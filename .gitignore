@@ -46,3 +46,6 @@ mobile/android/
 
 # ---- Local tooling ----
 .claude/settings.local.json
+
+# Downloaded source data (only extracted game slices are committed)
+backend/.cache/

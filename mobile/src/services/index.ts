@@ -7,3 +7,4 @@ export * from './http';
 export * from './profile';
 export * from './social';
 export * from './teams';
+export * from './replay';

@@ -4,11 +4,11 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { DayTabs, FeaturedGame, ScoreRow, type ScoreDay } from '@/components/scores';
+import { DayTabs, FeaturedGame, ReplayRow, ScoreRow, type ScoreDay } from '@/components/scores';
 import { Avatar, EmptyState, Screen, Skeleton } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { splitKickoff } from '@/lib/format';
-import { getTeam, listGamesByDay, listMostRecentFinals } from '@/services';
+import { getTeam, listGamesByDay, listMostRecentFinals, listReplayGames } from '@/services';
 import { useAppState } from '@/state/AppStore';
 import { colors, withAlpha } from '@/theme';
 import type { Game } from '@/types';
@@ -70,6 +70,8 @@ export default function ScoresScreen() {
     [day],
   );
 
+  // Real historical games from the backend replay engine; hidden if the backend is offline.
+  const { data: replays } = useAsync(listReplayGames);
   const favoriteIds = profile.favoriteTeamIds;
   const games = data?.games ?? [];
   const hero = day === 'today' ? games.find((g) => g.status === 'live' && involves(g, favoriteIds)) : undefined;
@@ -126,6 +128,16 @@ export default function ScoresScreen() {
                 <ScoreRow key={g.id} game={g} />
               ))}
             </>
+          ) : null}
+
+          {day === 'today' && replays?.length ? (
+            <View>
+              <SectionLabel title="Classic replays" icon="play-circle" />
+              {replays.map((g) => (
+                <ReplayRow key={g.game_id} game={g} />
+              ))}
+              <Text className="mt-1 px-5 text-[11px] text-mute">Real play-by-play from nflverse (CC BY 4.0), replayed play by play.</Text>
+            </View>
           ) : null}
 
           {day !== 'yesterday' && sections.length === 0 && !hero ? (

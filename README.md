@@ -3,8 +3,9 @@
 AI-powered mobile companion that makes watching live NFL games more interactive,
 personalized, and social.
 
-> **Phase 1 status:** polished UI with clearly labeled **mock data**, plus a FastAPI backend
-> with a `/health` endpoint. No real sports APIs, Supabase, or AI agents yet.
+> **Status:** Phase 1 UI (clearly labeled **mock data**) plus Phase 2A/2B: a deterministic
+> **historical replay engine** that replays real NFL play-by-play from nflverse. No live
+> commercial sports APIs, Supabase, or AI agents yet.
 
 | | |
 |---|---|
@@ -42,7 +43,15 @@ python3.12 -m venv .venv
 
 - Health check: http://localhost:8000/health
 - API docs (development only): http://localhost:8000/docs
-- Tests: `.venv/bin/python -m pytest -q`
+- To use the app from a phone, add `--host 0.0.0.0` (see the API URL table below).
+
+Checks (install dev tools once with `.venv/bin/pip install -r requirements-dev.txt`):
+
+```bash
+.venv/bin/ruff check . && .venv/bin/ruff format --check .   # lint + format
+.venv/bin/mypy                                              # strict type check
+.venv/bin/python -m pytest -q                               # tests
+```
 
 ## 3. Mobile
 
@@ -73,17 +82,57 @@ npx expo-doctor       # dependency / config health
 
 ## What's in the app
 
-- **Home** — featured live game hero, quick actions, live carousel, AI Pulse insights, open predictions, your teams, upcoming games
-- **Games** — Live / Upcoming / Final / All filter with scorecards
-- **Watch Party** — active party room (live mini-scoreboard, reactions, group chat), join/leave, create a party
-- **Discover** — search, category filters, trending players, stories with bookmarking, standings
-- **Profile** — stats, badges, follow teams, settings (alerts, spoiler shield, AI commentary, haptics), backend status
-- **Game Detail** — scoreboard with field tracker, timeouts and win probability; Timeline, Insights (+ leaders), Predict, and Ask AI chat tabs
+- **Scores** — Yesterday / Today / Upcoming, team-color score rows, featured game for your team, and **Classic replays** (real historical games, needs the backend)
+- **Picks** — free-to-play picks (Live / My picks / Results) and your record
+- **Party** — watch-party room with the game's score row, reactions, and chat
+- **Discover** — stories, trending players, standings
+- **You** — profile, teams, badges, saved stories, settings, backend status
+- **Game sheet** — scoreboard + linescore; Summary, Plays, Picks, and Ask AI tabs
+- **Replay sheet** — historical game replayed play by play with play / pause / restart / next play and 1×–10× speed
 
-All interactive state (picks, chat, parties, follows, settings) is local and resets on reload.
+Everything except replays uses local mock data and resets on reload.
 
-## Mock data disclaimer
+## Historical replays (Phase 2A/2B)
+
+Real NFL play-by-play is replayed by a deterministic Python engine (not an LLM). The engine
+updates score, quarter, clock, possession, down, distance, field position, timeouts and win
+probability one event at a time, and never exposes a play before the replay reaches it.
+
+**Included games** (`backend/data/nflverse/`):
+
+| game_id | Game | Plays |
+|---|---|---|
+| `2023_20_KC_BUF` | AFC Divisional Round · Jan 21, 2024 · Chiefs at Bills | 166 |
+| `2023_22_SF_KC` | Super Bowl LVIII · Feb 11, 2024 · 49ers vs Chiefs (OT) | 207 |
+
+**Data source:** [nflverse play-by-play](https://github.com/nflverse/nflverse-data/releases/tag/pbp)
+(`play_by_play_2023.csv.gz`), licensed **CC BY 4.0**. Each extract has a `.source.json` with the
+source URL, SHA-256, retrieval time, and license. Add more games with:
+
+```bash
+cd backend
+.venv/bin/python scripts/fetch_nflverse_games.py --season 2023 --game 2023_20_KC_BUF
+```
+
+The full season file is cached in `backend/.cache/` (git-ignored); only per-game extracts are committed.
+
+**API** (`/api/v1/replay`):
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/games` | Available games (matchup and metadata only, no results) |
+| POST | `/sessions` | Start a replay `{game_id, speed?, autoplay?}` → session snapshot |
+| GET | `/sessions/{id}` | Current state (poll while playing) |
+| POST | `/sessions/{id}/play` · `/pause` · `/resume` · `/restart` | Playback controls |
+| POST | `/sessions/{id}/step` | Advance `{plays: n}` events manually |
+| PUT | `/sessions/{id}/speed` | `{speed}` from 0.25 to 50 (1× = one play every 3 s) |
+| DELETE | `/sessions/{id}` | End the session |
+
+Sessions are isolated per id and expire after 2 hours idle.
+
+## Data disclaimer
 
 Everything under `mobile/src/data/mock/` is fabricated for development: scores, stats, odds,
-quotes, users, and AI responses are not real. Team names and colors are used for realism only;
+quotes, users, and AI responses are not real. Historical replays use real nflverse data
+(CC BY 4.0). Team names and colors are used for realism only;
 team marks are generated from colors and abbreviations, not official logos.

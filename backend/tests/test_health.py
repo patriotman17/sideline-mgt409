@@ -1,9 +1,9 @@
+from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
 from app import __version__
 from app.core.config import Settings, get_settings
 from app.main import create_app
-from fastapi.testclient import TestClient
 
 
 def test_health_ok(client):
@@ -18,9 +18,7 @@ def test_health_ok(client):
 
 def test_health_does_not_leak_secrets():
     app = create_app()
-    app.dependency_overrides[get_settings] = lambda: Settings(
-        portkey_api_key=SecretStr("test-secret-value")
-    )
+    app.dependency_overrides[get_settings] = lambda: Settings(portkey_api_key=SecretStr("test-secret-value"))
     res = TestClient(app).get("/health")
     assert res.status_code == 200
     assert "test-secret-value" not in res.text

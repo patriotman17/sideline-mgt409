@@ -7,6 +7,7 @@ import { colors } from '@/theme';
 import type { TimelineEvent, TimelineEventType } from '@/types';
 
 const EVENT_STYLE: Record<TimelineEventType, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  play: { icon: 'ellipse', color: colors.sub },
   touchdown: { icon: 'american-football', color: colors.volt },
   field_goal: { icon: 'flag', color: colors.win },
   turnover: { icon: 'swap-horizontal', color: colors.live },

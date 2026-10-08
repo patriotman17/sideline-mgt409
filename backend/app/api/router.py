@@ -1,8 +1,10 @@
-"""Versioned API router. Feature routers (games, assistant, parties) mount here."""
+"""Versioned API router. Feature routers mount here."""
 
 from fastapi import APIRouter
 
-api_router = APIRouter(prefix="/api/v1")
+from app.api.routes import replay
 
-# Phase 2+: api_router.include_router(games.router, prefix="/games")
-# Phase 2+: api_router.include_router(assistant.router, prefix="/assistant")
+api_router = APIRouter(prefix="/api/v1")
+api_router.include_router(replay.router, prefix="/replay")
+
+# Phase 2C+: api_router.include_router(assistant.router, prefix="/assistant")

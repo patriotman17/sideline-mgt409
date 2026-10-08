@@ -4,8 +4,8 @@ Environment is loaded with python-dotenv in this precedence order
 (highest first, existing values are never overwritten):
 
 1. Real process environment variables
-2. ``backend/.env``  – backend-specific settings
-3. ``<repo>/.env``   – shared secrets (e.g. PORTKEY_API_KEY)
+2. ``backend/.env``  - backend-specific settings
+3. ``<repo>/.env``   - shared secrets (e.g. PORTKEY_API_KEY)
 
 Secrets only ever live here on the server; the mobile app never sees them.
 """

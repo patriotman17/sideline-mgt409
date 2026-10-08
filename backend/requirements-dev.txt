@@ -1,0 +1,4 @@
+# Development tools (linting, formatting, type checking). Runtime deps live in requirements.txt.
+-r requirements.txt
+ruff
+mypy

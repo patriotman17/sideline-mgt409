@@ -53,6 +53,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             {/* Game screen slides up as a sheet over the tabs (swipe down to close on iOS). */}
             <Stack.Screen name="game/[id]" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="replay/[gameId]" options={{ presentation: 'modal' }} />
           </Stack>
         </AppStoreProvider>
       </ThemeProvider>

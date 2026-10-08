@@ -90,6 +90,7 @@ export interface Game {
 }
 
 export type TimelineEventType =
+  | 'play'
   | 'touchdown'
   | 'field_goal'
   | 'turnover'

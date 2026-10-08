@@ -27,15 +27,24 @@ Sideline/
 │       ├── state/AppStore.tsx# Local user state (picks, chats, parties, follows, settings)
 │       ├── hooks/  lib/  theme/  types/
 └── backend/                  # Python 3.12 · FastAPI · Pydantic AI (later)
-    ├── requirements.txt  pytest.ini  .env / .env.example
+    ├── requirements.txt  requirements-dev.txt  pyproject.toml (ruff/mypy)  pytest.ini  .env(.example)
     ├── app/
     │   ├── main.py           # create_app(): CORS, routers
     │   ├── core/config.py    # Settings via python-dotenv (+ SecretStr)
-    │   ├── api/routes/       # health.py; future feature routers
+    │   ├── api/routes/       # health.py, replay.py
     │   ├── api/router.py     # /api/v1 aggregator
-    │   ├── agents/           # Pydantic AI agents (Phase 2+)
-    │   └── services/         # External integrations (sports data, Supabase) (Phase 2+)
-    └── tests/
+    │   ├── replay/           # Phase 2A/2B: nflverse ingestion + deterministic replay engine
+    │   │   ├── source.py     #   nflverse URL, license, column list
+    │   │   ├── ingest.py     #   CSV rows -> normalized PlayEvents + validation
+    │   │   ├── models.py     #   Pydantic: Game, GameInfo, PlayEvent, GameState, ...
+    │   │   ├── engine.py     #   pure apply_event / replay (no future leakage)
+    │   │   ├── sessions.py   #   per-user playback (play/pause/resume/restart/step/speed)
+    │   │   └── catalog.py    #   loads data/nflverse/*.csv once per process
+    │   ├── agents/           # Pydantic AI agents (Phase 2C)
+    │   └── services/         # External integrations (Supabase etc., later)
+    ├── data/nflverse/        # Committed per-game extracts + .source.json provenance
+    ├── scripts/fetch_nflverse_games.py   # Downloads a season (to .cache/, ignored) and extracts games
+    └── tests/                # tests/replay/: ingest, engine, sessions, API
 ```
 
 ## Architecture principles
@@ -50,7 +59,9 @@ Sideline/
    When backend endpoints arrive, define matching Pydantic models and keep field names aligned.
 4. **Mock data is always labeled.** Any surface showing fabricated content shows a
    `<MockBadge />` or equivalent copy. Don't present mock scores/stats as real.
-5. **AI visual language.** Violet (`ai` token) + sparkles icon is reserved for AI-generated content.
+5. **AI visual language.** A lime ✦ sparkle + "Sideline AI" label marks AI-generated content.
+6. **Historical replays are real data.** They come from the backend replay engine (nflverse),
+   are labeled with their CC BY 4.0 attribution, and never show a result before it happens.
 
 ## Env loading (backend)
 
@@ -79,7 +90,8 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
   carry meaning (row gradients away→home), lime only for user actions/selection, one quiet
   "Sample data" marker per screen.
 - Navigation: `router.push({ pathname: '/game/[id]', params: { id, tab } })`.
-  Game Detail accepts `tab=timeline|insights|predict|chat`.
+  Game Detail accepts `tab=summary|plays|picks|chat` (old names are aliased).
+  Historical replays: `router.push({ pathname: '/replay/[gameId]', params: { gameId } })`.
 - State: read with `useAppState()`, mutate with `useAppActions()`. Keep the reducer pure.
 - Async data: `useAsync(fn, deps)` (deps must be primitives). Plan: TanStack Query in Phase 2.
 - Interactions: use `useHaptics()` (respects the user setting, no-ops on web). Every
@@ -96,7 +108,33 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
 - Settings via `Depends(get_settings)`; override with `app.dependency_overrides` in tests.
 - Response models are Pydantic `BaseModel`s; agents use typed deps and structured `output_type`.
 - Dependencies are pinned only by name in `requirements.txt` for now — pin versions before
-  deploying.
+  deploying. Dev tools (ruff, mypy) live in `requirements-dev.txt`.
+- `app/` and `scripts/` are mypy `--strict`; tests are type-checked with relaxed untyped-def rules.
+
+## Replay engine (Phase 2A/2B)
+
+Flow: nflverse CSV extract → `ingest.normalize_rows` → immutable `Game` → `engine.apply_event`
+folded over `events[:cursor]` → `ReplaySession` (cursor derived from an injectable clock) → API.
+
+- **Deterministic, not an LLM.** `apply_event(state, event, game)` is a pure function. Same events
+  in, same state out.
+- **No future leakage.** State at cursor *k* depends only on `events[:k]` (tested for every *k*).
+  An event's `after` fields hold only the immediate post-play situation (the next snap's
+  pre-snap down/distance/spot/possession) — never a later outcome. API responses never include
+  later events, the final score, or warning text (only a warning count). Future AI context must
+  come from `ReplaySession.visible_events()`.
+- **Don't invent data.** Blank/`NA` source values stay `None`. Scoring comes only from explicit
+  result flags; source score totals are used to *validate* the engine, and mismatches become
+  `Game.warnings` rather than silent fixes.
+- **nflverse quirks (verified on 2023 data):** `total_home_score`/`total_away_score` and
+  `*_timeouts_remaining` already include the current row, despite the dictionary saying
+  "start of play". Lost fumbles on kicks can be by the *receiving* team, so the loser is derived
+  from who has the ball next. Rams are `LA`. Postseason OT is a 15:00 period.
+- **Sessions:** unguessable ids, isolated state, idle TTL (2h) and a cap (500, LRU eviction).
+  Speeds 0.25×–50×; 1× = one event per 3 s. Polling (1 s) from the app; WebSockets later.
+- **Adding a game:** `cd backend && .venv/bin/python scripts/fetch_nflverse_games.py --season 2023
+  --game <game_id>`; commit the `.csv` + `.source.json`; run tests (ingestion must report 0 warnings).
+- **Data license:** nflverse data is CC BY 4.0 — keep the attribution visible wherever it's shown.
 
 ## Checks (run before declaring work done)
 
@@ -105,15 +143,18 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
 npx tsc --noEmit && npx expo lint && npx expo-doctor
 npx expo export --platform ios --platform android --output-dir /tmp/sideline-export  # native bundle compiles
 
-# backend/
-.venv/bin/python -m pytest -q
+# backend/  (install dev tools once: .venv/bin/pip install -r requirements-dev.txt)
+.venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv/bin/mypy && .venv/bin/python -m pytest -q
 ```
 
 ## Roadmap hooks
 
 | Phase | Where it plugs in |
 |-------|-------------------|
-| Real scores / play-by-play | `backend/app/services/` provider → `/api/v1/games` → `mobile/src/services/games.ts` |
-| AI chat & insights (Pydantic AI via Portkey) | `backend/app/agents/` → `/api/v1/assistant/chat` → `mobile/src/services/assistant.ts` |
+| 2A/2B ✅ Historical ingestion + replay engine | `app/replay/` → `/api/v1/replay/*` → `mobile/src/services/replay.ts` + `hooks/useReplaySession.ts` |
+| 2C AI agent with game tools (Pydantic AI via Portkey) | `backend/app/agents/`, tools read only `ReplaySession.visible_events()` / `GameState` → `/api/v1/assistant/chat` |
+| 2D Mobile integration | Replace mock insights/chat in `services/assistant.ts` & `services/games.ts` with replay-backed data |
+| 2E Evaluations | Accuracy, no-future-leakage, reliability suites alongside `tests/replay/` |
+| Live scores (commercial provider) | `backend/app/services/` provider emitting the same `PlayEvent` model |
 | Auth, profiles, picks persistence | Supabase → replace seeding in `state/AppStore.tsx` / `services/profile.ts` |
 | Live watch parties | Supabase Realtime → `services/social.ts` + party actions in the store |

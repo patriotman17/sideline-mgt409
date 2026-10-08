@@ -16,7 +16,7 @@ function Timeouts({ count }: { count: number }) {
   );
 }
 
-function Side({ ts, game }: { ts: TeamScore; game: Game }) {
+function Side({ ts, game, showRecord }: { ts: TeamScore; game: Game; showRecord: boolean }) {
   const team = getTeam(ts.teamId);
   const other = ts === game.away ? game.home : game.away;
   const hasBall = game.status === 'live' && game.situation?.possessionTeamId === ts.teamId;
@@ -31,7 +31,7 @@ function Side({ ts, game }: { ts: TeamScore; game: Game }) {
         <Text className="text-[15px] font-semibold text-ink">{team.name}</Text>
         {hasBall ? <View className="h-1.5 w-1.5 rounded-full bg-gold" accessibilityLabel="Has possession" /> : null}
       </View>
-      <Text className="font-cond text-[13px] text-sub">{team.record}</Text>
+      {showRecord ? <Text className="font-cond text-[13px] text-sub">{team.record}</Text> : null}
       {game.status === 'live' ? <Timeouts count={ts.timeouts} /> : null}
     </View>
   );
@@ -69,15 +69,18 @@ function Status({ game }: { game: Game }) {
   );
 }
 
-/** Top of the game screen: huge scores, team marks, and game state. */
-export function Scoreboard({ game }: { game: Game }) {
+/**
+ * Top of the game screen: huge scores, team marks, and game state.
+ * `showRecords` is off for historical replays (current-season records would be wrong).
+ */
+export function Scoreboard({ game, showRecords = true }: { game: Game; showRecords?: boolean }) {
   return (
     <View className="flex-row items-start px-2">
-      <Side ts={game.away} game={game} />
+      <Side ts={game.away} game={game} showRecord={showRecords} />
       <View className={`w-[120px] items-center ${game.status === 'scheduled' ? 'pt-3' : 'pt-6'}`}>
         <Status game={game} />
       </View>
-      <Side ts={game.home} game={game} />
+      <Side ts={game.home} game={game} showRecord={showRecords} />
     </View>
   );
 }
