@@ -14,6 +14,7 @@ interface Props {
   onAnswer: (predictionId: string, optionId: string) => void;
   onTogglePause: (enabled: boolean) => void;
   onExplain: (predictionId: string) => void;
+  secondsToSnap?: number | null;
   explanations: Record<string, { text?: string; error?: string; loading?: boolean }>;
 }
 
@@ -36,7 +37,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** Real, deterministic predictions for a historical replay (demo scoring). */
-export function ReplayPicksPanel({ data, view, error, onRetry, onAnswer, onTogglePause, onExplain, explanations }: Props) {
+export function ReplayPicksPanel({
+  data,
+  view,
+  error,
+  onRetry,
+  onAnswer,
+  onTogglePause,
+  onExplain,
+  secondsToSnap,
+  explanations,
+}: Props) {
   if (error && !data) {
     return (
       <View className="mx-4 rounded-2xl bg-loss/10 p-4">
@@ -66,7 +77,11 @@ export function ReplayPicksPanel({ data, view, error, onRetry, onAnswer, onToggl
       <View className="mt-3 flex-row items-center justify-between rounded-2xl bg-white/10 px-4 py-2.5">
         <View className="flex-1 pr-3">
           <Text className="text-[14px] font-semibold text-ink">Pause for picks</Text>
-          <Text className="text-[12px] text-mute">Stop the replay when a new question opens</Text>
+          <Text className="text-[12px] text-mute">
+            {data.pause_for_predictions
+              ? 'The replay stops until you answer'
+              : 'Off: you get a few extra seconds before the next snap'}
+          </Text>
         </View>
         <Switch
           value={data.pause_for_predictions}
@@ -87,14 +102,20 @@ export function ReplayPicksPanel({ data, view, error, onRetry, onAnswer, onToggl
       {view.open.length ? (
         <Section title="Make your pick">
           {view.open.map((c) => (
-            <ReplayPredictionCard key={c.item.prediction.id} card={c} onAnswer={(o) => onAnswer(c.item.prediction.id, o)} />
+            <ReplayPredictionCard
+              key={c.item.prediction.id}
+              card={c}
+              secondsToSnap={secondsToSnap}
+              onAnswer={(o) => onAnswer(c.item.prediction.id, o)}
+            />
           ))}
         </Section>
       ) : (
         <View className="mt-5 items-center rounded-2xl bg-white/5 px-6 py-6">
           <Text className="text-center text-[15px] font-semibold text-ink">No open questions right now</Text>
           <Text className="mt-1 text-center text-[13px] leading-[18px] text-sub">
-            Questions appear before key moments: drive starts, 3rd downs, and 4th-down decisions.
+            A handful of featured questions per game, saved for the big moments: 4th-down calls, red-zone
+            snaps, and late, close situations. They’ll pop up under the replay controls.
           </Text>
         </View>
       )}

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.predictions.config import PredictionConfig
 from app.predictions.models import POINTS, Option, Prediction, PredictionType
 from app.replay.models import GameInfo, GameState, GameStatus, PlayEvent, PlayKind, ScoreType
 
@@ -257,3 +258,74 @@ RESOLVERS = {
 def resolve(p: Prediction, e: PlayEvent) -> Resolution | None:
     """Outcome decided by the newly revealed event ``e``, or None if still undecided."""
     return RESOLVERS[p.type](e, p)
+
+
+# ---------------------------------------------------------------- ranking (revealed state only)
+
+
+def _first_drive_of_half(r: Revealed) -> bool:
+    """The kickoff that starts a half: nothing scored yet in the game (Q1) or the half's first possession (Q3).
+    Uses only the clock of the revealed state — a half-opening kickoff leaves 14:xx or more."""
+    s = r.state
+    return s.clock_seconds is not None and s.clock_seconds >= 840
+
+
+def rank(p: Prediction, r: Revealed, cfg: PredictionConfig) -> Prediction:
+    """Score how compelling this moment is and why. Uses only the revealed snapshot."""
+    s = r.state
+    score = cfg.base[p.type]
+    tags: list[str] = []
+    margin = abs(s.home_score - s.away_score)
+    clock = s.clock_seconds if s.clock_seconds is not None else 900
+    late = s.quarter >= 5 or (s.quarter == 4 and clock <= 300)
+    close = margin <= 8
+    red_zone = s.yardline_100 is not None and s.yardline_100 <= 20
+    last = r.last_snap
+
+    if late:
+        score += 20
+        tags.append("Overtime" if s.quarter >= 5 else "Late game")
+        if close:
+            score += 20
+            tags.append("Tied game" if margin == 0 else "One-score game")
+    elif s.quarter == 2 and clock <= 120:
+        score += 10
+        tags.append("Two-minute drill")
+
+    if p.type is PredictionType.FOURTH_DOWN_CONVERSION:
+        tags.insert(0, "4th down")
+        if (s.distance or 99) <= 2:
+            score += 10
+            tags.append("Short yardage")
+        if red_zone:
+            score += 15
+            tags.append("Red zone")
+        elif s.yardline_100 is not None and s.yardline_100 > 50 and not late:
+            if (s.distance or 99) > 1 or s.yardline_100 >= 70:
+                score -= 15  # in their own half early on (or backed up deep): usually a punt
+    elif p.type is PredictionType.NEXT_PLAY_GAIN_5:
+        if red_zone:
+            score += 40
+            tags.append("Red zone")
+            if s.distance is not None and s.yardline_100 is not None and s.distance >= s.yardline_100:
+                score += 10
+                tags.append("Goal to go")
+        if s.distance is not None and s.distance >= 8:
+            score -= 15  # 3rd & long rarely makes a good question
+    elif p.type is PredictionType.DRIVE_TOUCHDOWN:
+        if s.yardline_100 is not None and s.yardline_100 <= 50:
+            score += 25
+            tags.append("Short field")
+        if last is not None and last.turnover is not None:
+            score += 15
+            tags.append("Takeaway")
+    elif p.type is PredictionType.NEXT_SCORE:
+        if last is not None and last.kind is PlayKind.KICKOFF and s.quarter in (1, 3) and _first_drive_of_half(r):
+            score += 35
+            tags.append("Opening drive" if s.quarter == 1 else "Second half")
+        if s.quarter >= 2 and margin == 0 and "Tied game" not in tags:
+            score += 10
+            tags.append("Tied game")
+        if s.quarter >= 4 and close:
+            score += 20
+    return p.model_copy(update={"importance": score, "tags": tags})

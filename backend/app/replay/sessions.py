@@ -18,6 +18,7 @@ from collections.abc import Callable
 from enum import StrEnum
 
 from app.agents.conversation import Conversation
+from app.predictions.config import DEFAULT_CONFIG, PredictionConfig
 from app.predictions.ledger import PredictionLedger
 from app.predictions.models import Answer
 from app.replay.engine import apply_event, initial_state, replay
@@ -60,7 +61,8 @@ class ReplaySession:
         speed: float = 1.0,
         clock: Clock = time.monotonic,
         session_id: str | None = None,
-        pause_for_predictions: bool = True,
+        pause_for_predictions: bool = False,
+        prediction_config: PredictionConfig = DEFAULT_CONFIG,
     ):
         self.id = session_id or uuid.uuid4().hex
         #: Secret returned once at creation; only its hash is kept. Required for every session request.
@@ -70,9 +72,12 @@ class ReplaySession:
         #: Ask Sideline chat for this session only (isolated; expires with the session).
         self.conversation = Conversation()
         #: Prediction lifecycle for this session. Only ever moves forward (see ``_advance_to``).
-        self.predictions = PredictionLedger(game.info)
-        #: Stop playback at the play where a new prediction opens, so there's time to answer.
+        self.predictions = PredictionLedger(game.info, prediction_config)
+        #: Opt-in: stop playback at the play where a new prediction opens. Off by default — instead
+        #: playback holds briefly (a "pick window") before the next snap, like a broadcast beat.
         self.pause_for_predictions = pause_for_predictions
+        #: Clock time when the current pick window ends (None = no window).
+        self._pick_window_until: float | None = None
         #: Why playback is paused, when the server paused it ("prediction"); None otherwise.
         self.pause_reason: str | None = None
         self._clock = clock
@@ -119,12 +124,7 @@ class ReplaySession:
                 self._cursor = index + 1
                 if self._cursor > self.predictions.high_water:
                     opened = self.predictions.observe(event, self._state, self._cursor)
-                    if (
-                        opened
-                        and stop_on_prediction
-                        and self.pause_for_predictions
-                        and self._cursor < self.total_events
-                    ):
+                    if opened and stop_on_prediction and self._cursor < self.total_events:
                         stopped = True
                         break
         if self._cursor >= self.total_events:
@@ -134,15 +134,36 @@ class ReplaySession:
     def _sync(self) -> float:
         now = self._clock()
         self.last_access = now
-        playing = self._status is PlaybackStatus.PLAYING
-        if self._advance_to(self._target_cursor(now), stop_on_prediction=playing) and playing:
-            self._status = PlaybackStatus.PAUSED
-            self.pause_reason = "prediction"
+        if self._status is not PlaybackStatus.PLAYING:
+            self._advance_to(self._target_cursor(now))
+            return now
+        while self._advance_to(self._target_cursor(now), stop_on_prediction=True):
+            if self.pause_for_predictions:
+                self._status = PlaybackStatus.PAUSED
+                self.pause_reason = "prediction"
+                break
+            # Pick window: the next snap waits a little longer. Anchored to when this play was
+            # *due* (not when it was polled), so the timeline is the same however often clients poll.
+            spp = SECONDS_PER_PLAY / self._speed
+            due = self._anchor_time + (self._cursor - self._anchor_cursor) * spp
+            self._anchor_cursor = self._cursor
+            self._anchor_time = due + self.predictions.config.pick_window_seconds / self._speed
+            self._pick_window_until = self._anchor_time + spp  # when the next snap is due
         return now
 
     def _reanchor(self, now: float) -> None:
         self._anchor_cursor = self._cursor
         self._anchor_time = now
+        self._pick_window_until = None
+
+    def pick_window_left(self) -> float | None:
+        """Seconds until the next snap while a pick window holds playback (None otherwise)."""
+        with self._lock:
+            now = self._sync()
+            if self._status is not PlaybackStatus.PLAYING or self._pick_window_until is None:
+                return None
+            left = self._pick_window_until - now
+            return round(left, 2) if left > 0 else None
 
     # -- reads ------------------------------------------------------------
 
@@ -208,7 +229,7 @@ class ReplaySession:
                 raise InvalidTransition("Replay has finished; restart it to step again.")
             if self._status is PlaybackStatus.PLAYING:
                 self._status = PlaybackStatus.PAUSED
-            stopped = self._advance_to(self._cursor + plays, stop_on_prediction=True)
+            stopped = self._advance_to(self._cursor + plays, stop_on_prediction=self.pause_for_predictions)
             if self._status is not PlaybackStatus.FINISHED and self._cursor > 0:
                 self._status = PlaybackStatus.PAUSED
             self.pause_reason = "prediction" if stopped else None
@@ -233,16 +254,14 @@ class ReplaySession:
             now = self._sync()
             answer, created = self.predictions.answer(prediction_id, option_id, self._cursor)
             resumed = False
-            if (
-                created
-                and self._status is PlaybackStatus.PAUSED
-                and self.pause_reason == "prediction"
-                and not self.predictions.unanswered_open(self._cursor)
-            ):
+            all_answered = created and not self.predictions.unanswered_open(self._cursor)
+            if all_answered and self._status is PlaybackStatus.PAUSED and self.pause_reason == "prediction":
                 self._status = PlaybackStatus.PLAYING
                 self.pause_reason = None
                 self._reanchor(now)
                 resumed = True
+            elif all_answered and self._pick_window_until is not None and self._pick_window_until > now:
+                self._reanchor(now)  # answered during the pick window: carry on at normal pace
             return answer, created, resumed
 
     def set_pause_for_predictions(self, enabled: bool) -> None:
@@ -262,15 +281,29 @@ class ReplaySession:
 class ReplaySessionManager:
     """Isolated sessions keyed by unguessable ids, with idle expiry and a cap."""
 
-    def __init__(self, *, clock: Clock = time.monotonic, ttl_seconds: float = 2 * 60 * 60, max_sessions: int = 500):
+    def __init__(
+        self,
+        *,
+        clock: Clock = time.monotonic,
+        ttl_seconds: float = 2 * 60 * 60,
+        max_sessions: int = 500,
+        prediction_config: PredictionConfig = DEFAULT_CONFIG,
+    ):
         self._clock = clock
+        self._prediction_config = prediction_config
         self._ttl = ttl_seconds
         self._max = max_sessions
         self._sessions: dict[str, ReplaySession] = {}
         self._lock = threading.Lock()
 
-    def create(self, game: Game, *, speed: float = 1.0, pause_for_predictions: bool = True) -> ReplaySession:
-        session = ReplaySession(game, speed=speed, clock=self._clock, pause_for_predictions=pause_for_predictions)
+    def create(self, game: Game, *, speed: float = 1.0, pause_for_predictions: bool = False) -> ReplaySession:
+        session = ReplaySession(
+            game,
+            speed=speed,
+            clock=self._clock,
+            pause_for_predictions=pause_for_predictions,
+            prediction_config=self._prediction_config,
+        )
         with self._lock:
             self._evict()
             if len(self._sessions) >= self._max:

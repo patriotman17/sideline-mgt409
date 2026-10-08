@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { useHaptics } from '@/lib/haptics';
-import type { PredictionCard } from '@/lib/replayPredictions';
+import { lockLabel, type PredictionCard } from '@/lib/replayPredictions';
 import { colors } from '@/theme';
 
 const BADGE: Record<string, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
@@ -20,10 +20,14 @@ interface Props {
   onAnswer?: (optionId: string) => void;
   explanation?: { text?: string; error?: string; loading?: boolean };
   onExplain?: () => void;
+  /** Seconds until the next snap (pick window), for the open-question footer. */
+  secondsToSnap?: number | null;
+  /** Inline under the playback controls: tighter, without the long window text. */
+  compact?: boolean;
 }
 
 /** A real replay prediction: answer before the play, watch it lock, see the deterministic result. */
-export function ReplayPredictionCard({ card, onAnswer, explanation, onExplain }: Props) {
+export function ReplayPredictionCard({ card, onAnswer, explanation, onExplain, secondsToSnap, compact }: Props) {
   const { success } = useHaptics();
   const { item, state, selected } = card;
   const p = item.prediction;
@@ -47,7 +51,14 @@ export function ReplayPredictionCard({ card, onAnswer, explanation, onExplain }:
           <Text className="font-cond text-[14px] text-volt">+{p.points} pts</Text>
         )}
       </View>
-      <Text className="mb-3 mt-2 text-[17px] font-semibold leading-[22px] text-ink">{p.question}</Text>
+      {p.tags.length ? (
+        <Text className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.8px] text-white/60" numberOfLines={1}>
+          {p.tags.join(' · ')}
+        </Text>
+      ) : null}
+      <Text className={`mb-3 mt-1.5 font-semibold text-ink ${compact ? 'text-[16px] leading-[21px]' : 'text-[17px] leading-[22px]'}`}>
+        {p.question}
+      </Text>
 
       <View className={p.options.length > 2 ? 'gap-2' : 'flex-row gap-2'}>
         {p.options.map((o) => {
@@ -82,7 +93,15 @@ export function ReplayPredictionCard({ card, onAnswer, explanation, onExplain }:
       </View>
 
       {card.error ? <Text className="mt-2.5 text-[12px] text-loss">{card.error}</Text> : null}
-      {state === 'open' ? <Text className="mt-2.5 text-[12px] text-mute">Locks at the next snap · {p.window}</Text> : null}
+      {state === 'open' ? (
+        <Text className="mt-2.5 text-[12px] text-mute">
+          {lockLabel(secondsToSnap)}
+          {compact ? '' : ` · ${p.window}`}
+        </Text>
+      ) : null}
+      {compact && state === 'locked_in' ? (
+        <Text className="mt-2.5 text-[12px] text-mute">Locked in · result in Picks</Text>
+      ) : null}
       {state === 'locked_in' || state === 'closed' ? (
         <Text className="mt-2.5 text-[12px] text-mute">{p.window}</Text>
       ) : null}

@@ -86,6 +86,8 @@ export interface ReplaySnapshot {
     status: PlaybackStatus;
     /** True when the server paused playback because a new prediction opened. */
     paused_for_prediction: boolean;
+    /** Seconds until the next snap while a "pick window" holds playback after a question opens. */
+    pick_window_seconds_left: number | null;
     speed: number;
     seconds_per_play: number;
     cursor: number;
@@ -352,6 +354,9 @@ export interface ReplayPrediction {
   void_reason: string | null;
   resolution_summary: string | null;
   situation: string;
+  /** Deterministic ranking score (higher = bigger moment) and why it was featured, e.g. "Red zone". */
+  importance: number;
+  tags: string[];
 }
 
 export interface ReplayPredictionItem {

@@ -13,7 +13,7 @@ import {
   Timeline,
   WinProbabilityBar,
 } from '@/components/game';
-import { ReplayAskPanel, ReplayInsightCard, ReplayPicksPanel } from '@/components/replay';
+import { ReplayAskPanel, ReplayInsightCard, ReplayPicksPanel, ReplayPredictionCard } from '@/components/replay';
 import { Button, EmptyState, IconButton, Skeleton, TextTabs } from '@/components/ui';
 import { useReplayChat } from '@/hooks/useReplayChat';
 import { useReplayInsights } from '@/hooks/useReplayInsights';
@@ -21,6 +21,7 @@ import { useReplayPredictions } from '@/hooks/useReplayPredictions';
 import { useReplaySession } from '@/hooks/useReplaySession';
 import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { useHaptics } from '@/lib/haptics';
+import { inlinePick } from '@/lib/replayPredictions';
 import {
   formatGameDate,
   getTeam,
@@ -107,6 +108,8 @@ export default function ReplayScreen() {
   const away = snapshot ? getTeam(replayTeamId(snapshot.game.away.abbr)) : undefined;
   const home = snapshot ? getTeam(replayTeamId(snapshot.game.home.abbr)) : undefined;
   const isPlaying = playback?.status === 'playing';
+  // Featured question shown right under the controls (except on the Picks tab, which lists it already).
+  const featuredPick = tab === 'picks' ? undefined : inlinePick(picks.view);
   const finished = playback?.status === 'finished';
 
   const togglePlay = () => {
@@ -265,6 +268,17 @@ export default function ReplayScreen() {
               </View>
             ) : null}
 
+            {featuredPick ? (
+              <View className="mx-4 mt-3">
+                <ReplayPredictionCard
+                  compact
+                  card={featuredPick}
+                  secondsToSnap={playback?.pick_window_seconds_left}
+                  onAnswer={(o) => picks.answer(featuredPick.item.prediction.id, o)}
+                />
+              </View>
+            ) : null}
+
             {game?.status === 'live' ? (
               <View className="mx-4 mt-3 gap-3">
                 {game.situation ? (
@@ -314,6 +328,7 @@ export default function ReplayScreen() {
                     onAnswer={picks.answer}
                     onTogglePause={picks.setPauseForPicks}
                     onExplain={picks.explain}
+                    secondsToSnap={playback?.pick_window_seconds_left}
                     explanations={picks.explanations}
                   />
                 ) : tab === 'insights' ? (

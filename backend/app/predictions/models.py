@@ -58,6 +58,9 @@ class Prediction(BaseModel):
     situation: str
     #: Next-score window: closes at the end of this quarter (2 = half, 4 = regulation; None = game).
     window_end_quarter: int | None = None
+    #: Deterministic ranking score and the reasons it was featured (e.g. "Red zone", "Late game").
+    importance: int = 0
+    tags: list[str] = Field(default_factory=list)
 
 
 class Answer(BaseModel):

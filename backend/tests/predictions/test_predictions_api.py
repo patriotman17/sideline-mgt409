@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 
 from app.api.routes.replay import get_ai_service, get_session_manager
 from app.main import create_app
-from app.replay.sessions import ReplaySessionManager
+from app.predictions.config import DEFAULT_CONFIG
+from app.replay.sessions import SECONDS_PER_PLAY, ReplaySessionManager
 from tests.agents.conftest import scripted, simple_answer
 from tests.replay.conftest import DIVISIONAL, FakeClock
 
@@ -26,6 +27,15 @@ def api(make_service):
     app.dependency_overrides[get_session_manager] = lambda: manager
     app.dependency_overrides[get_ai_service] = lambda: ai
     return TestClient(app), ai
+
+
+@pytest.fixture
+def api_with_clock():
+    app = create_app()
+    clock = FakeClock()
+    manager = ReplaySessionManager(clock=clock)
+    app.dependency_overrides[get_session_manager] = lambda: manager
+    return TestClient(app), clock
 
 
 def start(client: TestClient, **body: Any) -> tuple[str, dict[str, str]]:
@@ -53,17 +63,19 @@ def test_full_lifecycle_over_http(api):
     client.post(f"{BASE}/sessions/{sid}/step", json={"plays": 2}, headers=auth)
     ov = client.get(f"{BASE}/sessions/{sid}/predictions", headers=auth).json()
     assert ov["scoring_mode"] == "demo" and "Demo scoring" in ov["scoring_note"]
-    drive = next(i["prediction"] for i in ov["open"] if i["prediction"]["type"] == "drive_touchdown")
+    assert ov["pause_for_predictions"] is False  # opt-in
+    drive = next(i["prediction"] for i in ov["open"] if i["prediction"]["type"] == "next_score")
     assert "correct_option_id" in drive and drive["correct_option_id"] is None  # nothing about the outcome
+    assert drive["tags"] == ["Opening drive"] and drive["importance"] >= 60
 
-    r = client.post(f"{BASE}/sessions/{sid}/predictions/{drive['id']}/answer", json={"option_id": "no"}, headers=auth)
-    assert r.status_code == 200 and r.json()["created"] is True and r.json()["item"]["your_answer"] == "no"
+    r = client.post(f"{BASE}/sessions/{sid}/predictions/{drive['id']}/answer", json={"option_id": "BUF"}, headers=auth)
+    assert r.status_code == 200 and r.json()["created"] is True and r.json()["item"]["your_answer"] == "BUF"
     again = client.post(
-        f"{BASE}/sessions/{sid}/predictions/{drive['id']}/answer", json={"option_id": "no"}, headers=auth
+        f"{BASE}/sessions/{sid}/predictions/{drive['id']}/answer", json={"option_id": "BUF"}, headers=auth
     )
     assert again.status_code == 200 and again.json()["created"] is False  # idempotent retry
     changed = client.post(
-        f"{BASE}/sessions/{sid}/predictions/{drive['id']}/answer", json={"option_id": "yes"}, headers=auth
+        f"{BASE}/sessions/{sid}/predictions/{drive['id']}/answer", json={"option_id": "KC"}, headers=auth
     )
     assert changed.status_code == 409 and changed.json()["detail"]["code"] == "already_answered"
     bad = client.post(
@@ -76,8 +88,8 @@ def test_full_lifecycle_over_http(api):
     client.post(f"{BASE}/sessions/{sid}/step", json={"plays": 20}, headers=auth)  # BUF kicks a FG at play 16
     hist = client.get(f"{BASE}/sessions/{sid}/predictions/history", headers=auth).json()
     mine = next(i for i in hist["items"] if i["prediction"]["id"] == drive["id"])
-    assert (mine["outcome"], mine["points_awarded"]) == ("correct", 20)
-    assert hist["stats"]["points"] == 20 and hist["stats"]["current_streak"] == 1
+    assert (mine["outcome"], mine["points_awarded"]) == ("correct", 15)
+    assert hist["stats"]["points"] == 15 and hist["stats"]["current_streak"] == 1
     assert client.get(f"{BASE}/sessions/{sid}/predictions/stats", headers=auth).json()["accuracy"] == 1.0
 
 
@@ -105,16 +117,25 @@ def test_restart_masks_results_and_reports_where_questions_resume(api):
 
 def test_playback_snapshot_reports_pause_for_prediction(api):
     client, _ = api
-    sid, auth = start(client)
+    sid, auth = start(client, pause_for_predictions=True)
     snap = client.post(f"{BASE}/sessions/{sid}/step", json={"plays": 10}, headers=auth).json()
     assert snap["playback"]["cursor"] == 2 and snap["playback"]["paused_for_prediction"] is True
+
+
+def test_playback_snapshot_reports_the_pick_window(api_with_clock):
+    client, clock = api_with_clock
+    sid, auth = start(client, autoplay=True)
+    clock.advance(SECONDS_PER_PLAY * 2)
+    pb = client.get(f"{BASE}/sessions/{sid}", headers=auth).json()["playback"]
+    assert pb["cursor"] == 2 and pb["status"] == "playing" and pb["paused_for_prediction"] is False
+    assert pb["pick_window_seconds_left"] == SECONDS_PER_PLAY + DEFAULT_CONFIG.pick_window_seconds
 
 
 def test_ai_explains_only_resolved_predictions(api):
     client, ai = api
     sid, auth = start(client, pause_for_predictions=False)
     client.post(f"{BASE}/sessions/{sid}/step", json={"plays": 2}, headers=auth)
-    pid = f"{DIVISIONAL}:drive_touchdown:2"
+    pid = f"{DIVISIONAL}:next_score:2"
     early = client.post(f"{BASE}/sessions/{sid}/predictions/{pid}/explain", headers=auth)
     assert early.status_code == 409 and early.json()["detail"]["code"] == "not_resolved"
     client.post(f"{BASE}/sessions/{sid}/step", json={"plays": 20}, headers=auth)

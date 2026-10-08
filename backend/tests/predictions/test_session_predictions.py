@@ -6,15 +6,20 @@ import threading
 
 import pytest
 
+from app.predictions.config import DEFAULT_CONFIG
 from app.predictions.ledger import PredictionError, visible_items
 from app.predictions.models import PredictionStatus, PredictionType
 from app.replay.sessions import SECONDS_PER_PLAY, PlaybackStatus, ReplaySession, ReplaySessionManager, SessionNotFound
+from tests.replay.conftest import PLAIN
 
 T = PredictionType
+WINDOW = DEFAULT_CONFIG.pick_window_seconds
+OPENING = "2023_20_KC_BUF:next_score:2"  # the first featured question: who scores first (BUF, a FG at play 16)
 
 
-def session(game, clock, *, pause: bool = True, speed: float = 1.0) -> ReplaySession:
-    return ReplaySession(game, clock=clock, pause_for_predictions=pause, speed=speed)
+def session(game, clock, *, pause: bool = False, speed: float = 1.0, plain: bool = False) -> ReplaySession:
+    config = PLAIN if plain else DEFAULT_CONFIG
+    return ReplaySession(game, clock=clock, pause_for_predictions=pause, speed=speed, prediction_config=config)
 
 
 def open_ids(s: ReplaySession) -> list[str]:
@@ -24,67 +29,123 @@ def open_ids(s: ReplaySession) -> list[str]:
     ]
 
 
-def test_pause_for_picks_stops_exactly_where_a_question_opens(divisional, clock):
+def test_pause_for_picks_is_off_by_default(divisional, clock):
+    assert ReplaySession(divisional, clock=clock).pause_for_predictions is False
+    assert ReplaySessionManager(clock=clock).create(divisional).pause_for_predictions is False
     s = session(divisional, clock)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 50)
     st, _, cursor, _ = s.snapshot()
+    assert st is PlaybackStatus.PLAYING and cursor > 2 and s.pause_reason is None
+
+
+def test_pick_window_holds_the_next_snap(divisional, clock):
+    """With pause off, a featured question adds a short beat before the next snap (play 3)."""
+    s = session(divisional, clock)
+    s.play()
+    clock.advance(SECONDS_PER_PLAY * 2)  # play 2 revealed: the opening question opens
+    assert open_ids(s) == [OPENING] and s.cursor == 2
+    assert s.pick_window_left() == SECONDS_PER_PLAY + WINDOW
+    clock.advance(SECONDS_PER_PLAY + WINDOW - 0.01)
+    assert s.snapshot()[2] == 2 and s.snapshot()[0] is PlaybackStatus.PLAYING
+    clock.advance(0.01)
+    assert s.snapshot()[2] == 3 and s.pick_window_left() is None
+
+
+def test_pick_window_timeline_does_not_depend_on_polling(divisional, clock):
+    from tests.replay.conftest import FakeClock
+
+    polled_clock, idle_clock = FakeClock(), FakeClock()
+    polled, idle = session(divisional, polled_clock), session(divisional, idle_clock)
+    polled.play()
+    idle.play()
+    for _ in range(400):
+        polled_clock.advance(0.5)
+        polled.snapshot()
+    idle_clock.advance(200)
+    assert polled.snapshot()[2] == idle.snapshot()[2]
+
+
+def test_answering_ends_the_pick_window_early(divisional, clock):
+    s = session(divisional, clock)
+    s.play()
+    clock.advance(SECONDS_PER_PLAY * 2 + 1)
+    _, created, resumed = s.submit_prediction(OPENING, "BUF")
+    assert created and not resumed  # it never paused
+    assert s.pick_window_left() is None
+    clock.advance(SECONDS_PER_PLAY)
+    assert s.snapshot()[2] == 3  # normal pace from the moment of the answer
+
+
+def test_pick_window_scales_with_speed(divisional, clock):
+    s = session(divisional, clock, speed=4)
+    s.play()
+    clock.advance(SECONDS_PER_PLAY * 2 / 4)
+    assert s.pick_window_left() == (SECONDS_PER_PLAY + WINDOW) / 4
+
+
+def test_pause_for_picks_stops_exactly_where_a_question_opens(divisional, clock):
+    s = session(divisional, clock, pause=True)
+    s.play()
+    clock.advance(SECONDS_PER_PLAY * 50)
+    st, _, cursor, _ = s.snapshot()
     assert (st, cursor, s.pause_reason) == (PlaybackStatus.PAUSED, 2, "prediction")
-    assert len(open_ids(s)) == 2
+    assert open_ids(s) == [OPENING]
     clock.advance(1000)
     assert s.snapshot()[2] == 2  # stays put until the user acts
 
 
 def test_answering_every_open_question_resumes_playback(divisional, clock):
-    s = session(divisional, clock)
+    s = session(divisional, clock, pause=True)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 10)
-    first, second = open_ids(s)
-    assert s.submit_prediction(first, "yes" if "drive" in first else "BUF")[2] is False  # one left unanswered
-    _, created, resumed = s.submit_prediction(second, "yes" if "drive" in second else "BUF")
+    _, created, resumed = s.submit_prediction(OPENING, "BUF")
     assert created and resumed and s.snapshot()[0] is PlaybackStatus.PLAYING
 
 
 def test_submit_after_the_play_is_due_is_rejected_even_without_polling(divisional, clock):
     """The server advances to 'now' before validating, so a late answer finds the question locked."""
-    s = session(divisional, clock, pause=False)
-    s.step(2)  # questions open at play 2
+    s = session(divisional, clock, plain=True)
+    s.step(2)  # the opening question opens at play 2
     pid = open_ids(s)[0]
     s.play()
     clock.advance(SECONDS_PER_PLAY * 1.01)  # the next snap is due; nobody has polled
     with pytest.raises(PredictionError) as exc:
-        s.submit_prediction(pid, "yes" if "drive" in pid else "BUF")
+        s.submit_prediction(pid, "BUF")
     assert exc.value.code == "locked"
 
 
-def test_step_stops_at_a_new_question(divisional, clock):
-    s = session(divisional, clock)
+def test_step_stops_at_a_new_question_only_with_pause_on(divisional, clock):
+    s = session(divisional, clock, pause=True)
     s.step(20)
     assert s.cursor == 2 and s.pause_reason == "prediction"
+    off = session(divisional, clock)
+    off.step(20)
+    assert off.cursor == 20 and off.pause_reason is None
 
 
 def test_restart_and_rewind_never_reopen_or_recreate_questions(divisional, clock):
-    s = session(divisional, clock, pause=False)
+    s = session(divisional, clock)
     s.step(2)
-    drive = next(pid for pid in open_ids(s) if "drive" in pid)
-    s.step(30)  # outcome of the first drive now known (field goal at play 16)
+    drive = OPENING
+    s.step(30)  # outcome known now (BUF field goal at play 16)
     high = s.predictions.high_water
     before = {p.id for p in s.predictions.all()}
     s.restart()
     s.step(2)  # back to the moment the drive question opened
     assert open_ids(s) == []  # nothing is re-offered
     with pytest.raises(PredictionError) as exc:
-        s.submit_prediction(drive, "no")  # the answer is known now; can't be farmed
+        s.submit_prediction(drive, "KC")  # the answer is known now; can't be farmed
     assert exc.value.code == "locked"
     s.step(high - 2)  # re-watch up to where we left off
     assert {p.id for p in s.predictions.all()} == before  # no new questions below the high-water mark
     assert s.predictions.high_water == high
-    s.step(10)  # past the mark: new questions resume normally
+    s.step(20)  # past the mark: new questions resume normally (the red-zone 3rd down at 45)
     assert s.predictions.high_water > high
 
 
 def test_rewind_hides_later_outcomes_until_the_replay_gets_back(divisional, clock):
-    s = session(divisional, clock, pause=False)
+    s = session(divisional, clock)
     s.step(40)
     s.restart()
     s.step(5)
@@ -95,7 +156,7 @@ def test_rewind_hides_later_outcomes_until_the_replay_gets_back(divisional, cloc
 
 
 def test_rapid_playback_resolves_everything_and_awards_nothing_unanswered(super_bowl, clock):
-    s = session(super_bowl, clock, pause=False, speed=50)
+    s = session(super_bowl, clock, speed=50)
     s.play()
     clock.advance(10_000)
     assert s.snapshot()[0] is PlaybackStatus.FINISHED
@@ -104,7 +165,7 @@ def test_rapid_playback_resolves_everything_and_awards_nothing_unanswered(super_
 
 
 def test_pause_resume_and_speed_changes_keep_the_lifecycle_consistent(divisional, clock):
-    s = session(divisional, clock, pause=False)
+    s = session(divisional, clock)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 7)
     s.pause()
@@ -121,7 +182,7 @@ def test_pause_resume_and_speed_changes_keep_the_lifecycle_consistent(divisional
 def test_concurrent_submissions_record_exactly_one_answer(divisional, clock):
     s = session(divisional, clock)
     s.step(2)
-    pid = next(p for p in open_ids(s) if "drive" in p)
+    pid = OPENING
     results: list[object] = []
 
     def submit(option: str) -> None:
@@ -130,7 +191,7 @@ def test_concurrent_submissions_record_exactly_one_answer(divisional, clock):
         except PredictionError as exc:
             results.append(exc.code)
 
-    threads = [threading.Thread(target=submit, args=("yes" if i % 2 else "no",)) for i in range(16)]
+    threads = [threading.Thread(target=submit, args=("BUF" if i % 2 else "KC",)) for i in range(16)]
     for t in threads:
         t.start()
     for t in threads:
@@ -145,7 +206,7 @@ def test_sessions_have_independent_ledgers(divisional, clock):
     a = manager.create(divisional)
     b = manager.create(divisional)
     a.step(2)
-    a.submit_prediction(next(p for p in open_ids(a) if "drive" in p), "yes")
+    a.submit_prediction(OPENING, "BUF")
     b.step(2)
     assert a.predictions.stats().answered == 1 and b.predictions.stats().answered == 0
 

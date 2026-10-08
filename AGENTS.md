@@ -53,7 +53,8 @@ Sideline/
     │   ├── predictions/      # Phase 2D: deterministic replay predictions
     │   │   ├── models.py     #   Prediction, Answer, PredictionStats, POINTS table
     │   │   ├── rules.py      #   detectors (revealed snapshot only) + resolvers (one event at a time)
-    │   │   └── ledger.py     #   per-session lifecycle, answers, stats, position-aware views
+    │   │   ├── config.py     #   PredictionConfig: ranking thresholds, cooldowns, pick window
+    │   │   └── ledger.py     #   per-session lifecycle, featured selection, answers, stats, views
     │   └── services/         # External integrations (Supabase etc., later)
     ├── data/nflverse/        # Committed per-game extracts + .source.json provenance
     ├── scripts/fetch_nflverse_games.py   # Downloads a season (to .cache/, ignored) and extracts games
@@ -225,11 +226,23 @@ stays the source of truth: the agent only *reads* engine-derived facts through f
 Deterministic, server-authoritative predictions on historical replays. No AI decides eligibility,
 options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predictions.py`).
 
-- **Types:** `next_play_gain_5` (3rd down), `fourth_down_conversion` (4th & ≤3; ≤5 in opponent
-  territory; or Q4/OT trailing by 1-8 with ≤5:00 and ≤10 to go), `drive_touchdown` (first snap of a new
-  drive), `next_score` (drive start when none pending; window = half / regulation / OT). One open
-  question per type (timeouts and quarter breaks never duplicate one). No next-play/drive questions
-  with ≤60 s left in Q2/Q4 (kneel-downs).
+- **Types (eligibility):** `next_play_gain_5` (3rd down), `fourth_down_conversion` (4th & ≤3; ≤5 in
+  opponent territory; or Q4/OT trailing by 1-8 with ≤5:00 and ≤10 to go), `drive_touchdown` (first snap
+  of a new drive), `next_score` (drive start when none pending; window = half / regulation / OT). No
+  next-play/drive questions with ≤60 s left in Q2/Q4 (kneel-downs).
+- **Featured moments (ranking + pacing):** eligible candidates are *ranked*, not all asked.
+  `rules.rank` scores each from the revealed state only (base per type + late game / OT, one-score or
+  tied, red zone, goal to go, short yardage, short field, takeaway, two-minute drill, opening drive /
+  second half; minus 3rd & long and own-half 4th downs) and attaches `importance` + `tags` (the "why
+  now", shown on the card). `PredictionLedger._feature` opens at most **one** question, and only when no
+  other is open: the best candidate ≥ `min_score`, past the cooldown since the last question
+  (`cooldown_snaps`, or `critical_cooldown_snaps` when ≥ `critical_score`), past `type_cooldown_snaps` for
+  its type, and within `max_per_quarter` (critical moments ignore the cap). All knobs live in
+  `app/predictions/config.py::PredictionConfig`; pacing state (snap count, last featured snap,
+  per-type/per-quarter counts) is built only from revealed plays, so it stays deterministic and
+  leak-free (truncated-game equality test covers it). Current result: **6** (Divisional) and **9** (Super
+  Bowl) featured questions, pinned by `test_featured_moments_per_game`. Tests that exercise resolvers
+  on every situation use `tests/predictions/helpers.EVERY` (ranking/pacing off).
 - **Lifecycle:** OPEN → LOCKED at the **next snap** (any event except timeout / end of quarter /
   game start / end of game) → RESOLVED (correct option) or VOID (reason). Next-play and 4th-down
   resolve on that snap; void if it's a no-play penalty or not a pass/run (punt, FG, kneel, spike).
@@ -242,18 +255,27 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   question first. One final answer per question (same option = idempotent 200; different = 409).
   Reads hide questions opened after the current position and mask outcomes revealed after it
   (`result_hidden_until`).
-- **Pause for picks** (default on, `PUT .../predictions/settings`): playback stops at the play where
-  a question opens (`playback.paused_for_prediction`); answering every open question auto-resumes.
-  Playback-mechanics tests pass `pause_for_predictions=False`.
+- **Pick window (default):** when a question opens during playback, the next snap waits an extra
+  `pick_window_seconds` (8 s at 1×, scaled by speed). It's anchored to when the play was *due*, not when
+  a client polled, so the timeline is identical however often clients poll.
+  `playback.pick_window_seconds_left` = seconds until that next snap; answering ends the window early.
+- **Pause for picks** (opt-in, default **off**, `PUT .../predictions/settings`): playback stops at the
+  play where a question opens (`playback.paused_for_prediction`); answering auto-resumes. `step` stops at
+  a new question only when it's on. Playback-mechanics tests use `tests/replay/conftest.PLAIN`
+  (`pick_window_seconds=0`) for exact 3 s timing.
 - **Points (demo scoring):** correct = 10 next play, 15 next score, 20 drive TD, 25 4th down;
   incorrect/void/unanswered = 0. Accuracy = correct / (correct + incorrect). Streaks count consecutive
   correct answers in resolution order; voids neither extend nor break them. Points are per replay
   session and never competitive (historical outcomes are public); future live scoring belongs to
   Supabase accounts + a live provider emitting the same `PlayEvent`.
-- **AI:** only `POST .../predictions/{id}/explain` for resolved predictions, via `AIService.explain`
-  with the view at the resolving play (shared cache, budget, audit).
+- **AI:** optional and never authoritative — question wording is templated, ranking is rules, outcomes
+  and points are rules. AI is only `POST .../predictions/{id}/explain` (user taps "Why?") for resolved
+  predictions, via `AIService.explain` with the view at the resolving play (shared cache, budget, audit),
+  so cost is ≤ one cached call per featured question.
 - **Mobile:** `hooks/useReplayPredictions` + `lib/replayPredictions.ts` (card states, optimistic answers
-  with rollback, badge count; unit-tested) → replay screen **Picks** tab. Mock predictions in the game
+  with rollback, badge count, `inlinePick`, `lockLabel` countdown; unit-tested) → the open question shows
+  **inline under the playback controls** (compact card with tags + "Next snap in Ns") and in the
+  replay screen's **Picks** tab. Mock predictions in the game
   sheet / Picks tab stay separate and labeled "Sample data".
 
 ## Checks (run before declaring work done)

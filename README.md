@@ -135,22 +135,32 @@ returned at creation in an `X-Session-Token` header on every other request.
 
 ## Predictions (Phase 2D)
 
-During a historical replay, Sideline asks short questions before key moments and scores them
-automatically, using deterministic rules (never AI) and only the plays revealed so far:
+During a historical replay, Sideline asks a handful of questions at the game's **featured moments**
+and scores them automatically, using deterministic rules (never AI) and only the plays revealed so far:
 
-| Question | When it appears | Points |
+| Question | Eligible when | Points |
 |---|---|---|
 | Will the next play gain 5+ yards? | 3rd down | 10 |
 | Which team will score next? | A drive starts (one at a time) | 15 |
 | Will this drive end in a touchdown? | A drive starts | 20 |
 | If they go for it on 4th down, will they convert? | 4th & short / realistic go-for-it spots | 25 |
 
+Not every eligible moment is asked. Each one is ranked by how much it matters (late and close, overtime,
+red zone, goal to go, 4th & short, short field after a takeaway, opening drive / second half), and only
+the best one opens, with cooldowns between questions, per type, and per quarter. That's about 5–10
+questions per game: **6** for the Divisional Round replay and **9** for Super Bowl LVIII. Each card
+says why it was picked ("4th down · Late game · One-score game"). Tune it in
+`backend/app/predictions/config.py`.
+
 - Answers lock at the **next snap**; picks are final. Results resolve on the deciding play or drive.
 - **Void** (0 points, doesn't affect accuracy or streaks) when the question can't be fairly scored,
   e.g. the play is wiped out by a penalty or a team punts instead of going for it.
 - Incorrect and unanswered = 0. Accuracy = correct ÷ (correct + incorrect); current and longest
   streaks count consecutive correct answers.
-- **Pause for picks** (on by default) stops the replay when a question opens; answering resumes it.
+- The open question appears **right under the replay controls** (and in the Picks tab). By default
+  the replay keeps going but gives you a short **pick window**: the next snap waits about 8 extra seconds
+  (at 1×), with a countdown. Answering ends the wait.
+- **Pause for picks** (off by default) stops the replay until you answer instead.
 - **Demo scoring:** historical outcomes are public, so points live only in that replay session.
   Restarting or rewinding never re-offers a question or shows a result early.
 - "Why?" on a result asks Sideline AI to explain it (optional; cached).

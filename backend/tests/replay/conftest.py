@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 import pytest
 
+from app.predictions.config import PredictionConfig
 from app.replay.catalog import DEFAULT_DATA_DIR, GameCatalog
 from app.replay.ingest import build_game
 from app.replay.models import Game, Provenance
@@ -11,6 +12,8 @@ from app.replay.source import COLUMNS
 
 DIVISIONAL = "2023_20_KC_BUF"  # KC 27 @ BUF 24, 2024-01-21
 SUPER_BOWL = "2023_22_SF_KC"  # SF 22 vs KC 25 (OT), 2024-02-11
+#: Playback-mechanics tests use exact one-play-per-3s timing: no pick-window holds.
+PLAIN = PredictionConfig(pick_window_seconds=0)
 
 # Synthetic rows are clearly labeled test fixtures, never shipped as game data.
 FIXTURE_PROVENANCE = Provenance(source="synthetic test fixture", is_test_fixture=True)

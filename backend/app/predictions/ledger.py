@@ -12,8 +12,9 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel
 
+from app.predictions.config import DEFAULT_CONFIG, PredictionConfig
 from app.predictions.models import Answer, Outcome, Prediction, PredictionStats, PredictionStatus, PredictionType
-from app.predictions.rules import Revealed, detect, is_snap, resolve
+from app.predictions.rules import Revealed, detect, is_snap, rank, resolve
 from app.replay.models import GameInfo, GameState, PlayEvent
 
 
@@ -27,13 +28,19 @@ class PredictionError(Exception):
 
 
 class PredictionLedger:
-    def __init__(self, info: GameInfo):
+    def __init__(self, info: GameInfo, config: PredictionConfig = DEFAULT_CONFIG):
         self.info = info
+        self.config = config
         self._predictions: dict[str, Prediction] = {}
         self._answers: dict[str, Answer] = {}
         self._resolution_order: list[str] = []
         self.high_water = 0
         self._last_snap: PlayEvent | None = None
+        #: Pacing state — all derived from plays already revealed, so ranking stays deterministic.
+        self._snaps = 0
+        self._last_featured_snap: int | None = None
+        self._per_quarter: dict[int, int] = {}
+        self._last_snap_by_type: dict[PredictionType, int] = {}
 
     # ------------------------------------------------------------ forward processing
 
@@ -57,22 +64,50 @@ class PredictionLedger:
                 self._resolution_order.append(p.id)
         if is_snap(event):
             self._last_snap = event
+            self._snaps += 1
         self.high_water = cursor_after
 
         pending_next_score = any(
             p.type is PredictionType.NEXT_SCORE and p.status in (PredictionStatus.OPEN, PredictionStatus.LOCKED)
             for p in self._predictions.values()
         )
-        # One open question per type: a timeout or quarter break doesn't change the situation,
-        # so it must not create a duplicate of a question that's still open.
-        open_types = {p.type for p in self._predictions.values() if p.status is PredictionStatus.OPEN}
+        # One question at a time: a timeout or quarter break doesn't change the situation, so it
+        # must not stack a second question on one that's still open.
+        if any(p.status is PredictionStatus.OPEN for p in self._predictions.values()):
+            return []
         revealed = Revealed(info=self.info, state=state_after, last_snap=self._last_snap, cursor=cursor_after)
-        opened = []
-        for p in detect(revealed, next_score_pending=pending_next_score):
-            if p.id not in self._predictions and p.type not in open_types:
-                self._predictions[p.id] = p
-                opened.append(p)
-        return opened
+        best = self._feature(revealed, detect(revealed, next_score_pending=pending_next_score))
+        if best is None:
+            return []
+        self._predictions[best.id] = best
+        self._last_featured_snap = self._snaps
+        self._last_snap_by_type[best.type] = self._snaps
+        self._per_quarter[state_after.quarter] = self._per_quarter.get(state_after.quarter, 0) + 1
+        return [best]
+
+    def _feature(self, r: Revealed, candidates: list[Prediction]) -> Prediction | None:
+        """Pick at most one featured question: the highest-ranked candidate that clears the bar,
+        the cooldown since the last question, and the per-quarter cap (critical moments get a
+        shorter cooldown and ignore the cap). Ties keep detector order, so it's deterministic."""
+        cfg = self.config
+        ranked = [rank(p, r, cfg) for p in candidates if p.id not in self._predictions]
+        ranked = [
+            p
+            for p in ranked
+            if p.importance >= cfg.min_score
+            and self._snaps - self._last_snap_by_type.get(p.type, -cfg.type_cooldown_snaps) >= cfg.type_cooldown_snaps
+        ]
+        if not ranked:
+            return None
+        best = max(ranked, key=lambda p: p.importance)  # max() keeps the first of equal scores
+        critical = best.importance >= cfg.critical_score
+        if self._last_featured_snap is not None:
+            since = self._snaps - self._last_featured_snap
+            if since < (cfg.critical_cooldown_snaps if critical else cfg.cooldown_snaps):
+                return None
+        if not critical and self._per_quarter.get(r.state.quarter, 0) >= cfg.max_per_quarter:
+            return None
+        return best
 
     # ------------------------------------------------------------ answers
 

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.api.routes.replay import get_session_manager
 from app.main import create_app
 from app.replay.sessions import SECONDS_PER_PLAY, ReplaySessionManager
-from tests.replay.conftest import DIVISIONAL, SUPER_BOWL, FakeClock
+from tests.replay.conftest import DIVISIONAL, PLAIN, SUPER_BOWL, FakeClock
 
 BASE = "/api/v1/replay"
 
@@ -23,7 +23,7 @@ def api_clock() -> FakeClock:
 @pytest.fixture
 def client(api_clock: FakeClock) -> TestClient:
     app = create_app()
-    manager = ReplaySessionManager(clock=api_clock)
+    manager = ReplaySessionManager(clock=api_clock, prediction_config=PLAIN)
     app.dependency_overrides[get_session_manager] = lambda: manager
     return TestClient(app)
 

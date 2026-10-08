@@ -70,6 +70,17 @@ export function settlePending(pending: PendingAnswers, data: ReplayPredictions):
   return next;
 }
 
+/** The question to surface inline under the playback controls: the first one still awaiting the user. */
+export function inlinePick(view: PicksView): PredictionCard | undefined {
+  return view.open.find((c) => c.state === 'open' || c.state === 'sending' || c.state === 'locked_in');
+}
+
+/** Footer for an open question: a countdown during the pick window, otherwise when it locks. */
+export function lockLabel(secondsLeft: number | null | undefined): string {
+  if (secondsLeft && secondsLeft > 0) return `Next snap in ${Math.ceil(secondsLeft)}s`;
+  return 'Locks at the next snap';
+}
+
 export function formatAccuracy(accuracy: number | null): string {
   return accuracy === null ? '–' : `${Math.round(accuracy * 100)}%`;
 }

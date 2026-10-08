@@ -78,6 +78,8 @@ class PlaybackInfo(BaseModel):
     status: PlaybackStatus
     #: True when the server paused playback because a new prediction opened.
     paused_for_prediction: bool = False
+    #: Seconds left in the "pick window" — a short hold before the next snap after a question opens.
+    pick_window_seconds_left: float | None = None
     speed: float
     seconds_per_play: float
     cursor: int
@@ -110,8 +112,8 @@ class CreateSessionRequest(BaseModel):
     game_id: str
     speed: float = Field(default=1.0, ge=MIN_SPEED, le=MAX_SPEED)
     autoplay: bool = False
-    #: Pause playback when a new prediction opens so there's time to answer.
-    pause_for_predictions: bool = True
+    #: Opt-in: pause playback when a new prediction opens (default: a short pick window instead).
+    pause_for_predictions: bool = False
 
 
 class SpeedRequest(BaseModel):
@@ -148,7 +150,9 @@ def summarize(game: Game) -> GameSummary:
 
 
 def snapshot(session: ReplaySession) -> ReplaySnapshot:
-    playback_status, speed, cursor, state = session.snapshot()
+    with session.locked():
+        playback_status, speed, cursor, state = session.snapshot()
+        window_left = session.pick_window_left()
     total = session.total_events
     return ReplaySnapshot(
         session_id=session.id,
@@ -156,6 +160,7 @@ def snapshot(session: ReplaySession) -> ReplaySnapshot:
         playback=PlaybackInfo(
             status=playback_status,
             paused_for_prediction=session.pause_reason == "prediction",
+            pick_window_seconds_left=window_left,
             speed=speed,
             seconds_per_play=SECONDS_PER_PLAY,
             cursor=cursor,

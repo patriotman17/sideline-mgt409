@@ -6,40 +6,40 @@ import pytest
 
 from app.predictions.ledger import PredictionError, PredictionLedger, visible_items
 from app.predictions.models import POINTS, Answer, Option, Prediction, PredictionStatus, PredictionType
-from tests.predictions.helpers import final, ledger_at, pred
+from tests.predictions.helpers import EVERY, final, ledger_at, pred
 
 T = PredictionType
 
 
 def test_answer_rules(divisional):
     led = ledger_at(divisional, 2)
-    pid = pred(led, T.DRIVE_TOUCHDOWN, 2).id
+    pid = pred(led, T.NEXT_SCORE, 2).id
     with pytest.raises(PredictionError) as bad:
         led.answer(pid, "maybe", 2)
     assert bad.value.code == "invalid_option"
-    first, created = led.answer(pid, "yes", 2)
-    again, created_again = led.answer(pid, "yes", 2)
+    first, created = led.answer(pid, "BUF", 2)
+    again, created_again = led.answer(pid, "BUF", 2)
     assert created and not created_again and again == first
     with pytest.raises(PredictionError) as changed:
-        led.answer(pid, "no", 2)
+        led.answer(pid, "KC", 2)
     assert changed.value.code == "already_answered"
     with pytest.raises(PredictionError) as future:
-        led.answer(pid, "yes", 1)  # not visible before it opened
+        led.answer(pid, "BUF", 1)  # not visible before it opened
     assert future.value.code == "not_found"
 
 
 def test_cannot_answer_after_lock(divisional):
     led = ledger_at(divisional, 3)  # the play after opening has been revealed
     with pytest.raises(PredictionError) as exc:
-        led.answer(pred(led, T.DRIVE_TOUCHDOWN, 2).id, "yes", 3)
+        led.answer(pred(led, T.NEXT_SCORE, 2).id, "BUF", 3)
     assert exc.value.code == "locked"
 
 
 def test_points_accuracy_and_streaks_on_a_real_game(divisional):
-    """Answer every question 'yes'/first option the moment it opens, then check the arithmetic."""
+    """Answer every eligible question with its first option the moment it opens, then check the arithmetic."""
     from app.replay.engine import apply_event, initial_state
 
-    led = PredictionLedger(divisional.info)
+    led = PredictionLedger(divisional.info, EVERY)
     state = initial_state(divisional)
     for i, e in enumerate(divisional.events):
         state = apply_event(state, e, divisional)

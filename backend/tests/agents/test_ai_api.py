@@ -11,7 +11,7 @@ from app.api.routes.replay import get_ai_service, get_session_manager
 from app.main import create_app
 from app.replay.sessions import ReplaySessionManager
 from tests.agents.conftest import FAKE_KEY, scripted, simple_answer
-from tests.replay.conftest import DIVISIONAL, FakeClock
+from tests.replay.conftest import DIVISIONAL, PLAIN, FakeClock
 
 BASE = "/api/v1/replay"
 
@@ -25,7 +25,7 @@ def score_answer(returns: dict[str, Any]) -> dict[str, Any]:
 def app_with(make_service):
     def build(model=None, **settings):
         app = create_app()
-        manager = ReplaySessionManager(clock=FakeClock())
+        manager = ReplaySessionManager(clock=FakeClock(), prediction_config=PLAIN)
         service = make_service(model or scripted([("get_game_state", {})], score_answer), **settings)
         app.dependency_overrides[get_session_manager] = lambda: manager
         app.dependency_overrides[get_ai_service] = lambda: service

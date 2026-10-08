@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { ReplayPredictionItem, ReplayPredictions } from '@/services';
-import { cardFor, formatAccuracy, picksView, settlePending } from '../replayPredictions';
+import { cardFor, formatAccuracy, inlinePick, lockLabel, picksView, settlePending } from '../replayPredictions';
 
 function item(over: Partial<ReplayPredictionItem['prediction']> = {}, extra: Partial<ReplayPredictionItem> = {}): ReplayPredictionItem {
   return {
@@ -24,6 +24,8 @@ function item(over: Partial<ReplayPredictionItem['prediction']> = {}, extra: Par
       void_reason: null,
       resolution_summary: null,
       situation: 'Q1 · BUF ball',
+      importance: 70,
+      tags: ['Short field'],
       ...over,
     },
     your_answer: null,
@@ -41,7 +43,7 @@ function overview(parts: Partial<ReplayPredictions>): ReplayPredictions {
     scoring_mode: 'demo',
     scoring_note: '',
     points_table: { next_play_gain_5: 10, next_score: 15, drive_touchdown: 20, fourth_down_conversion: 25 },
-    pause_for_predictions: true,
+    pause_for_predictions: false,
     paused_for_prediction: false,
     resumes_after_play: null,
     open: [],
@@ -115,5 +117,24 @@ describe('formatting', () => {
   it('formats accuracy', () => {
     expect(formatAccuracy(null)).toBe('–');
     expect(formatAccuracy(0.6667)).toBe('67%');
+  });
+});
+
+describe('inline featured pick', () => {
+  it('surfaces the open question until it locks', () => {
+    const open = overview({ open: [item()] });
+    expect(inlinePick(picksView(open, {}))?.state).toBe('open');
+    expect(inlinePick(picksView(open, { 'g:drive_touchdown:2': { optionId: 'yes' } }))?.state).toBe('sending');
+    const answered = overview({ open: [item({}, { your_answer: 'yes', outcome: 'pending' })] });
+    expect(inlinePick(picksView(answered, {}))?.state).toBe('locked_in');
+    const locked = overview({ locked: [item({ status: 'locked', locked_cursor: 3 })] });
+    expect(inlinePick(picksView(locked, {}))).toBeUndefined();
+  });
+
+  it('counts down the pick window, then falls back to the lock rule', () => {
+    expect(lockLabel(10.2)).toBe('Next snap in 11s');
+    expect(lockLabel(0.4)).toBe('Next snap in 1s');
+    expect(lockLabel(null)).toBe('Locks at the next snap');
+    expect(lockLabel(undefined)).toBe('Locks at the next snap');
   });
 });
