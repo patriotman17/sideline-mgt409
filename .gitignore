@@ -1,0 +1,48 @@
+# ---- Secrets / environment ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.mobileprovision
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# ---- Node / Expo ----
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.tsbuildinfo
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Generated native projects (Continuous Native Generation)
+mobile/ios/
+mobile/android/
+.kotlin/
+
+# ---- OS / editors ----
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ---- Local tooling ----
+.claude/settings.local.json

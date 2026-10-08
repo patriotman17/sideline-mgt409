@@ -1,0 +1,19 @@
+{
+  "bg": "#07090D",
+  "surface": "#0E1218",
+  "elevated": "#151A23",
+  "raised": "#1C2230",
+  "line": "#232A37",
+  "ink": "#F4F6FA",
+  "sub": "#A3ACBC",
+  "mute": "#6B7486",
+  "volt": "#C6FF3D",
+  "voltDim": "#2A3510",
+  "live": "#FF4757",
+  "liveDim": "#3A1218",
+  "ai": "#8C7CFF",
+  "aiDim": "#211D44",
+  "gold": "#FFC94D",
+  "win": "#2EE59D",
+  "loss": "#FF6B6B"
+}

@@ -1,0 +1,36 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable } from 'react-native';
+
+import { useHaptics } from '@/lib/haptics';
+import { colors } from '@/theme';
+
+interface IconButtonProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  accessibilityLabel: string;
+  color?: string;
+  size?: number;
+  variant?: 'filled' | 'ghost';
+  disabled?: boolean;
+}
+
+export function IconButton({ icon, onPress, accessibilityLabel, color = colors.ink, size = 20, variant = 'filled', disabled }: IconButtonProps) {
+  const { tap } = useHaptics();
+  return (
+    <Pressable
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      className={`h-10 w-10 items-center justify-center rounded-full active:opacity-70 ${
+        variant === 'filled' ? 'border border-line bg-elevated' : ''
+      } ${disabled ? 'opacity-40' : ''}`}
+    >
+      <Ionicons name={icon} size={size} color={color} />
+    </Pressable>
+  );
+}
