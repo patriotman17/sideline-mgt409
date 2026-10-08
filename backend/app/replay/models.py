@@ -97,6 +97,37 @@ class Situation(Frozen):
     ball_on: str | None = None
 
 
+class PlayerCredits(Frozen):
+    """Players credited on a play, as abbreviated in the source (e.g. "J.Allen")."""
+
+    passer: str | None = None
+    receiver: str | None = None
+    rusher: str | None = None
+    interceptor: str | None = None
+    sacker: str | None = None
+    kicker: str | None = None
+    fumbler: str | None = None
+
+
+class PlayStats(Frozen):
+    """Per-play stat flags/yardage. ``None`` means the source didn't say."""
+
+    pass_attempt: bool | None = None
+    complete_pass: bool | None = None
+    rush_attempt: bool | None = None
+    sack: bool | None = None
+    scramble: bool | None = None
+    pass_touchdown: bool | None = None
+    rush_touchdown: bool | None = None
+    passing_yards: int | None = None
+    receiving_yards: int | None = None
+    rushing_yards: int | None = None
+    kick_distance: int | None = None
+    first_down: bool | None = None
+    shotgun: bool | None = None
+    no_huddle: bool | None = None
+
+
 class PlayEvent(Frozen):
     """One normalized play-by-play row.
 
@@ -119,6 +150,8 @@ class PlayEvent(Frozen):
     turnover: Turnover | None = None
     penalty: Penalty | None = None
     timeout_team: str | None = None
+    players: PlayerCredits = PlayerCredits()
+    stats: PlayStats = PlayStats()
 
     after: Situation = Situation()
     clock_after_seconds: int | None = None

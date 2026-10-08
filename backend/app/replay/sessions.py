@@ -7,13 +7,17 @@ so no background tasks are needed and tests can control time exactly.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import math
+import secrets
 import threading
 import time
 import uuid
 from collections.abc import Callable
 from enum import StrEnum
 
+from app.agents.conversation import Conversation
 from app.replay.engine import apply_event, initial_state, replay
 from app.replay.models import Game, GameState, PlayEvent
 
@@ -49,7 +53,12 @@ def validate_speed(speed: float) -> float:
 class ReplaySession:
     def __init__(self, game: Game, *, speed: float = 1.0, clock: Clock = time.monotonic, session_id: str | None = None):
         self.id = session_id or uuid.uuid4().hex
+        #: Secret returned once at creation; only its hash is kept. Required for every session request.
+        self.token = secrets.token_urlsafe(32)
+        self._token_hash = hashlib.sha256(self.token.encode()).digest()
         self.game = game
+        #: Ask Sideline chat for this session only (isolated; expires with the session).
+        self.conversation = Conversation()
         self._clock = clock
         self._lock = threading.RLock()
         self._speed = validate_speed(speed)
@@ -59,6 +68,11 @@ class ReplaySession:
         self._cursor = 0
         self._state = initial_state(game)
         self.last_access = clock()
+
+    def check_token(self, token: str | None) -> bool:
+        if not token:
+            return False
+        return hmac.compare_digest(hashlib.sha256(token.encode()).digest(), self._token_hash)
 
     # -- time -------------------------------------------------------------
 

@@ -49,3 +49,7 @@ mobile/android/
 
 # Downloaded source data (only extracted game slices are committed)
 backend/.cache/
+
+# AI audit logs (local only)
+backend/logs/
+backend/evals/reports/

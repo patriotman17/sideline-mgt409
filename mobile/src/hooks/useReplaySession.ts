@@ -7,6 +7,7 @@ import {
   getReplay,
   setReplaySpeed,
   startReplay,
+  type ReplayAuth,
   type ReplayControl,
   type ReplaySnapshot,
 } from '@/services';
@@ -23,18 +24,22 @@ export function useReplaySession(gameId: string) {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const sessionRef = useRef<string | null>(null);
+  // Session id + secret token live only in memory for this screen.
+  const sessionRef = useRef<ReplayAuth | null>(null);
+  const [auth, setAuth] = useState<ReplayAuth | null>(null);
 
   // Create (and later clean up) the session.
   useEffect(() => {
     let active = true;
     startReplay(gameId).then(
-      (snap) => {
+      ({ session_token, ...snap }) => {
+        const created = { sessionId: snap.session_id, token: session_token };
         if (!active) {
-          endReplay(snap.session_id).catch(() => {});
+          endReplay(created).catch(() => {});
           return;
         }
-        sessionRef.current = snap.session_id;
+        sessionRef.current = created;
+        setAuth(created);
         setSnapshot(snap);
         setError(undefined);
       },
@@ -42,9 +47,9 @@ export function useReplaySession(gameId: string) {
     );
     return () => {
       active = false;
-      const sid = sessionRef.current;
+      const current = sessionRef.current;
       sessionRef.current = null;
-      if (sid) endReplay(sid).catch(() => {});
+      if (current) endReplay(current).catch(() => {});
     };
   }, [gameId, attempt]);
 
@@ -53,21 +58,21 @@ export function useReplaySession(gameId: string) {
   useEffect(() => {
     if (!playing) return;
     const timer = setInterval(() => {
-      const sid = sessionRef.current;
-      if (!sid) return;
-      getReplay(sid).then(setSnapshot, (err: unknown) => {
+      const current = sessionRef.current;
+      if (!current) return;
+      getReplay(current).then(setSnapshot, (err: unknown) => {
         if (err instanceof ApiError && err.status === 404) setError('This replay session expired.');
       });
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [playing]);
 
-  const run = useCallback(async (request: (sid: string) => Promise<ReplaySnapshot>) => {
-    const sid = sessionRef.current;
-    if (!sid) return;
+  const run = useCallback(async (request: (a: ReplayAuth) => Promise<ReplaySnapshot>) => {
+    const current = sessionRef.current;
+    if (!current) return;
     setBusy(true);
     try {
-      setSnapshot(await request(sid));
+      setSnapshot(await request(current));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Replay request failed');
     } finally {
@@ -75,13 +80,14 @@ export function useReplaySession(gameId: string) {
     }
   }, []);
 
-  const control = useCallback((action: ReplayControl) => run((sid) => controlReplay(sid, action)), [run]);
-  const setSpeed = useCallback((speed: number) => run((sid) => setReplaySpeed(sid, speed)), [run]);
+  const control = useCallback((action: ReplayControl) => run((a) => controlReplay(a, action)), [run]);
+  const setSpeed = useCallback((speed: number) => run((a) => setReplaySpeed(a, speed)), [run]);
   const retry = useCallback(() => {
     setError(undefined);
     setSnapshot(undefined);
+    setAuth(null);
     setAttempt((n) => n + 1);
   }, []);
 
-  return { snapshot, error, busy, control, setSpeed, retry };
+  return { snapshot, auth, error, busy, control, setSpeed, retry };
 }

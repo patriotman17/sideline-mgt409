@@ -32,6 +32,8 @@ def start(client: TestClient, game_id: str = DIVISIONAL, **body: Any) -> dict[st
     res = client.post(f"{BASE}/sessions", json={"game_id": game_id, **body})
     assert res.status_code == 201, res.text
     data: dict[str, Any] = res.json()
+    # Every later request for this session must carry its token.
+    client.headers["X-Session-Token"] = data["session_token"]
     return data
 
 
@@ -105,12 +107,15 @@ def test_invalid_transition_is_409(client, api_clock):
 
 
 def test_sessions_do_not_interfere(client, api_clock):
-    a = start(client, autoplay=True)["session_id"]
-    b = start(client)["session_id"]
+    sa = start(client, autoplay=True)
+    sb = start(client)
+    ha, hb = {"X-Session-Token": sa["session_token"]}, {"X-Session-Token": sb["session_token"]}
+    a, b = sa["session_id"], sb["session_id"]
     api_clock.advance(SECONDS_PER_PLAY * 30)
-    client.post(f"{BASE}/sessions/{b}/step", json={"plays": 5})
-    assert client.get(f"{BASE}/sessions/{a}").json()["playback"]["cursor"] == 30
-    assert client.get(f"{BASE}/sessions/{b}").json()["playback"]["cursor"] == 5
+    client.post(f"{BASE}/sessions/{b}/step", json={"plays": 5}, headers=hb)
+    assert client.get(f"{BASE}/sessions/{a}", headers=ha).json()["playback"]["cursor"] == 30
+    assert client.get(f"{BASE}/sessions/{b}", headers=hb).json()["playback"]["cursor"] == 5
+    assert client.get(f"{BASE}/sessions/{a}", headers=hb).status_code == 404  # tokens aren't interchangeable
 
 
 def test_snapshot_never_leaks_future_plays(client, divisional):

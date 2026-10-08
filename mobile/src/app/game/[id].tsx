@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -22,6 +22,7 @@ import {
 import { Button, EmptyState, IconButton, MockBadge, Skeleton, TextTabs } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { useGameChat } from '@/hooks/useGameChat';
+import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { getGameDetail, getTeam } from '@/services';
 import { useAppState } from '@/state/AppStore';
 import { colors, withAlpha } from '@/theme';
@@ -58,6 +59,7 @@ export default function GameDetailScreen() {
   const { picks, settings } = useAppState();
   const chat = useGameChat(gameId);
   const scrollRef = useRef<ScrollView>(null);
+  const { ref: keyboardRef, overlap: keyboardOverlap } = useKeyboardOverlap();
 
   // Keep the newest chat message in view.
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function GameDetailScreen() {
       const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
       return () => clearTimeout(t);
     }
-  }, [tab, chat.messages.length, chat.typing]);
+  }, [tab, chat.messages.length, chat.typing, keyboardOverlap]);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
@@ -103,7 +105,8 @@ export default function GameDetailScreen() {
       />
 
       <SafeAreaView edges={['top', 'bottom']} className="flex-1">
-        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Keyboard-aware wrapper: pads by the exact on-screen keyboard overlap (works inside sheets). */}
+        <View ref={keyboardRef} className="flex-1" style={{ paddingBottom: keyboardOverlap }}>
           {/* Sheet chrome */}
           <View className="items-center pt-1.5">
             <View className="h-1 w-9 rounded-full bg-white/30" />
@@ -217,7 +220,7 @@ export default function GameDetailScreen() {
           </ScrollView>
 
           {tab === 'chat' && game ? <ChatComposer onSend={chat.send} disabled={chat.typing} /> : null}
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
     </View>
   );

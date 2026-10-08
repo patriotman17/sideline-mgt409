@@ -61,4 +61,28 @@ COLUMNS = [
     "home_wp_post",
     "quarter_end",
     "aborted_play",
+    # Player credits and per-play stats (Phase 2C player/team stats).
+    "passer_player_name",
+    "receiver_player_name",
+    "rusher_player_name",
+    "interception_player_name",
+    "sack_player_name",
+    "kicker_player_name",
+    "fumbled_1_player_name",
+    "pass_attempt",
+    "complete_pass",
+    "rush_attempt",
+    "sack",
+    "qb_scramble",
+    "pass_touchdown",
+    "rush_touchdown",
+    "passing_yards",
+    "receiving_yards",
+    "rushing_yards",
+    "kick_distance",
+    "shotgun",
+    "no_huddle",
 ]
+# Deliberately NOT extracted — look-ahead columns that summarize the future at each play:
+# fixed_drive_result, drive_play_count, drive_time_of_possession, drive_end_*,
+# series_result. (home_score/away_score are read once for validation only.)

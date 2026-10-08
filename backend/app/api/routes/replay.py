@@ -1,8 +1,9 @@
-"""Historical replay API.
+"""Historical replay API (+ Ask Sideline and insights for a replay session).
 
-Sessions are addressed by unguessable ids so concurrent users never share
-playback state. Responses never include events past the session cursor, the
-final score, or source warnings (which can quote scores) — only a count.
+Sessions are isolated per id and protected by a per-session secret token sent in
+the ``X-Session-Token`` header (returned once at creation; never in URLs or logs).
+Responses never include events past the session cursor, the final score, or
+source warnings (which can quote scores) — only a count.
 """
 
 from __future__ import annotations
@@ -10,9 +11,14 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
+from app.agents.budget import RateLimited as RateLimitedError
+from app.agents.insights import Insight, latest_insights
+from app.agents.service import AIError, AIService, AskResult, AsOf, as_of
+from app.agents.view import ReplayView
+from app.core.config import get_settings
 from app.replay.catalog import GameCatalog, get_catalog
 from app.replay.models import Game, GameState, Team
 from app.replay.sessions import (
@@ -34,8 +40,14 @@ def get_session_manager() -> ReplaySessionManager:
     return ReplaySessionManager()
 
 
+@lru_cache
+def get_ai_service() -> AIService:
+    return AIService(get_settings())
+
+
 CatalogDep = Annotated[GameCatalog, Depends(get_catalog)]
 ManagerDep = Annotated[ReplaySessionManager, Depends(get_session_manager)]
+AIDep = Annotated[AIService, Depends(get_ai_service)]
 
 
 # ---------------------------------------------------------------- schemas
@@ -76,6 +88,20 @@ class ReplaySnapshot(BaseModel):
     game: GameSummary
     playback: PlaybackInfo
     state: GameState
+
+
+class CreatedSession(ReplaySnapshot):
+    session_token: str = Field(description="Secret for X-Session-Token. Returned only once.")
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+
+
+class InsightsResponse(BaseModel):
+    as_of: AsOf
+    ai_configured: bool
+    insights: list[Insight]
 
 
 class CreateSessionRequest(BaseModel):
@@ -135,15 +161,25 @@ def snapshot(session: ReplaySession) -> ReplaySnapshot:
     )
 
 
-def _session(manager: ReplaySessionManager, session_id: str) -> ReplaySession:
+def authorized_session(
+    session_id: str,
+    manager: ManagerDep,
+    x_session_token: Annotated[str | None, Header()] = None,
+) -> ReplaySession:
+    """Resolve a session and require its token. Unknown ids and bad tokens are indistinguishable (404)."""
     try:
-        return manager.get(session_id)
+        session = manager.get(session_id)
     except SessionNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Replay session not found or expired") from None
+        session = None
+    if session is None or not session.check_token(x_session_token):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Replay session not found or expired")
+    return session
 
 
-def _control(manager: ReplaySessionManager, session_id: str, action: str, *args: object) -> ReplaySnapshot:
-    session = _session(manager, session_id)
+SessionDep = Annotated[ReplaySession, Depends(authorized_session)]
+
+
+def _control(session: ReplaySession, action: str, *args: object) -> ReplaySnapshot:
     try:
         getattr(session, action)(*args)
     except InvalidTransition as exc:
@@ -160,57 +196,165 @@ def list_games(catalog: CatalogDep) -> list[GameSummary]:
     return [summarize(g) for g in catalog.list()]
 
 
-@router.post("/sessions", response_model=ReplaySnapshot, status_code=status.HTTP_201_CREATED)
-def create_session(body: CreateSessionRequest, catalog: CatalogDep, manager: ManagerDep) -> ReplaySnapshot:
+@router.post("/sessions", response_model=CreatedSession, status_code=status.HTTP_201_CREATED)
+def create_session(body: CreateSessionRequest, catalog: CatalogDep, manager: ManagerDep) -> CreatedSession:
     game = catalog.get(body.game_id)
     if game is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Unknown game: {body.game_id}")
     session = manager.create(game, speed=body.speed)
     if body.autoplay:
         session.play()
-    return snapshot(session)
+    return CreatedSession(**snapshot(session).model_dump(), session_token=session.token)
 
 
 @router.get("/sessions/{session_id}", response_model=ReplaySnapshot)
-def get_session(session_id: str, manager: ManagerDep) -> ReplaySnapshot:
+def get_session(session: SessionDep) -> ReplaySnapshot:
     """Current state. Poll this while playing (the cursor advances with wall-clock time)."""
-    return snapshot(_session(manager, session_id))
+    return snapshot(session)
 
 
 @router.post("/sessions/{session_id}/play", response_model=ReplaySnapshot)
-def play(session_id: str, manager: ManagerDep) -> ReplaySnapshot:
-    return _control(manager, session_id, "play")
+def play(session: SessionDep) -> ReplaySnapshot:
+    return _control(session, "play")
 
 
 @router.post("/sessions/{session_id}/pause", response_model=ReplaySnapshot)
-def pause(session_id: str, manager: ManagerDep) -> ReplaySnapshot:
-    return _control(manager, session_id, "pause")
+def pause(session: SessionDep) -> ReplaySnapshot:
+    return _control(session, "pause")
 
 
 @router.post("/sessions/{session_id}/resume", response_model=ReplaySnapshot)
-def resume(session_id: str, manager: ManagerDep) -> ReplaySnapshot:
-    return _control(manager, session_id, "resume")
+def resume(session: SessionDep) -> ReplaySnapshot:
+    return _control(session, "resume")
 
 
 @router.post("/sessions/{session_id}/restart", response_model=ReplaySnapshot)
-def restart(session_id: str, manager: ManagerDep) -> ReplaySnapshot:
-    return _control(manager, session_id, "restart")
+def restart(session: SessionDep) -> ReplaySnapshot:
+    return _control(session, "restart")
 
 
 @router.post("/sessions/{session_id}/step", response_model=ReplaySnapshot)
-def step(session_id: str, manager: ManagerDep, body: StepRequest | None = None) -> ReplaySnapshot:
-    return _control(manager, session_id, "step", (body or StepRequest()).plays)
+def step(session: SessionDep, body: StepRequest | None = None) -> ReplaySnapshot:
+    return _control(session, "step", (body or StepRequest()).plays)
 
 
 @router.put("/sessions/{session_id}/speed", response_model=ReplaySnapshot)
-def set_speed(session_id: str, body: SpeedRequest, manager: ManagerDep) -> ReplaySnapshot:
-    return _control(manager, session_id, "set_speed", body.speed)
+def set_speed(body: SpeedRequest, session: SessionDep) -> ReplaySnapshot:
+    return _control(session, "set_speed", body.speed)
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session(session_id: str, manager: ManagerDep) -> Response:
+def delete_session(session: SessionDep, manager: ManagerDep) -> Response:
     try:
-        manager.delete(session_id)
+        manager.delete(session.id)
     except SessionNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Replay session not found or expired") from None
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------- Ask Sideline + insights
+
+
+def _ai_http_error(exc: AIError) -> HTTPException:
+    return HTTPException(exc.status_code, {"code": exc.code, "message": exc.message})
+
+
+@router.post("/sessions/{session_id}/ask", response_model=AskResult)
+async def ask(body: AskRequest, session: SessionDep, ai: AIDep) -> AskResult:
+    """Answer a question using only data revealed at this session's current replay position."""
+    cursor = session.snapshot()[2]  # captured once: the answer is "as of" this play
+    try:
+        return await ai.ask(
+            game=session.game,
+            cursor=cursor,
+            question=body.question,
+            session_id=session.id,
+            conversation=session.conversation,
+        )
+    except AIError as exc:
+        raise _ai_http_error(exc) from None
+
+
+class ConversationTurnOut(BaseModel):
+    request_id: str
+    question: str
+    answer: str
+    cursor: int
+    period: str
+    clock: str | None
+
+
+class ConversationOut(BaseModel):
+    cursor: int
+    turns: list[ConversationTurnOut] = Field(description="Turns asked at or before the current replay position")
+    hidden_later: int = Field(description="Turns from later replay positions, hidden until the replay reaches them")
+
+
+@router.get("/sessions/{session_id}/conversation", response_model=ConversationOut)
+def get_conversation(session: SessionDep) -> ConversationOut:
+    """The chat as the server will use it at the current position (lets clients stay in sync after rewinds)."""
+    cursor = session.snapshot()[2]
+    turns, hidden = session.conversation.visible(cursor)
+    return ConversationOut(
+        cursor=cursor,
+        turns=[
+            ConversationTurnOut(
+                request_id=t.request_id,
+                question=t.question,
+                answer=t.answer,
+                cursor=t.cursor,
+                period=t.period,
+                clock=t.clock,
+            )
+            for t in turns
+        ],
+        hidden_later=hidden,
+    )
+
+
+@router.delete("/sessions/{session_id}/conversation", status_code=status.HTTP_204_NO_CONTENT)
+def reset_conversation(session: SessionDep) -> Response:
+    """Start a new Ask Sideline chat for this session (forgets earlier turns)."""
+    session.conversation.clear()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/sessions/{session_id}/insights", response_model=InsightsResponse)
+async def insights(
+    session: SessionDep,
+    ai: AIDep,
+    limit: Annotated[int, Query(ge=1, le=20)] = 8,
+    explain: Annotated[int, Query(ge=0, le=3, description="Max new AI explanations to generate")] = 2,
+) -> InsightsResponse:
+    """Noteworthy moments so far (deterministic), with cached/new AI explanations."""
+    view = ReplayView.at(session.game, session.snapshot()[2])
+    items = latest_insights(view, limit=limit)
+    for item in items:
+        cached = ai.cached_explanation(game=session.game, sequence=item.play_sequence, kind=item.kind)
+        if cached:
+            item.explanation, item.explanation_status = cached, "cached"
+    budget = explain
+    for item in items:
+        if budget <= 0 or item.explanation or item.importance < 3:
+            continue
+        budget -= 1
+        try:
+            ai.limiter.hit(f"{session.id}:insights")
+            item.explanation = await ai.explain(
+                game=session.game,
+                sequence=item.play_sequence,
+                kind=item.kind,
+                headline=item.headline,
+                facts=", ".join(f"{k}: {v}" for k, v in item.facts.items() if v is not None),
+            )
+            item.explanation_status = "generated"
+        except RateLimitedError:
+            item.explanation_status = "rate_limited"
+            break
+        except AIError as exc:
+            item.explanation_status = (
+                exc.code if exc.code in ("not_configured", "budget_exceeded", "rate_limited", "blocked") else "error"
+            )
+            if exc.code in ("not_configured", "budget_exceeded"):
+                break
+    return InsightsResponse(as_of=as_of(view), ai_configured=ai.settings.ai_configured, insights=items)

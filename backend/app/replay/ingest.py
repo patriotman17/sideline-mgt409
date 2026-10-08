@@ -24,8 +24,10 @@ from app.replay.models import (
     Game,
     GameInfo,
     Penalty,
+    PlayerCredits,
     PlayEvent,
     PlayKind,
+    PlayStats,
     Provenance,
     ScoreType,
     Scoring,
@@ -74,6 +76,11 @@ def _int(row: Row, key: str) -> int | None:
 
 def _flag(row: Row, key: str) -> bool:
     return _int(row, key) == 1
+
+
+def _opt_flag(row: Row, key: str) -> bool | None:
+    value = _int(row, key)
+    return None if value is None else value == 1
 
 
 def _clock_seconds(row: Row) -> int | None:
@@ -192,6 +199,37 @@ def _turnover(row: Row, kind: PlayKind, after: Situation) -> Turnover | None:
     return None
 
 
+def _players(row: Row) -> PlayerCredits:
+    return PlayerCredits(
+        passer=_str(row, "passer_player_name"),
+        receiver=_str(row, "receiver_player_name"),
+        rusher=_str(row, "rusher_player_name"),
+        interceptor=_str(row, "interception_player_name"),
+        sacker=_str(row, "sack_player_name"),
+        kicker=_str(row, "kicker_player_name"),
+        fumbler=_str(row, "fumbled_1_player_name"),
+    )
+
+
+def _stats(row: Row) -> PlayStats:
+    return PlayStats(
+        pass_attempt=_opt_flag(row, "pass_attempt"),
+        complete_pass=_opt_flag(row, "complete_pass"),
+        rush_attempt=_opt_flag(row, "rush_attempt"),
+        sack=_opt_flag(row, "sack"),
+        scramble=_opt_flag(row, "qb_scramble"),
+        pass_touchdown=_opt_flag(row, "pass_touchdown"),
+        rush_touchdown=_opt_flag(row, "rush_touchdown"),
+        passing_yards=_int(row, "passing_yards"),
+        receiving_yards=_int(row, "receiving_yards"),
+        rushing_yards=_int(row, "rushing_yards"),
+        kick_distance=_int(row, "kick_distance"),
+        first_down=_opt_flag(row, "first_down"),
+        shotgun=_opt_flag(row, "shotgun"),
+        no_huddle=_opt_flag(row, "no_huddle"),
+    )
+
+
 def _situation(row: Row) -> Situation:
     return Situation(
         possession=_str(row, "posteam"),
@@ -274,6 +312,8 @@ def normalize_rows(rows: list[Row]) -> list[PlayEvent]:
                 turnover=_turnover(row, kind, after),
                 penalty=_penalty(row, kind),
                 timeout_team=_str(row, "timeout_team") if kind is PlayKind.TIMEOUT else None,
+                players=_players(row) if kind not in _NON_SNAP else PlayerCredits(),
+                stats=_stats(row) if kind not in _NON_SNAP else PlayStats(),
                 after=after,
                 clock_after_seconds=clock_after,
                 home_timeouts_after=_int(row, "home_timeouts_remaining"),

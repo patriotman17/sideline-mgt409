@@ -3,15 +3,16 @@
 AI-powered mobile companion that makes watching live NFL games more interactive,
 personalized, and social.
 
-> **Status:** Phase 1 UI (clearly labeled **mock data**) plus Phase 2A/2B: a deterministic
-> **historical replay engine** that replays real NFL play-by-play from nflverse. No live
-> commercial sports APIs, Supabase, or AI agents yet.
+> **Status:** Phase 1 UI (clearly labeled **mock data**), Phase 2A/2B: a deterministic
+> **historical replay engine** for real NFL play-by-play (nflverse), and Phase 2C: **Ask Sideline**,
+> an AI agent that answers questions and explains key moments using only what has happened so far
+> in the replay. No live commercial sports APIs, Supabase, or payments yet.
 
 | | |
 |---|---|
 | Mobile | React Native · Expo SDK 57 · TypeScript · Expo Router · NativeWind v4 |
-| Backend | Python 3.12 · FastAPI · Pydantic AI (planned) |
-| Planned | Supabase (auth, DB, realtime) · Portkey AI gateway |
+| Backend | Python 3.12 · FastAPI · Pydantic AI (gpt-6-luna via Portkey) |
+| Planned | Supabase (auth, DB, realtime) |
 
 See [AGENTS.md](AGENTS.md) for architecture and conventions.
 
@@ -75,6 +76,7 @@ API URL by target (set `EXPO_PUBLIC_API_URL` in `mobile/.env`):
 Quality checks:
 
 ```bash
+npm test              # unit tests (jest-expo)
 npx tsc --noEmit      # types
 npx expo lint         # ESLint (incl. React Compiler rules)
 npx expo-doctor       # dependency / config health
@@ -88,7 +90,7 @@ npx expo-doctor       # dependency / config health
 - **Discover** — stories, trending players, standings
 - **You** — profile, teams, badges, saved stories, settings, backend status
 - **Game sheet** — scoreboard + linescore; Summary, Plays, Picks, and Ask AI tabs
-- **Replay sheet** — historical game replayed play by play with play / pause / restart / next play and 1×–10× speed
+- **Replay sheet** — historical game replayed play by play with play / pause / restart / next play and 1×–10× speed, plus **Plays · Insights · Ask AI** tabs
 
 Everything except replays uses local mock data and resets on reload.
 
@@ -128,7 +130,38 @@ The full season file is cached in `backend/.cache/` (git-ignored); only per-game
 | PUT | `/sessions/{id}/speed` | `{speed}` from 0.25 to 50 (1× = one play every 3 s) |
 | DELETE | `/sessions/{id}` | End the session |
 
-Sessions are isolated per id and expire after 2 hours idle.
+Sessions are isolated per id, expire after 2 hours idle, and require the `session_token`
+returned at creation in an `X-Session-Token` header on every other request.
+
+## Ask Sideline AI (Phase 2C)
+
+Ask questions about a replay ("Who leads in rushing?", "What just happened?") and get concise answers
+with evidence, grounded only in plays revealed so far. The chat remembers the conversation within a
+replay session, so follow-ups work: "No, which player?", "What about the other team?", "How many yards
+does he have?", "Who leads now?" (always re-checked against the current play). If "he" could mean several
+tied players, Sideline asks which one (with tap-to-ask options) instead of guessing. Rewinding or
+restarting a replay hides chat messages from later in the game until the replay gets back there. Key moments (scores, lead changes, turnovers,
+big plays, fourth downs, missed kicks) are detected by deterministic rules and explained by the AI.
+
+**Setup:** put `PORTKEY_API_KEY` in the repo-root `.env`. Optional settings in `backend/.env`
+(see `backend/.env.example`): `AI_MODEL` (default `gpt-6-luna`), `AI_DAILY_BUDGET_USD` (default 2.0),
+rate/token limits, price overrides. Without a key, the app shows a setup message instead of answers.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/v1/replay/sessions/{id}/ask` | `{question}` → answer, evidence, uncertainty, confidence, as-of position |
+| GET | `/api/v1/replay/sessions/{id}/conversation` | Chat turns visible at the current replay position (+ how many are hidden as later) |
+| DELETE | `/api/v1/replay/sessions/{id}/conversation` | Start a new chat (forget this session's earlier turns) |
+| GET | `/api/v1/replay/sessions/{id}/insights?limit=&explain=` | Key moments so far + AI explanations (≤3 new per call) |
+| GET | `/api/v1/ai/status` | Configured?, model, today's estimated spend vs budget (no secrets) |
+| GET | `/api/v1/ai/audit` | Recent AI audit records (development only) |
+
+**Cost:** about **$0.00015–0.0003 per question** with `gpt-6-luna` ($0.20/M input, $0.50/M output tokens);
+spend is capped per day. Every AI call is logged to `backend/logs/ai_audit.jsonl` (no secrets).
+
+**Evals:** `cd backend && .venv/bin/python -m evals.run` (offline, free) or `--live` (≈$0.005) checks
+factual accuracy, tool selection, evidence grounding, future-data leakage, and cost/latency on known
+situations from both replay games.
 
 ## Data disclaimer
 

@@ -93,19 +93,106 @@ export interface ReplaySnapshot {
   state: ReplayState;
 }
 
+/** Returned once when a session is created; the token authorizes every later request. */
+export interface CreatedReplaySession extends ReplaySnapshot {
+  session_token: string;
+}
+
 export type ReplayControl = 'play' | 'pause' | 'resume' | 'restart' | 'step';
 
+/** A session id plus its secret token (kept in memory only; never logged or put in URLs). */
+export interface ReplayAuth {
+  sessionId: string;
+  token: string;
+}
+
 const BASE = '/api/v1/replay';
+const auth = (a: ReplayAuth) => ({ 'X-Session-Token': a.token });
 
 export const listReplayGames = () => apiGet<ReplayGameSummary[]>(`${BASE}/games`);
 export const startReplay = (gameId: string, speed = 1) =>
-  apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions`, { game_id: gameId, speed, autoplay: false });
-export const getReplay = (sessionId: string) => apiGet<ReplaySnapshot>(`${BASE}/sessions/${sessionId}`);
-export const controlReplay = (sessionId: string, action: ReplayControl) =>
-  apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions/${sessionId}/${action}`);
-export const setReplaySpeed = (sessionId: string, speed: number) =>
-  apiRequest<ReplaySnapshot>('PUT', `${BASE}/sessions/${sessionId}/speed`, { speed });
-export const endReplay = (sessionId: string) => apiRequest<void>('DELETE', `${BASE}/sessions/${sessionId}`);
+  apiRequest<CreatedReplaySession>('POST', `${BASE}/sessions`, { game_id: gameId, speed, autoplay: false });
+export const getReplay = (a: ReplayAuth) => apiGet<ReplaySnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));
+export const controlReplay = (a: ReplayAuth, action: ReplayControl) =>
+  apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions/${a.sessionId}/${action}`, undefined, { headers: auth(a) });
+export const setReplaySpeed = (a: ReplayAuth, speed: number) =>
+  apiRequest<ReplaySnapshot>('PUT', `${BASE}/sessions/${a.sessionId}/speed`, { speed }, { headers: auth(a) });
+export const endReplay = (a: ReplayAuth) =>
+  apiRequest<void>('DELETE', `${BASE}/sessions/${a.sessionId}`, undefined, { headers: auth(a) });
+
+// ---------------------------------------------------------------- Ask Sideline + insights
+// Mirrors backend/app/agents/{agent,service,insights}.py.
+
+export interface AskEvidence {
+  tool: string;
+  fact: string;
+  play_sequence: number | null;
+}
+
+export interface AskAnswer {
+  request_id: string;
+  /** "clarification": the question was ambiguous (e.g. "he" after a tie); see `answer.clarification`. */
+  status: 'ok' | 'cached' | 'clarification';
+  answer: {
+    answer: string;
+    evidence: AskEvidence[];
+    uncertainty: string | null;
+    confidence: 'high' | 'medium' | 'low';
+    answerable: boolean;
+    clarification: { question: string; options: string[] } | null;
+  };
+  as_of: { cursor: number; period: string; clock: string | null; state_version: string };
+  model: string;
+  usage: { requests: number; input_tokens: number; output_tokens: number; estimated_cost_usd: number | null };
+  latency_ms: number;
+  /** Earlier turns of this session's chat the server used as context (0 = standalone). */
+  context_turns: number;
+  ambiguous_players: string[];
+}
+
+export interface ReplayConversation {
+  cursor: number;
+  turns: { request_id: string; question: string; answer: string; cursor: number; period: string; clock: string | null }[];
+  hidden_later: number;
+}
+
+export type InsightExplanationStatus =
+  | 'generated' | 'cached' | 'pending' | 'not_configured' | 'budget_exceeded' | 'rate_limited' | 'blocked' | 'error';
+
+export interface ReplayInsight {
+  id: string;
+  kind: string;
+  play_sequence: number;
+  period: string;
+  clock: string | null;
+  team: string | null;
+  headline: string;
+  facts: Record<string, string | number | null>;
+  importance: number;
+  explanation: string | null;
+  explanation_status: InsightExplanationStatus;
+}
+
+export interface ReplayInsights {
+  as_of: AskAnswer['as_of'];
+  ai_configured: boolean;
+  insights: ReplayInsight[];
+}
+
+/** Ask Sideline about the game as of the session's current play. AI runs only on the backend. */
+export const askReplay = (a: ReplayAuth, question: string) =>
+  apiRequest<AskAnswer>('POST', `${BASE}/sessions/${a.sessionId}/ask`, { question }, { headers: auth(a), timeoutMs: 45000 });
+
+/** The server's chat as it applies at the session's current replay position. */
+export const getReplayConversation = (a: ReplayAuth) =>
+  apiGet<ReplayConversation>(`${BASE}/sessions/${a.sessionId}/conversation`, 6000, auth(a));
+
+/** Start a new Ask Sideline chat: the server forgets this session's earlier turns. */
+export const resetReplayChat = (a: ReplayAuth) =>
+  apiRequest<void>('DELETE', `${BASE}/sessions/${a.sessionId}/conversation`, undefined, { headers: auth(a) });
+
+export const getReplayInsights = (a: ReplayAuth, explain = 2) =>
+  apiGet<ReplayInsights>(`${BASE}/sessions/${a.sessionId}/insights?limit=10&explain=${explain}`, 45000, auth(a));
 
 // ---------------------------------------------------------------- adapters
 // Map replay state onto the app's Game/TimelineEvent types so existing
