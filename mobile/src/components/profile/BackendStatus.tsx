@@ -13,9 +13,9 @@ export function BackendStatus() {
   const label = loading ? 'Checking…' : ok ? `Online · v${data.version}` : 'Offline';
 
   return (
-    <Pressable onPress={reload} accessibilityRole="button" accessibilityLabel="Recheck backend status" className="flex-row items-center border-t border-line py-3.5 active:opacity-70">
-      <View className="mr-3 h-9 w-9 items-center justify-center rounded-xl bg-elevated">
-        <Ionicons name="server" size={17} color={colors.sub} />
+    <Pressable onPress={reload} accessibilityRole="button" accessibilityLabel="Recheck backend status" className="flex-row items-center px-4 py-3 active:opacity-70">
+      <View className="mr-3 h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+        <Ionicons name="server" size={16} color={colors.ink} />
       </View>
       <View className="flex-1">
         <Text className="text-[15px] font-semibold text-ink">Backend</Text>

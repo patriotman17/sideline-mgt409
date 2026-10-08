@@ -14,18 +14,18 @@ export function WinProbabilityBar({ game, showLabel = true }: { game: Game; show
     <View>
       {showLabel ? (
         <View className="mb-2 flex-row items-center justify-between">
-          <Text className="text-xs font-bold text-ink">
+          <Text className="font-cond text-[14px] text-ink">
             {away.abbr} <Text className="text-sub">{awayPct}%</Text>
           </Text>
-          <Text className="text-[10px] font-semibold uppercase tracking-widest text-mute">Win probability</Text>
-          <Text className="text-xs font-bold text-ink">
+          <Text className="text-[11px] text-mute">Win probability</Text>
+          <Text className="font-cond text-[14px] text-ink">
             <Text className="text-sub">{homePct}%</Text> {home.abbr}
           </Text>
         </View>
       ) : null}
-      <View className="h-2 flex-row overflow-hidden rounded-full bg-raised">
+      <View className="h-1.5 flex-row overflow-hidden rounded-full bg-white/10">
         <View style={{ flex: awayPct, backgroundColor: away.primary }} />
-        <View className="w-0.5 bg-bg" />
+        <View className="w-0.5" />
         <View style={{ flex: homePct, backgroundColor: home.primary }} />
       </View>
     </View>

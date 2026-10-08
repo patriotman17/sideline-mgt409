@@ -28,7 +28,7 @@ function TypingDots() {
   return (
     <View className="flex-row gap-1 py-1" accessibilityLabel="Sideline AI is typing">
       {anims.map((v, i) => (
-        <Animated.View key={i} className="h-2 w-2 rounded-full bg-ai" style={{ opacity: v }} />
+        <Animated.View key={i} className="h-2 w-2 rounded-full bg-white" style={{ opacity: v }} />
       ))}
     </View>
   );
@@ -36,8 +36,8 @@ function TypingDots() {
 
 function AssistantAvatar() {
   return (
-    <View className="mr-2 h-7 w-7 items-center justify-center rounded-full bg-aiDim">
-      <Ionicons name="sparkles" size={14} color={colors.ai} />
+    <View className="mr-2 h-7 w-7 items-center justify-center rounded-full bg-white/10">
+      <Ionicons name="sparkles" size={13} color={colors.volt} />
     </View>
   );
 }
@@ -49,7 +49,7 @@ function Bubble({ message }: { message: ChatMessage }) {
       {!mine ? <AssistantAvatar /> : null}
       <View
         className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 ${
-          mine ? 'rounded-br-md bg-volt' : 'rounded-bl-md border border-line bg-elevated'
+          mine ? 'rounded-br-md bg-volt' : 'rounded-bl-md bg-white/10'
         }`}
       >
         <Text className={`text-[14px] leading-5 ${mine ? 'font-medium text-bg' : 'text-ink'}`}>{message.text}</Text>
@@ -68,17 +68,17 @@ interface ChatMessagesProps {
 export function ChatMessages({ messages, typing, onSuggestion }: ChatMessagesProps) {
   return (
     <View className="px-5">
-      <View className="mb-4 rounded-2xl border border-ai/30 bg-aiDim/60 p-4">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <Ionicons name="sparkles" size={16} color={colors.ai} />
-            <Text className="text-[15px] font-bold text-ink">Ask Sideline AI</Text>
-          </View>
-          <MockBadge label="DEMO RESPONSES" />
+      <View className="mb-5 items-center px-6 pt-2">
+        <View className="h-11 w-11 items-center justify-center rounded-full bg-white/10">
+          <Ionicons name="sparkles" size={20} color={colors.volt} />
         </View>
-        <Text className="mt-1.5 text-[13px] leading-5 text-sub">
-          Your game-aware co-pilot. Ask about plays, stats, strategy, or what to expect next.
+        <Text className="mt-2.5 text-[17px] font-semibold text-ink">Ask Sideline AI</Text>
+        <Text className="mt-1 text-center text-[14px] leading-5 text-sub">
+          Plays, stats, strategy, or what to expect next.
         </Text>
+        <View className="mt-1.5">
+          <MockBadge label="Demo responses" />
+        </View>
       </View>
 
       {messages.map((m) => (
@@ -88,7 +88,7 @@ export function ChatMessages({ messages, typing, onSuggestion }: ChatMessagesPro
       {typing ? (
         <View className="mb-3 flex-row items-center">
           <AssistantAvatar />
-          <View className="rounded-2xl rounded-bl-md border border-line bg-elevated px-3.5 py-2">
+          <View className="rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2">
             <TypingDots />
           </View>
         </View>
@@ -101,9 +101,9 @@ export function ChatMessages({ messages, typing, onSuggestion }: ChatMessagesPro
               key={s}
               onPress={() => onSuggestion(s)}
               accessibilityRole="button"
-              className="rounded-full border border-ai/40 px-3.5 py-2 active:opacity-70"
+              className="rounded-full bg-white/10 px-3.5 py-2 active:opacity-70"
             >
-              <Text className="text-[13px] font-semibold text-ai">{s}</Text>
+              <Text className="text-[13px] font-medium text-ink">{s}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -126,13 +126,13 @@ export function ChatComposer({ onSend, disabled }: { onSend: (text: string) => v
   };
 
   return (
-    <View className="flex-row items-end gap-2 border-t border-line bg-bg px-4 pb-2 pt-3">
+    <View className="flex-row items-end gap-2 border-t border-white/10 bg-black/90 px-4 pb-2 pt-3">
       <TextInput
         value={text}
         onChangeText={setText}
         placeholder="Ask about this game…"
         placeholderTextColor={colors.mute}
-        className="max-h-28 min-h-[44px] flex-1 rounded-3xl border border-line bg-surface px-4 py-3 text-[15px] text-ink"
+        className="max-h-28 min-h-[44px] flex-1 rounded-3xl bg-white/10 px-4 py-3 text-[15px] text-ink"
         multiline
         returnKeyType="send"
         submitBehavior="submit"
@@ -144,7 +144,7 @@ export function ChatComposer({ onSend, disabled }: { onSend: (text: string) => v
         disabled={!canSend}
         accessibilityRole="button"
         accessibilityLabel="Send message"
-        className={`h-11 w-11 items-center justify-center rounded-full ${canSend ? 'bg-volt' : 'bg-elevated'}`}
+        className={`h-11 w-11 items-center justify-center rounded-full ${canSend ? 'bg-volt' : 'bg-white/10'}`}
       >
         <Ionicons name="arrow-up" size={20} color={canSend ? colors.bg : colors.mute} />
       </Pressable>

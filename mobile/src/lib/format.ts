@@ -12,3 +12,19 @@ export function gameStatusLabel(game: Game): string {
 }
 
 export const formatNumber = (n: number) => n.toLocaleString('en-US');
+
+const WEEKDAYS: Record<string, string> = {
+  Mon: 'Monday',
+  Tue: 'Tuesday',
+  Wed: 'Wednesday',
+  Thu: 'Thursday',
+  Fri: 'Friday',
+  Sat: 'Saturday',
+  Sun: 'Sunday',
+};
+
+/** "Sun 8:20 PM ET" -> { day: 'Sunday', time: '8:20 PM' } */
+export function splitKickoff(label: string): { day: string; time: string } {
+  const [day = '', time = '', meridiem = ''] = label.split(' ');
+  return { day: WEEKDAYS[day] ?? day, time: `${time} ${meridiem}`.trim() };
+}

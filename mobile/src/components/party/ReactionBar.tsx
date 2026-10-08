@@ -21,10 +21,10 @@ export function ReactionBar({ counts, onReact }: ReactionBarProps) {
           }}
           accessibilityRole="button"
           accessibilityLabel={`React ${emoji}, ${counts[emoji] ?? 0} so far`}
-          className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-line bg-elevated py-2.5 active:scale-95 active:bg-raised"
+          className="flex-1 flex-row items-center justify-center gap-1.5 rounded-full bg-white/10 py-2.5 active:scale-95 active:bg-white/20"
         >
           <Text className="text-lg">{emoji}</Text>
-          <Text className="text-xs font-bold tabular-nums text-sub">{counts[emoji] ?? 0}</Text>
+          <Text className="font-cond text-[15px] text-sub">{counts[emoji] ?? 0}</Text>
         </Pressable>
       ))}
     </View>

@@ -21,8 +21,8 @@ export function FieldTracker({ game }: { game: Game }) {
   return (
     <View>
       <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-sm font-bold text-ink">
-          {downAndDistance(s.down, s.distance)} <Text className="text-sub">at {s.ballOn}</Text>
+        <Text className="text-[15px] font-semibold text-ink">
+          {downAndDistance(s.down, s.distance)} <Text className="font-normal text-sub">at {s.ballOn}</Text>
         </Text>
         <View className="flex-row items-center gap-1.5">
           {s.redZone ? (
@@ -33,7 +33,7 @@ export function FieldTracker({ game }: { game: Game }) {
           <Text className="text-xs font-semibold text-sub">{offense.abbr} ball {towardHome ? '→' : '←'}</Text>
         </View>
       </View>
-      <View className="h-12 flex-row overflow-hidden rounded-lg" style={{ backgroundColor: '#123A24' }}>
+      <View className="h-12 flex-row overflow-hidden rounded-xl" style={{ backgroundColor: '#14361F' }}>
         <View className="w-[8%] items-center justify-center" style={{ backgroundColor: away.primary }}>
           <Text className="text-[9px] font-black text-white" style={{ transform: [{ rotate: '-90deg' }] }}>
             {away.abbr}

@@ -1,10 +1,12 @@
 // MOCK DATA — fabricated Week 5 slate. Scores, odds, and stat lines are not real.
 import type { Game } from '@/types';
+import { withBoxScore } from './boxscore';
 
-export const MOCK_GAMES: Game[] = [
+const RAW_GAMES: Game[] = [
   {
     id: 'g-buf-kc',
     week: 5,
+    day: 'today',
     status: 'live',
     away: { teamId: 'buf', score: 27, timeouts: 2 },
     home: { teamId: 'kc', score: 24, timeouts: 1 },
@@ -36,6 +38,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-det-gb',
     week: 5,
+    day: 'today',
     status: 'live',
     away: { teamId: 'det', score: 17, timeouts: 3 },
     home: { teamId: 'gb', score: 14, timeouts: 2 },
@@ -65,6 +68,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-dal-phi',
     week: 5,
+    day: 'today',
     status: 'live',
     away: { teamId: 'dal', score: 13, timeouts: 2 },
     home: { teamId: 'phi', score: 10, timeouts: 3 },
@@ -89,6 +93,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-sf-sea',
     week: 5,
+    day: 'today',
     status: 'scheduled',
     away: { teamId: 'sf', score: 0, timeouts: 3 },
     home: { teamId: 'sea', score: 0, timeouts: 3 },
@@ -103,6 +108,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-hou-mia',
     week: 5,
+    day: 'upcoming',
     status: 'scheduled',
     away: { teamId: 'hou', score: 0, timeouts: 3 },
     home: { teamId: 'mia', score: 0, timeouts: 3 },
@@ -117,6 +123,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-bal-cin',
     week: 6,
+    day: 'upcoming',
     status: 'scheduled',
     away: { teamId: 'bal', score: 0, timeouts: 3 },
     home: { teamId: 'cin', score: 0, timeouts: 3 },
@@ -131,6 +138,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-min-chi',
     week: 5,
+    day: 'today',
     status: 'final',
     away: { teamId: 'min', score: 23, timeouts: 0 },
     home: { teamId: 'chi', score: 20, timeouts: 0 },
@@ -146,6 +154,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-pit-den',
     week: 5,
+    day: 'today',
     status: 'final',
     away: { teamId: 'pit', score: 16, timeouts: 0 },
     home: { teamId: 'den', score: 19, timeouts: 0 },
@@ -161,6 +170,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-was-lac',
     week: 5,
+    day: 'today',
     status: 'final',
     away: { teamId: 'was', score: 28, timeouts: 0 },
     home: { teamId: 'lac', score: 31, timeouts: 0 },
@@ -176,6 +186,7 @@ export const MOCK_GAMES: Game[] = [
   {
     id: 'g-atl-tb',
     week: 5,
+    day: 'today',
     status: 'final',
     away: { teamId: 'atl', score: 24, timeouts: 0 },
     home: { teamId: 'tb', score: 27, timeouts: 0 },
@@ -188,4 +199,22 @@ export const MOCK_GAMES: Game[] = [
     homeWinProbability: 100,
     storyline: 'NFC South rivalry goes down to the wire',
   },
+  {
+    id: 'g-nyj-ne',
+    week: 5,
+    day: 'earlier',
+    status: 'final',
+    away: { teamId: 'nyj', score: 13, timeouts: 0 },
+    home: { teamId: 'ne', score: 17, timeouts: 0 },
+    period: 'FINAL',
+    kickoffLabel: 'Thu 8:15 PM ET',
+    network: 'Prime Video',
+    venue: 'Gillette Stadium',
+    spread: 'NE -1',
+    overUnder: 39.5,
+    homeWinProbability: 100,
+    storyline: 'Thursday Night Football',
+  },
 ];
+
+export const MOCK_GAMES: Game[] = RAW_GAMES.map(withBoxScore);

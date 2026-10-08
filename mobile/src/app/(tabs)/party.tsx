@@ -1,9 +1,8 @@
-import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 
 import { CreatePartySheet, PartyCard, PartyRoom } from '@/components/party';
-import { Button, EmptyState, IconButton, Screen, ScreenHeader, SectionHeader } from '@/components/ui';
+import { Button, EmptyState, IconButton, ListGroup, Screen, ScreenHeader, SectionHeader } from '@/components/ui';
 import { useHaptics } from '@/lib/haptics';
 import { listPartyEligibleGames } from '@/services';
 import { isPartyMember, useAppActions, useAppState } from '@/state/AppStore';
@@ -23,8 +22,8 @@ export default function WatchPartyScreen() {
     <KeyboardAvoidingView className="flex-1 bg-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen>
         <ScreenHeader
-          eyebrow="Watch together"
-          title="Watch Party"
+          eyebrow="Watch together · Sample data"
+          title="Party"
           right={<IconButton icon="add" accessibilityLabel="Create watch party" onPress={() => setCreating(true)} />}
         />
 
@@ -34,10 +33,9 @@ export default function WatchPartyScreen() {
             onReact={(emoji) => actions.reactInParty(active.id, emoji)}
             onSend={(text) => actions.sendPartyMessage(active.id, text)}
             onLeave={() => actions.leaveParty(active.id)}
-            onOpenGame={() => router.push({ pathname: '/game/[id]', params: { id: active.gameId } })}
           />
         ) : (
-          <EmptyState icon="people-outline" title="You’re not in a party" body="Join one below or start your own to watch with friends.">
+          <EmptyState icon="people-outline" title="Start a watch party" body="React, chat, and make picks with friends during the game.">
             <Button label="Start a party" icon="add" onPress={() => setCreating(true)} />
           </EmptyState>
         )}
@@ -45,28 +43,31 @@ export default function WatchPartyScreen() {
         {joined.length ? (
           <>
             <SectionHeader title="Your parties" />
-            {joined.map((p) => (
-              <PartyCard key={p.id} party={p} joined active={false} onJoin={() => {}} onOpen={() => actions.setActiveParty(p.id)} />
-            ))}
+            <ListGroup inset={80}>
+              {joined.map((p) => (
+                <PartyCard key={p.id} party={p} joined onJoin={() => {}} onOpen={() => actions.setActiveParty(p.id)} />
+              ))}
+            </ListGroup>
           </>
         ) : null}
 
         {discover.length ? (
           <>
-            <SectionHeader title="Discover parties" />
-            {discover.map((p) => (
-              <PartyCard
-                key={p.id}
-                party={p}
-                joined={false}
-                active={false}
-                onJoin={() => {
-                  success();
-                  actions.joinParty(p.id);
-                }}
-                onOpen={() => {}}
-              />
-            ))}
+            <SectionHeader title="Join a party" />
+            <ListGroup inset={80}>
+              {discover.map((p) => (
+                <PartyCard
+                  key={p.id}
+                  party={p}
+                  joined={false}
+                  onJoin={() => {
+                    success();
+                    actions.joinParty(p.id);
+                  }}
+                  onOpen={() => {}}
+                />
+              ))}
+            </ListGroup>
           </>
         ) : null}
       </Screen>

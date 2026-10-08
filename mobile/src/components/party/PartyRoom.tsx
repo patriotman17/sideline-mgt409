@@ -2,11 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
-import { TeamBadge } from '@/components/game';
-import { Avatar, AvatarStack, Card, LiveBadge, MockBadge } from '@/components/ui';
-import { gameStatusLabel } from '@/lib/format';
+import { ScoreRow } from '@/components/scores';
+import { Avatar, AvatarStack } from '@/components/ui';
 import { useHaptics } from '@/lib/haptics';
-import { findGame } from '@/services';
+import { currentUserMember, findGame } from '@/services';
 import { colors } from '@/theme';
 import type { WatchParty } from '@/types';
 import { ReactionBar } from './ReactionBar';
@@ -16,11 +15,10 @@ interface PartyRoomProps {
   onReact: (emoji: string) => void;
   onSend: (text: string) => void;
   onLeave: () => void;
-  onOpenGame: () => void;
 }
 
-/** The active watch party: mini scoreboard, reactions, and group chat. */
-export function PartyRoom({ party, onReact, onSend, onLeave, onOpenGame }: PartyRoomProps) {
+/** The active watch party: the game's score row, reactions, and the group chat. */
+export function PartyRoom({ party, onReact, onSend, onLeave }: PartyRoomProps) {
   const [draft, setDraft] = useState('');
   const { tap } = useHaptics();
   const game = findGame(party.gameId);
@@ -34,91 +32,87 @@ export function PartyRoom({ party, onReact, onSend, onLeave, onOpenGame }: Party
   };
 
   return (
-    <Card className="mx-5 p-4">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-1">
-          <Text className="text-lg font-extrabold text-ink">{party.name}</Text>
+    <View>
+      <View className="flex-row items-center justify-between px-5">
+        <View className="flex-1 pr-3">
+          <Text className="text-[22px] font-bold text-ink" numberOfLines={1}>
+            {party.name}
+          </Text>
           <View className="mt-1 flex-row items-center gap-2">
             <AvatarStack people={party.members} size={22} max={5} />
-            <Text className="text-xs text-sub">{party.members.length} in the room</Text>
+            <Text className="text-[13px] text-sub">{party.members.length} watching</Text>
           </View>
         </View>
-        <Pressable onPress={onLeave} hitSlop={8} accessibilityRole="button" className="rounded-full border border-line px-3 py-1.5 active:opacity-70">
-          <Text className="text-xs font-semibold text-sub">Leave</Text>
+        <Pressable onPress={onLeave} hitSlop={8} accessibilityRole="button" className="rounded-full bg-white/10 px-3.5 py-1.5 active:opacity-70">
+          <Text className="text-[13px] font-medium text-ink">Leave</Text>
         </Pressable>
       </View>
 
       {game ? (
-        <Pressable
-          onPress={onOpenGame}
-          accessibilityRole="button"
-          accessibilityLabel="Open game center"
-          className="mt-4 flex-row items-center rounded-2xl bg-elevated px-4 py-3 active:opacity-80"
-        >
-          <TeamBadge teamId={game.away.teamId} size={30} />
-          <Text className="ml-2 text-xl font-black tabular-nums text-ink">{game.status === 'scheduled' ? '' : game.away.score}</Text>
-          <View className="flex-1 items-center">
-            {game.status === 'live' ? <LiveBadge compact /> : null}
-            <Text className="mt-0.5 text-[11px] font-bold text-sub">{gameStatusLabel(game)}</Text>
-          </View>
-          <Text className="mr-2 text-xl font-black tabular-nums text-ink">{game.status === 'scheduled' ? '' : game.home.score}</Text>
-          <TeamBadge teamId={game.home.teamId} size={30} />
-        </Pressable>
+        <View className="mt-4">
+          <ScoreRow game={game} />
+        </View>
       ) : null}
 
-      <View className="mt-4">
+      <View className="mt-2 px-4">
         <ReactionBar counts={party.reactions} onReact={onReact} />
       </View>
 
-      <View className="mt-4 flex-row items-center justify-between">
-        <Text className="text-sm font-bold text-ink">Party chat</Text>
-        <MockBadge label="MOCK USERS" />
-      </View>
-
-      <View className="mt-3 flex-row items-center gap-2">
+      <View className="mt-4 flex-row items-center gap-2 px-4">
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="Say something to the room…"
+          placeholder="Message the room"
           placeholderTextColor={colors.mute}
           onSubmitEditing={send}
           returnKeyType="send"
-          className="h-11 flex-1 rounded-full border border-line bg-elevated px-4 text-[14px] text-ink"
+          className="h-11 flex-1 rounded-full bg-white/10 px-4 text-[15px] text-ink"
           accessibilityLabel="Message the watch party"
         />
         <Pressable
           onPress={send}
           accessibilityRole="button"
           accessibilityLabel="Send to party"
-          className={`h-11 w-11 items-center justify-center rounded-full ${draft.trim() ? 'bg-volt' : 'bg-elevated'}`}
+          className={`h-11 w-11 items-center justify-center rounded-full ${draft.trim() ? 'bg-volt' : 'bg-white/10'}`}
         >
-          <Ionicons name="send" size={16} color={draft.trim() ? colors.bg : colors.mute} />
+          <Ionicons name="arrow-up" size={19} color={draft.trim() ? colors.bg : colors.mute} />
         </Pressable>
       </View>
 
-      <View className="mt-3">
+      <View className="mt-2 px-4">
         {party.messages.length === 0 ? (
-          <Text className="py-4 text-center text-[13px] text-mute">No messages yet — start the trash talk.</Text>
+          <Text className="py-6 text-center text-[14px] text-mute">No messages yet. Start the trash talk.</Text>
         ) : (
-          party.messages.slice(0, 12).map((m) => {
+          party.messages.slice(0, 15).map((m) => {
+            const mine = m.memberId === currentUserMember.id;
             const member = membersById.get(m.memberId);
-            const mine = m.memberId === 'me';
-            return (
-              <View key={m.id} className="flex-row py-2">
-                <Avatar initials={member?.initials ?? '?'} color={member?.color ?? colors.mute} size={30} />
-                <View className="ml-2.5 flex-1">
-                  <View className="flex-row items-center gap-2">
-                    <Text className={`text-[13px] font-bold ${mine ? 'text-volt' : 'text-ink'}`}>{member?.name ?? 'Guest'}</Text>
-                    {member?.isHost ? <Text className="text-[10px] font-bold text-gold">HOST</Text> : null}
-                    <Text className="text-[11px] text-mute">{m.timeLabel}</Text>
+            if (mine) {
+              return (
+                <View key={m.id} className="mt-2.5 items-end">
+                  <View className="max-w-[80%] rounded-2xl rounded-br-md bg-volt px-3.5 py-2">
+                    <Text className="text-[15px] leading-5 text-bg">{m.text}</Text>
                   </View>
-                  <Text className="mt-0.5 text-[14px] leading-5 text-sub">{m.text}</Text>
+                  <Text className="mt-1 text-[11px] text-mute">{m.timeLabel}</Text>
+                </View>
+              );
+            }
+            return (
+              <View key={m.id} className="mt-2.5 flex-row items-end gap-2">
+                <Avatar initials={member?.initials ?? '?'} color={member?.color ?? colors.mute} size={28} />
+                <View className="max-w-[80%]">
+                  <Text className="mb-1 ml-1 text-[12px] text-sub">
+                    {member?.name ?? 'Guest'}
+                    {member?.isHost ? <Text className="text-gold"> · Host</Text> : null} · {m.timeLabel}
+                  </Text>
+                  <View className="rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2">
+                    <Text className="text-[15px] leading-5 text-ink">{m.text}</Text>
+                  </View>
                 </View>
               </View>
             );
           })
         )}
       </View>
-    </Card>
+    </View>
   );
 }

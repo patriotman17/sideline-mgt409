@@ -11,6 +11,13 @@ module.exports = {
   theme: {
     extend: {
       colors: palette,
+      // Condensed display face for scores, clocks and stats (loaded in src/app/_layout.tsx).
+      // Custom fonts carry their own weight — don't combine with font-bold etc.
+      fontFamily: {
+        score: ['BarlowCondensed_800ExtraBold'],
+        'score-bold': ['BarlowCondensed_700Bold'],
+        cond: ['BarlowCondensed_600SemiBold'],
+      },
       borderRadius: {
         xl: '14px',
         '2xl': '18px',

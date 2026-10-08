@@ -8,7 +8,16 @@ export const MOCK_PROFILE: UserProfile = {
   initials: 'AR',
   memberSince: 'Aug 2026',
   favoriteTeamIds: ['buf', 'det'],
-  stats: { points: 4820, accuracy: 64, streak: 5, rank: 312, partiesHosted: 7 },
+  stats: {
+    points: 4820,
+    accuracy: 68,
+    streak: 5,
+    rank: 312,
+    partiesHosted: 7,
+    wins: 34,
+    losses: 16,
+    recent: ['W', 'L', 'W', 'W', 'L', 'W', 'W', 'W', 'W', 'W'],
+  },
   badges: [
     { id: 'b1', label: 'Hot Streak', icon: 'flame', earned: true },
     { id: 'b2', label: 'Oracle', icon: 'eye', earned: true },

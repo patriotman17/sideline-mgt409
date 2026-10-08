@@ -10,7 +10,7 @@ interface CardProps extends ViewProps {
 
 /** Elevated surface used throughout the app. Becomes pressable when `onPress` is set. */
 export function Card({ children, onPress, className = '', accessibilityLabel, ...rest }: CardProps) {
-  const base = `rounded-2xl border border-line bg-surface ${className}`;
+  const base = `rounded-2xl bg-surface ${className}`;
   if (onPress) {
     return (
       <Pressable

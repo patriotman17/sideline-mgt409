@@ -1,11 +1,21 @@
 import '../../global.css';
 
+import {
+  BarlowCondensed_600SemiBold,
+  BarlowCondensed_700Bold,
+  BarlowCondensed_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/barlow-condensed';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppStoreProvider } from '@/state/AppStore';
 import { colors } from '@/theme';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const navTheme = {
   ...DarkTheme,
@@ -21,6 +31,19 @@ const navTheme = {
 };
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    BarlowCondensed_600SemiBold,
+    BarlowCondensed_700Bold,
+    BarlowCondensed_800ExtraBold,
+  });
+  const ready = fontsLoaded || !!fontError;
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  if (!ready) return null;
+
   return (
     <SafeAreaProvider>
       <ThemeProvider value={navTheme}>
@@ -28,7 +51,8 @@ export default function RootLayout() {
           <StatusBar style="light" />
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_right' }} />
+            {/* Game screen slides up as a sheet over the tabs (swipe down to close on iOS). */}
+            <Stack.Screen name="game/[id]" options={{ presentation: 'modal' }} />
           </Stack>
         </AppStoreProvider>
       </ThemeProvider>

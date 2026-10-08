@@ -19,6 +19,9 @@ export interface Team {
 
 export type GameStatus = 'live' | 'scheduled' | 'final';
 
+/** Which scoreboard day a game belongs to, relative to "today" (Sunday of Week 5 in mock data). */
+export type GameDay = 'yesterday' | 'today' | 'upcoming' | 'earlier';
+
 export interface TeamScore {
   teamId: string;
   score: number;
@@ -43,9 +46,27 @@ export interface GameLeader {
   line: string;
 }
 
+export interface TeamStatLine {
+  label: string;
+  away: number;
+  home: number;
+  /** Optional display text when the raw number isn't the right label (e.g. "7/12"). */
+  awayText?: string;
+  homeText?: string;
+  /** True when a lower number is better (e.g. turnovers). */
+  lowerIsBetter?: boolean;
+}
+
+export interface Linescore {
+  /** Points per period; index 4 is overtime. `null` = not played yet. */
+  away: (number | null)[];
+  home: (number | null)[];
+}
+
 export interface Game {
   id: string;
   week: number;
+  day: GameDay;
   status: GameStatus;
   away: TeamScore;
   home: TeamScore;
@@ -61,6 +82,8 @@ export interface Game {
   homeWinProbability: number;
   situation?: GameSituation;
   leaders?: GameLeader[];
+  linescore?: Linescore;
+  teamStats?: TeamStatLine[];
   featured?: boolean;
   /** Short hook shown on cards, e.g. "Rematch of last year's AFC title game". */
   storyline?: string;
@@ -204,6 +227,10 @@ export interface UserProfile {
     streak: number;
     rank: number;
     partiesHosted: number;
+    wins: number;
+    losses: number;
+    /** Most recent pick results, oldest first. */
+    recent: ('W' | 'L')[];
   };
   badges: { id: string; label: string; icon: string; earned: boolean }[];
 }

@@ -20,11 +20,11 @@ export function Chip({ label, selected = false, onPress, leading }: ChipProps) {
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={`flex-row items-center gap-1.5 rounded-full border px-4 py-2 active:opacity-70 ${
-        selected ? 'border-volt bg-volt' : 'border-line bg-elevated'
+        selected ? 'border-volt bg-volt' : 'border-transparent bg-white/10'
       }`}
     >
       {leading}
-      <Text className={`text-sm font-semibold ${selected ? 'text-bg' : 'text-sub'}`}>{label}</Text>
+      <Text className={`text-sm font-semibold ${selected ? 'text-bg' : 'text-ink'}`}>{label}</Text>
     </Pressable>
   );
 }

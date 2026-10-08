@@ -16,7 +16,7 @@ interface ButtonProps {
 
 const VARIANTS = {
   primary: { box: 'bg-volt', text: 'text-bg', icon: colors.bg },
-  secondary: { box: 'border border-line bg-elevated', text: 'text-ink', icon: colors.ink },
+  secondary: { box: 'bg-white/15', text: 'text-ink', icon: colors.ink },
   ghost: { box: '', text: 'text-volt', icon: colors.volt },
 };
 

@@ -14,9 +14,9 @@ interface SettingRowProps {
 
 export function SettingRow({ icon, label, description, value, onChange, divider = true }: SettingRowProps) {
   return (
-    <View className={`flex-row items-center py-3.5 ${divider ? 'border-t border-line' : ''}`}>
-      <View className="mr-3 h-9 w-9 items-center justify-center rounded-xl bg-elevated">
-        <Ionicons name={icon} size={17} color={colors.sub} />
+    <View className={`flex-row items-center px-4 py-3 ${divider ? 'border-t border-white/10' : ''}`}>
+      <View className="mr-3 h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+        <Ionicons name={icon} size={16} color={colors.ink} />
       </View>
       <View className="flex-1 pr-3">
         <Text className="text-[15px] font-semibold text-ink">{label}</Text>

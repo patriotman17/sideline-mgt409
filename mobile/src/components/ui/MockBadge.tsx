@@ -1,10 +1,9 @@
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 
-/** Marks surfaces that show fabricated data, so mock content is never mistaken for real. */
-export function MockBadge({ label = 'MOCK DATA' }: { label?: string }) {
-  return (
-    <View className="self-start rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5">
-      <Text className="text-[9px] font-bold tracking-widest text-gold">{label}</Text>
-    </View>
-  );
+/**
+ * Quiet marker for surfaces showing fabricated data. Use once per screen,
+ * so mock content is never mistaken for real without cluttering the UI.
+ */
+export function MockBadge({ label = 'Sample data' }: { label?: string }) {
+  return <Text className="text-[11px] font-medium text-mute">{label}</Text>;
 }

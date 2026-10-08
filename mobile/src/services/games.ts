@@ -1,7 +1,7 @@
 // TODO(phase-2): replace mock reads with `apiGet('/api/v1/games…')` once the
 // backend proxies a real sports data provider. Signatures should not change.
 import { buildMockGameContent, MOCK_GAMES } from '@/data/mock';
-import type { Game, GameStatus, Insight, Prediction, TimelineEvent } from '@/types';
+import type { Game, GameDay, GameStatus, Insight, Prediction, TimelineEvent } from '@/types';
 import { mockDelay } from './http';
 import { teamAbbr } from './teams';
 
@@ -19,6 +19,17 @@ export async function listGames(status?: GameStatus): Promise<Game[]> {
   return MOCK_GAMES.filter((g) => !status || g.status === status).sort(
     (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
   );
+}
+
+export async function listGamesByDay(day: GameDay): Promise<Game[]> {
+  await mockDelay();
+  return MOCK_GAMES.filter((g) => g.day === day).sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+}
+
+/** Most recent day with completed games (used when "Yesterday" has none). */
+export async function listMostRecentFinals(): Promise<Game[]> {
+  await mockDelay();
+  return MOCK_GAMES.filter((g) => g.day === 'earlier' || (g.day === 'yesterday' && g.status === 'final'));
 }
 
 export async function getFeaturedGame(): Promise<Game> {
@@ -41,6 +52,11 @@ export const listPartyEligibleGames = (): Game[] => MOCK_GAMES.filter((g) => g.s
 
 /** Live game count for the tab badge. Becomes a realtime subscription later. */
 export const countLiveGames = (): number => MOCK_GAMES.filter((g) => g.status === 'live').length;
+
+export async function listAllPredictions(): Promise<Prediction[]> {
+  await mockDelay();
+  return MOCK_GAMES.flatMap((g) => buildMockGameContent(g, teamAbbr).predictions);
+}
 
 export async function listOpenPredictions(): Promise<Prediction[]> {
   await mockDelay();

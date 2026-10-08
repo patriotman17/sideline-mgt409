@@ -1,7 +1,5 @@
 export * from './AIChat';
-export * from './FeaturedGameCard';
 export * from './FieldTracker';
-export * from './GameCard';
 export * from './GameLeaders';
 export * from './InsightCard';
 export * from './PredictionCard';
@@ -9,3 +7,6 @@ export * from './Scoreboard';
 export * from './TeamBadge';
 export * from './Timeline';
 export * from './WinProbabilityBar';
+export * from './Linescore';
+export * from './OddsCard';
+export * from './TeamStats';

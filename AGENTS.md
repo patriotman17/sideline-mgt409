@@ -17,7 +17,7 @@ Sideline/
 │   ├── AGENTS.md             # Expo-specific agent rules (versioned docs, expo install, CNG)
 │   ├── app.json  babel.config.js  metro.config.js  tailwind.config.js  global.css
 │   └── src/
-│       ├── app/              # ROUTES ONLY (Expo Router). (tabs)/ = 5 tabs, game/[id].tsx = Game Detail
+│       ├── app/              # ROUTES ONLY (Expo Router). (tabs)/ = Scores, Picks, Party, Discover, You; game/[id].tsx
 │       ├── components/
 │       │   ├── ui/           # Design-system primitives (Card, Chip, Button, SegmentedControl…)
 │       │   ├── game/         # Scoreboard, FieldTracker, Timeline, InsightCard, PredictionCard, AIChat…
@@ -66,8 +66,18 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
 - Styling: NativeWind `className` with tokens from `src/theme/palette.json` (shared by Tailwind
   and TS via `colors`). Use `style` only for dynamic values (team colors, widths).
   The app is dark-only (`darkMode: 'class'` in Tailwind config).
-- Tabs use `expo-router/js-tabs` (the bare `Tabs` export from `expo-router` is deprecated).
+- Tabs: Scores · Picks · Party · Discover · You. `(tabs)/_layout.tsx` uses native tabs
+  (`expo-router/unstable-native-tabs` in SDK 57; becomes `expo-router/native-tabs` in SDK 58) for
+  the system tab bar / iOS 26 Liquid Glass. `(tabs)/_layout.web.tsx` is a styled `expo-router/js-tabs`
+  fallback because native tabs have no web tab bar. Screens own their safe-area padding
+  (`disableAutomaticContentInsets`) and keep `pb-28` so content clears the floating bar.
   Theme exports (`DarkTheme`, `ThemeProvider`) come from `expo-router`.
+- Type: scores, clocks and stats use Barlow Condensed via `font-score` / `font-score-bold` /
+  `font-cond` (loaded in `src/app/_layout.tsx`); never combine those with `font-bold`.
+  UI text uses the system font.
+- Visual language (Scores redesign): pure-black background, no outlined cards, team colors
+  carry meaning (row gradients away→home), lime only for user actions/selection, one quiet
+  "Sample data" marker per screen.
 - Navigation: `router.push({ pathname: '/game/[id]', params: { id, tab } })`.
   Game Detail accepts `tab=timeline|insights|predict|chat`.
 - State: read with `useAppState()`, mutate with `useAppActions()`. Keep the reducer pure.

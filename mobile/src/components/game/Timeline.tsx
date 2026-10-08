@@ -32,15 +32,15 @@ export function Timeline({ events, awayId, homeId }: { events: TimelineEvent[]; 
         return (
           <View key={e.id} className="flex-row">
             <View className="mr-3.5 items-center">
-              <View className="h-8 w-8 items-center justify-center rounded-full border border-line bg-elevated">
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-white/10">
                 <Ionicons name={style.icon} size={14} color={style.color} />
               </View>
-              {!last ? <View className="w-px flex-1 bg-line" /> : null}
+              {!last ? <View className="w-px flex-1 bg-white/10" /> : null}
             </View>
             <View className={`flex-1 ${last ? '' : 'pb-5'}`}>
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-2">
-                  <Text className="text-sm font-bold" style={{ color: isScoring ? colors.ink : style.color }}>
+                  <Text className="text-[15px] font-semibold" style={{ color: isScoring ? colors.ink : style.color }}>
                     {e.title}
                   </Text>
                   {e.teamId ? (
@@ -49,13 +49,13 @@ export function Timeline({ events, awayId, homeId }: { events: TimelineEvent[]; 
                     </View>
                   ) : null}
                 </View>
-                <Text className="text-[11px] font-semibold text-mute">
+                <Text className="font-cond text-[13px] text-mute">
                   {e.period} · {e.clock}
                 </Text>
               </View>
-              <Text className="mt-1 text-[13px] leading-5 text-sub">{e.description}</Text>
+              <Text className="mt-1 text-[14px] leading-5 text-white/75">{e.description}</Text>
               {isScoring ? (
-                <Text className="mt-1.5 text-xs font-bold text-ink">
+                <Text className="mt-1.5 font-score-bold text-[16px] text-ink">
                   {away.abbr} {e.awayScore} – {e.homeScore} {home.abbr}
                 </Text>
               ) : null}

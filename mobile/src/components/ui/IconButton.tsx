@@ -27,7 +27,7 @@ export function IconButton({ icon, onPress, accessibilityLabel, color = colors.i
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       className={`h-10 w-10 items-center justify-center rounded-full active:opacity-70 ${
-        variant === 'filled' ? 'border border-line bg-elevated' : ''
+        variant === 'filled' ? 'bg-white/10' : ''
       } ${disabled ? 'opacity-40' : ''}`}
     >
       <Ionicons name={icon} size={size} color={color} />
