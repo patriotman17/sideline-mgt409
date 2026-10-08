@@ -29,7 +29,8 @@ def client(api_clock: FakeClock) -> TestClient:
 
 
 def start(client: TestClient, game_id: str = DIVISIONAL, **body: Any) -> dict[str, Any]:
-    res = client.post(f"{BASE}/sessions", json={"game_id": game_id, **body})
+    # Playback-mechanics tests: no automatic pauses for predictions.
+    res = client.post(f"{BASE}/sessions", json={"game_id": game_id, "pause_for_predictions": False, **body})
     assert res.status_code == 201, res.text
     data: dict[str, Any] = res.json()
     # Every later request for this session must carry its token.

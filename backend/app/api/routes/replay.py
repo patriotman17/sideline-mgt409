@@ -76,6 +76,8 @@ class GameSummary(BaseModel):
 
 class PlaybackInfo(BaseModel):
     status: PlaybackStatus
+    #: True when the server paused playback because a new prediction opened.
+    paused_for_prediction: bool = False
     speed: float
     seconds_per_play: float
     cursor: int
@@ -108,6 +110,8 @@ class CreateSessionRequest(BaseModel):
     game_id: str
     speed: float = Field(default=1.0, ge=MIN_SPEED, le=MAX_SPEED)
     autoplay: bool = False
+    #: Pause playback when a new prediction opens so there's time to answer.
+    pause_for_predictions: bool = True
 
 
 class SpeedRequest(BaseModel):
@@ -151,6 +155,7 @@ def snapshot(session: ReplaySession) -> ReplaySnapshot:
         game=summarize(session.game),
         playback=PlaybackInfo(
             status=playback_status,
+            paused_for_prediction=session.pause_reason == "prediction",
             speed=speed,
             seconds_per_play=SECONDS_PER_PLAY,
             cursor=cursor,
@@ -201,7 +206,7 @@ def create_session(body: CreateSessionRequest, catalog: CatalogDep, manager: Man
     game = catalog.get(body.game_id)
     if game is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Unknown game: {body.game_id}")
-    session = manager.create(game, speed=body.speed)
+    session = manager.create(game, speed=body.speed, pause_for_predictions=body.pause_for_predictions)
     if body.autoplay:
         session.play()
     return CreatedSession(**snapshot(session).model_dump(), session_token=session.token)

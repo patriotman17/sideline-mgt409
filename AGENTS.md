@@ -50,6 +50,10 @@ Sideline/
     │   │   ├── conversation.py #  per-session chat memory (cursor-aware window, fingerprint)
     │   │   ├── llm.py        #   Portkey model factory + setup message
     │   │   └── audit.py · budget.py · cache.py · pricing.py · sanitize.py
+    │   ├── predictions/      # Phase 2D: deterministic replay predictions
+    │   │   ├── models.py     #   Prediction, Answer, PredictionStats, POINTS table
+    │   │   ├── rules.py      #   detectors (revealed snapshot only) + resolvers (one event at a time)
+    │   │   └── ledger.py     #   per-session lifecycle, answers, stats, position-aware views
     │   └── services/         # External integrations (Supabase etc., later)
     ├── data/nflverse/        # Committed per-game extracts + .source.json provenance
     ├── scripts/fetch_nflverse_games.py   # Downloads a season (to .cache/, ignored) and extracts games
@@ -216,6 +220,42 @@ stays the source of truth: the agent only *reads* engine-derived facts through f
   computed from the engine; checks = factual, tool selection, grounding, no future leakage (incl. any
   player who only appears after the cursor), cost/latency.
 
+## Predictions (Phase 2D)
+
+Deterministic, server-authoritative predictions on historical replays. No AI decides eligibility,
+options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predictions.py`).
+
+- **Types:** `next_play_gain_5` (3rd down), `fourth_down_conversion` (4th & ≤3; ≤5 in opponent
+  territory; or Q4/OT trailing by 1-8 with ≤5:00 and ≤10 to go), `drive_touchdown` (first snap of a new
+  drive), `next_score` (drive start when none pending; window = half / regulation / OT). One open
+  question per type (timeouts and quarter breaks never duplicate one). No next-play/drive questions
+  with ≤60 s left in Q2/Q4 (kneel-downs).
+- **Lifecycle:** OPEN → LOCKED at the **next snap** (any event except timeout / end of quarter /
+  game start / end of game) → RESOLVED (correct option) or VOID (reason). Next-play and 4th-down
+  resolve on that snap; void if it's a no-play penalty or not a pass/run (punt, FG, kneel, spike).
+  Drive TD: yes on the drive team's TD; no on FG, punt, turnover, missed FG, opponent score, end of
+  half/regulation/game. Next score: first scoring play's team, or `none` at the window's end.
+- **Exploit prevention:** detectors take a `Revealed` (state + last revealed snap) only; the ledger
+  processes each event once, in order, beyond its **high-water mark**. Restart/rewind never reopen
+  or create questions until the replay passes the furthest play ever revealed. `submit_prediction`
+  syncs the session to "now" under the session lock before validating, so a due play locks the
+  question first. One final answer per question (same option = idempotent 200; different = 409).
+  Reads hide questions opened after the current position and mask outcomes revealed after it
+  (`result_hidden_until`).
+- **Pause for picks** (default on, `PUT .../predictions/settings`): playback stops at the play where
+  a question opens (`playback.paused_for_prediction`); answering every open question auto-resumes.
+  Playback-mechanics tests pass `pause_for_predictions=False`.
+- **Points (demo scoring):** correct = 10 next play, 15 next score, 20 drive TD, 25 4th down;
+  incorrect/void/unanswered = 0. Accuracy = correct / (correct + incorrect). Streaks count consecutive
+  correct answers in resolution order; voids neither extend nor break them. Points are per replay
+  session and never competitive (historical outcomes are public); future live scoring belongs to
+  Supabase accounts + a live provider emitting the same `PlayEvent`.
+- **AI:** only `POST .../predictions/{id}/explain` for resolved predictions, via `AIService.explain`
+  with the view at the resolving play (shared cache, budget, audit).
+- **Mobile:** `hooks/useReplayPredictions` + `lib/replayPredictions.ts` (card states, optimistic answers
+  with rollback, badge count; unit-tested) → replay screen **Picks** tab. Mock predictions in the game
+  sheet / Picks tab stay separate and labeled "Sample data".
+
 ## Checks (run before declaring work done)
 
 ```bash
@@ -234,7 +274,8 @@ npx expo export --platform ios --platform android --output-dir /tmp/sideline-exp
 |-------|-------------------|
 | 2A/2B ✅ Historical ingestion + replay engine | `app/replay/` → `/api/v1/replay/*` → `mobile/src/services/replay.ts` + `hooks/useReplaySession.ts` |
 | 2C ✅ Sideline AI agent + insights | `app/agents/` → `/replay/sessions/{id}/ask` & `/insights` → replay screen (Ask AI / Insights tabs) |
-| 2D Mobile integration | Extend replay-backed AI beyond the replay screen (mock game sheet chat still uses `services/assistant.ts`) |
+| 2D ✅ Dynamic predictions | `app/predictions/` → `/replay/sessions/{id}/predictions*` → replay screen Picks tab |
+| Next | Replay-backed AI beyond the replay screen (mock game sheet chat still uses `services/assistant.ts`) |
 | 2E Evaluations | Grow `evals/cases.py`; add regression thresholds to CI (live runs on prompt/tool changes) |
 | Live scores (commercial provider) | `backend/app/services/` provider emitting the same `PlayEvent` model |
 | Auth, profiles, picks persistence | Supabase → replace seeding in `state/AppStore.tsx` / `services/profile.ts` |

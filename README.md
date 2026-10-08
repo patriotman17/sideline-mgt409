@@ -90,7 +90,7 @@ npx expo-doctor       # dependency / config health
 - **Discover** — stories, trending players, standings
 - **You** — profile, teams, badges, saved stories, settings, backend status
 - **Game sheet** — scoreboard + linescore; Summary, Plays, Picks, and Ask AI tabs
-- **Replay sheet** — historical game replayed play by play with play / pause / restart / next play and 1×–10× speed, plus **Plays · Insights · Ask AI** tabs
+- **Replay sheet** — historical game replayed play by play with play / pause / restart / next play and 1×–10× speed, plus **Plays · Picks · Insights · Ask AI** tabs (Picks = real, auto-scored predictions)
 
 Everything except replays uses local mock data and resets on reload.
 
@@ -132,6 +132,36 @@ The full season file is cached in `backend/.cache/` (git-ignored); only per-game
 
 Sessions are isolated per id, expire after 2 hours idle, and require the `session_token`
 returned at creation in an `X-Session-Token` header on every other request.
+
+## Predictions (Phase 2D)
+
+During a historical replay, Sideline asks short questions before key moments and scores them
+automatically, using deterministic rules (never AI) and only the plays revealed so far:
+
+| Question | When it appears | Points |
+|---|---|---|
+| Will the next play gain 5+ yards? | 3rd down | 10 |
+| Which team will score next? | A drive starts (one at a time) | 15 |
+| Will this drive end in a touchdown? | A drive starts | 20 |
+| If they go for it on 4th down, will they convert? | 4th & short / realistic go-for-it spots | 25 |
+
+- Answers lock at the **next snap**; picks are final. Results resolve on the deciding play or drive.
+- **Void** (0 points, doesn't affect accuracy or streaks) when the question can't be fairly scored,
+  e.g. the play is wiped out by a penalty or a team punts instead of going for it.
+- Incorrect and unanswered = 0. Accuracy = correct ÷ (correct + incorrect); current and longest
+  streaks count consecutive correct answers.
+- **Pause for picks** (on by default) stops the replay when a question opens; answering resumes it.
+- **Demo scoring:** historical outcomes are public, so points live only in that replay session.
+  Restarting or rewinding never re-offers a question or shows a result early.
+- "Why?" on a result asks Sideline AI to explain it (optional; cached).
+
+| Method | Path (`/api/v1/replay/sessions/{id}/…`) | Purpose |
+|---|---|---|
+| GET | `predictions` | Open, waiting, recent results, stats, pause setting (one poll) |
+| GET | `predictions/open` · `predictions/resolved` · `predictions/history` · `predictions/stats` | Individual views |
+| POST | `predictions/{prediction_id}/answer` | `{option_id}` — final; same answer again is idempotent |
+| PUT | `predictions/settings` | `{pause_for_predictions}` |
+| POST | `predictions/{prediction_id}/explain` | AI explanation of a resolved prediction |
 
 ## Ask Sideline AI (Phase 2C)
 

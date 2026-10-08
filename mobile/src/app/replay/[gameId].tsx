@@ -13,10 +13,11 @@ import {
   Timeline,
   WinProbabilityBar,
 } from '@/components/game';
-import { ReplayAskPanel, ReplayInsightCard } from '@/components/replay';
+import { ReplayAskPanel, ReplayInsightCard, ReplayPicksPanel } from '@/components/replay';
 import { Button, EmptyState, IconButton, Skeleton, TextTabs } from '@/components/ui';
 import { useReplayChat } from '@/hooks/useReplayChat';
 import { useReplayInsights } from '@/hooks/useReplayInsights';
+import { useReplayPredictions } from '@/hooks/useReplayPredictions';
 import { useReplaySession } from '@/hooks/useReplaySession';
 import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { useHaptics } from '@/lib/haptics';
@@ -32,7 +33,7 @@ import { colors, withAlpha } from '@/theme';
 
 const SPEEDS = [1, 2, 5, 10];
 
-type ReplayTab = 'plays' | 'insights' | 'ask';
+type ReplayTab = 'plays' | 'picks' | 'insights' | 'ask';
 
 const STATUS_LABEL: Record<ReplaySnapshot['playback']['status'], string> = {
   ready: 'Ready to replay',
@@ -67,10 +68,11 @@ function ControlButton({
 
 export default function ReplayScreen() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
-  const { snapshot, auth, error, busy, control, setSpeed, retry } = useReplaySession(gameId);
+  const { snapshot, auth, error, busy, control, setSpeed, retry, refresh } = useReplaySession(gameId);
   const [tab, setTab] = useState<ReplayTab>('plays');
   const chat = useReplayChat(auth, snapshot?.playback.cursor ?? 0);
   const insights = useReplayInsights(auth, snapshot?.playback.cursor, tab === 'insights');
+  const picks = useReplayPredictions(auth, snapshot?.playback.cursor ?? 0, snapshot?.playback.status, refresh);
   const scrollRef = useRef<ScrollView>(null);
   const { ref: keyboardRef, overlap: keyboardOverlap } = useKeyboardOverlap();
   const { tap } = useHaptics();
@@ -189,6 +191,20 @@ export default function ReplayScreen() {
                     Play {playback.cursor} of {playback.total_events}
                   </Text>
                 </View>
+                {playback.paused_for_prediction ? (
+                  <Pressable
+                    onPress={() => setTab('picks')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Paused for your pick. Open picks"
+                    className="mt-2.5 flex-row items-center gap-2 rounded-xl bg-volt/15 px-3 py-2 active:opacity-70"
+                  >
+                    <Ionicons name="hand-left" size={14} color={colors.volt} />
+                    <Text className="flex-1 text-[13px] font-semibold text-volt">
+                      Paused for your pick — answer to keep watching
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.volt} />
+                  </Pressable>
+                ) : null}
                 <View className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
                   <View
                     className="h-full rounded-full bg-volt"
@@ -270,6 +286,7 @@ export default function ReplayScreen() {
                     onChange={setTab}
                     tabs={[
                       { value: 'plays', label: 'Plays' },
+                      { value: 'picks', label: 'Picks', badge: picks.view.needsAnswer },
                       { value: 'insights', label: 'Insights' },
                       { value: 'ask', label: 'Ask AI' },
                     ]}
@@ -288,6 +305,17 @@ export default function ReplayScreen() {
                       Press play to start from kickoff. Plays appear here as they happen.
                     </Text>
                   )
+                ) : tab === 'picks' ? (
+                  <ReplayPicksPanel
+                    data={picks.data}
+                    view={picks.view}
+                    error={picks.error}
+                    onRetry={picks.reload}
+                    onAnswer={picks.answer}
+                    onTogglePause={picks.setPauseForPicks}
+                    onExplain={picks.explain}
+                    explanations={picks.explanations}
+                  />
                 ) : tab === 'insights' ? (
                   <View className="gap-3 px-4">
                     {insights.data && !insights.data.ai_configured ? (

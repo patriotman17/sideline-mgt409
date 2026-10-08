@@ -23,13 +23,13 @@ def status(session: ReplaySession) -> PlaybackStatus:
 
 
 def test_new_session_is_ready_and_does_not_advance(divisional, clock):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     clock.advance(60)
     assert status(s) is PlaybackStatus.READY and cursor(s) == 0
 
 
 def test_play_advances_with_wall_clock(divisional, clock):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 10)
     assert cursor(s) == 10
@@ -38,7 +38,7 @@ def test_play_advances_with_wall_clock(divisional, clock):
 
 
 def test_pause_freezes_and_resume_continues(divisional, clock):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 5)
     s.pause()
@@ -50,7 +50,7 @@ def test_pause_freezes_and_resume_continues(divisional, clock):
 
 
 def test_speed_scales_playback_and_reanchors(divisional, clock):
-    s = ReplaySession(divisional, clock=clock, speed=2.0)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False, speed=2.0)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 5)
     assert cursor(s) == 10
@@ -61,13 +61,13 @@ def test_speed_scales_playback_and_reanchors(divisional, clock):
 
 @pytest.mark.parametrize("bad", [0, 0.1, 51, float("inf"), float("nan")])
 def test_invalid_speed_rejected(divisional, clock, bad):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     with pytest.raises(ValueError):
         s.set_speed(bad)
 
 
 def test_restart_resets_state(divisional, clock):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     s.play()
     clock.advance(SECONDS_PER_PLAY * 40)
     assert s.snapshot()[3].plays_revealed == 40
@@ -79,7 +79,7 @@ def test_restart_resets_state(divisional, clock):
 
 
 def test_step_advances_manually_and_pauses(divisional, clock):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     s.step(3)
     assert (status(s), cursor(s)) == (PlaybackStatus.PAUSED, 3)
     s.play()
@@ -89,7 +89,7 @@ def test_step_advances_manually_and_pauses(divisional, clock):
 
 
 def test_finishes_at_end_and_blocks_play(divisional, clock):
-    s = ReplaySession(divisional, clock=clock, speed=50)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False, speed=50)
     s.play()
     clock.advance(10_000)
     st, _, cur, state = s.snapshot()
@@ -105,11 +105,11 @@ def test_finishes_at_end_and_blocks_play(divisional, clock):
 
 def test_resume_before_play_is_rejected(divisional, clock):
     with pytest.raises(InvalidTransition):
-        ReplaySession(divisional, clock=clock).resume()
+        ReplaySession(divisional, clock=clock, pause_for_predictions=False).resume()
 
 
 def test_visible_events_never_include_future_plays(divisional, clock):
-    s = ReplaySession(divisional, clock=clock)
+    s = ReplaySession(divisional, clock=clock, pause_for_predictions=False)
     s.step(25)
     visible = s.visible_events()
     assert len(visible) == 25 and visible[-1].sequence == 24
@@ -117,9 +117,9 @@ def test_visible_events_never_include_future_plays(divisional, clock):
 
 def test_sessions_are_isolated(divisional, super_bowl, clock):
     manager = ReplaySessionManager(clock=clock)
-    a = manager.create(divisional)
-    b = manager.create(divisional, speed=4)
-    c = manager.create(super_bowl)
+    a = manager.create(divisional, pause_for_predictions=False)
+    b = manager.create(divisional, speed=4, pause_for_predictions=False)
+    c = manager.create(super_bowl, pause_for_predictions=False)
     assert len({a.id, b.id, c.id}) == 3
     a.play()
     b.step(7)
@@ -132,7 +132,7 @@ def test_sessions_are_isolated(divisional, super_bowl, clock):
 
 def test_idle_sessions_expire(divisional, clock):
     manager = ReplaySessionManager(clock=clock, ttl_seconds=60)
-    s = manager.create(divisional)
+    s = manager.create(divisional, pause_for_predictions=False)
     clock.advance(61)
     with pytest.raises(SessionNotFound):
         manager.get(s.id)
@@ -140,13 +140,13 @@ def test_idle_sessions_expire(divisional, clock):
 
 def test_session_cap_evicts_least_recently_used(divisional, clock):
     manager = ReplaySessionManager(clock=clock, max_sessions=2)
-    first = manager.create(divisional)
+    first = manager.create(divisional, pause_for_predictions=False)
     clock.advance(1)
-    second = manager.create(divisional)
+    second = manager.create(divisional, pause_for_predictions=False)
     clock.advance(1)
     manager.get(first.id).snapshot()  # touch first so second is the oldest
     clock.advance(1)
-    manager.create(divisional)
+    manager.create(divisional, pause_for_predictions=False)
     assert len(manager) == 2
     manager.get(first.id)
     with pytest.raises(SessionNotFound):

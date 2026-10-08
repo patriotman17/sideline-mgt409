@@ -35,7 +35,7 @@ def app_with(make_service):
 
 
 def start(client: TestClient, game_id: str = DIVISIONAL) -> tuple[str, dict[str, str]]:
-    body = client.post(f"{BASE}/sessions", json={"game_id": game_id}).json()
+    body = client.post(f"{BASE}/sessions", json={"game_id": game_id, "pause_for_predictions": False}).json()
     return body["session_id"], {"X-Session-Token": body["session_token"]}
 
 

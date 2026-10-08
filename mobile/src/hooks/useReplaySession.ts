@@ -82,6 +82,9 @@ export function useReplaySession(gameId: string) {
 
   const control = useCallback((action: ReplayControl) => run((a) => controlReplay(a, action)), [run]);
   const setSpeed = useCallback((speed: number) => run((a) => setReplaySpeed(a, speed)), [run]);
+  /** Re-read playback now (e.g. the server auto-resumed after a prediction was answered). */
+  const refresh = useCallback(() => run((a) => getReplay(a)), [run]);
+
   const retry = useCallback(() => {
     setError(undefined);
     setSnapshot(undefined);
@@ -89,5 +92,5 @@ export function useReplaySession(gameId: string) {
     setAttempt((n) => n + 1);
   }, []);
 
-  return { snapshot, auth, error, busy, control, setSpeed, retry };
+  return { snapshot, auth, error, busy, control, setSpeed, retry, refresh };
 }

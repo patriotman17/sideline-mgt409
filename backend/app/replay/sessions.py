@@ -18,6 +18,8 @@ from collections.abc import Callable
 from enum import StrEnum
 
 from app.agents.conversation import Conversation
+from app.predictions.ledger import PredictionLedger
+from app.predictions.models import Answer
 from app.replay.engine import apply_event, initial_state, replay
 from app.replay.models import Game, GameState, PlayEvent
 
@@ -51,7 +53,15 @@ def validate_speed(speed: float) -> float:
 
 
 class ReplaySession:
-    def __init__(self, game: Game, *, speed: float = 1.0, clock: Clock = time.monotonic, session_id: str | None = None):
+    def __init__(
+        self,
+        game: Game,
+        *,
+        speed: float = 1.0,
+        clock: Clock = time.monotonic,
+        session_id: str | None = None,
+        pause_for_predictions: bool = True,
+    ):
         self.id = session_id or uuid.uuid4().hex
         #: Secret returned once at creation; only its hash is kept. Required for every session request.
         self.token = secrets.token_urlsafe(32)
@@ -59,6 +69,12 @@ class ReplaySession:
         self.game = game
         #: Ask Sideline chat for this session only (isolated; expires with the session).
         self.conversation = Conversation()
+        #: Prediction lifecycle for this session. Only ever moves forward (see ``_advance_to``).
+        self.predictions = PredictionLedger(game.info)
+        #: Stop playback at the play where a new prediction opens, so there's time to answer.
+        self.pause_for_predictions = pause_for_predictions
+        #: Why playback is paused, when the server paused it ("prediction"); None otherwise.
+        self.pause_reason: str | None = None
         self._clock = clock
         self._lock = threading.RLock()
         self._speed = validate_speed(speed)
@@ -87,21 +103,41 @@ class ReplaySession:
         advanced = int(elapsed * self._speed / SECONDS_PER_PLAY)
         return min(self.total_events, self._anchor_cursor + advanced)
 
-    def _advance_to(self, cursor: int) -> None:
+    def _advance_to(self, cursor: int, *, stop_on_prediction: bool = False) -> bool:
+        """Move the cursor. Forward moves reveal events one at a time; every event beyond the
+        high-water mark (furthest play ever revealed) goes through the prediction ledger exactly
+        once, in order. Returns True if it stopped early because a prediction opened."""
         cursor = max(0, min(cursor, self.total_events))
+        stopped = False
         if cursor < self._cursor:
             self._state = replay(self.game, cursor)
+            self._cursor = cursor
         else:
-            for event in self.game.events[self._cursor : cursor]:
+            for index in range(self._cursor, cursor):
+                event = self.game.events[index]
                 self._state = apply_event(self._state, event, self.game)
-        self._cursor = cursor
+                self._cursor = index + 1
+                if self._cursor > self.predictions.high_water:
+                    opened = self.predictions.observe(event, self._state, self._cursor)
+                    if (
+                        opened
+                        and stop_on_prediction
+                        and self.pause_for_predictions
+                        and self._cursor < self.total_events
+                    ):
+                        stopped = True
+                        break
         if self._cursor >= self.total_events:
             self._status = PlaybackStatus.FINISHED
+        return stopped
 
     def _sync(self) -> float:
         now = self._clock()
         self.last_access = now
-        self._advance_to(self._target_cursor(now))
+        playing = self._status is PlaybackStatus.PLAYING
+        if self._advance_to(self._target_cursor(now), stop_on_prediction=playing) and playing:
+            self._status = PlaybackStatus.PAUSED
+            self.pause_reason = "prediction"
         return now
 
     def _reanchor(self, now: float) -> None:
@@ -130,6 +166,7 @@ class ReplaySession:
                 raise InvalidTransition("Replay has finished; restart it to play again.")
             if self._status is not PlaybackStatus.PLAYING:
                 self._status = PlaybackStatus.PLAYING
+                self.pause_reason = None
                 self._reanchor(now)
 
     def pause(self) -> None:
@@ -137,6 +174,7 @@ class ReplaySession:
             self._sync()
             if self._status is PlaybackStatus.PLAYING:
                 self._status = PlaybackStatus.PAUSED
+                self.pause_reason = None
 
     def resume(self) -> None:
         with self._lock:
@@ -147,13 +185,17 @@ class ReplaySession:
                 raise InvalidTransition("Replay hasn't started; use play.")
             if self._status is PlaybackStatus.PAUSED:
                 self._status = PlaybackStatus.PLAYING
+                self.pause_reason = None
                 self._reanchor(now)
 
     def restart(self) -> None:
+        """Back to kickoff. Predictions are NOT reset: the ledger keeps its high-water mark, so no
+        question is re-offered and none open again until the replay passes where it left off."""
         with self._lock:
             now = self._sync()
             self._advance_to(0)
             self._status = PlaybackStatus.READY
+            self.pause_reason = None
             self._reanchor(now)
 
     def step(self, plays: int = 1) -> None:
@@ -166,9 +208,10 @@ class ReplaySession:
                 raise InvalidTransition("Replay has finished; restart it to step again.")
             if self._status is PlaybackStatus.PLAYING:
                 self._status = PlaybackStatus.PAUSED
-            self._advance_to(self._cursor + plays)
+            stopped = self._advance_to(self._cursor + plays, stop_on_prediction=True)
             if self._status is not PlaybackStatus.FINISHED and self._cursor > 0:
                 self._status = PlaybackStatus.PAUSED
+            self.pause_reason = "prediction" if stopped else None
             self._reanchor(now)
 
     def set_speed(self, speed: float) -> None:
@@ -176,6 +219,44 @@ class ReplaySession:
             now = self._sync()
             self._speed = validate_speed(speed)
             self._reanchor(now)
+
+    # -- predictions --------------------------------------------------------
+
+    def submit_prediction(self, prediction_id: str, option_id: str) -> tuple[Answer, bool, bool]:
+        """Atomically: advance to *now*, then validate and record the answer.
+
+        Syncing first means that if the locking play is already due, the prediction locks
+        before the answer is checked — answers can never arrive after the outcome.
+        Returns (answer, created, resumed_playback).
+        """
+        with self._lock:
+            now = self._sync()
+            answer, created = self.predictions.answer(prediction_id, option_id, self._cursor)
+            resumed = False
+            if (
+                created
+                and self._status is PlaybackStatus.PAUSED
+                and self.pause_reason == "prediction"
+                and not self.predictions.unanswered_open(self._cursor)
+            ):
+                self._status = PlaybackStatus.PLAYING
+                self.pause_reason = None
+                self._reanchor(now)
+                resumed = True
+            return answer, created, resumed
+
+    def set_pause_for_predictions(self, enabled: bool) -> None:
+        with self._lock:
+            self._sync()
+            self.pause_for_predictions = enabled
+
+    def locked(self) -> threading.RLock:
+        """The session lock, for building consistent multi-part reads (e.g. prediction reports)."""
+        return self._lock
+
+    @property
+    def cursor(self) -> int:
+        return self._cursor
 
 
 class ReplaySessionManager:
@@ -188,8 +269,8 @@ class ReplaySessionManager:
         self._sessions: dict[str, ReplaySession] = {}
         self._lock = threading.Lock()
 
-    def create(self, game: Game, *, speed: float = 1.0) -> ReplaySession:
-        session = ReplaySession(game, speed=speed, clock=self._clock)
+    def create(self, game: Game, *, speed: float = 1.0, pause_for_predictions: bool = True) -> ReplaySession:
+        session = ReplaySession(game, speed=speed, clock=self._clock, pause_for_predictions=pause_for_predictions)
         with self._lock:
             self._evict()
             if len(self._sessions) >= self._max:

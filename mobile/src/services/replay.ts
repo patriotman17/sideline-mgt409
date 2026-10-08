@@ -84,6 +84,8 @@ export interface ReplaySnapshot {
   game: ReplayGameSummary;
   playback: {
     status: PlaybackStatus;
+    /** True when the server paused playback because a new prediction opened. */
+    paused_for_prediction: boolean;
     speed: number;
     seconds_per_play: number;
     cursor: number;
@@ -324,3 +326,99 @@ export function replayTimeline(snap: ReplaySnapshot): TimelineEvent[] {
     };
   });
 }
+
+
+// ---------------------------------------------------------------- replay predictions (Phase 2D)
+// Mirrors backend/app/predictions/models.py + api/routes/predictions.py. Outcomes, locks and points
+// are decided by the server's deterministic ledger; the app only sends a prediction id + option id.
+
+export type ReplayPredictionType = 'next_play_gain_5' | 'fourth_down_conversion' | 'drive_touchdown' | 'next_score';
+export type ReplayPredictionStatus = 'open' | 'locked' | 'resolved' | 'void';
+export type ReplayPredictionOutcome = 'correct' | 'incorrect' | 'void' | 'pending' | 'unanswered';
+
+export interface ReplayPrediction {
+  id: string;
+  type: ReplayPredictionType;
+  question: string;
+  options: { id: string; label: string }[];
+  points: number;
+  window: string;
+  team: string | null;
+  status: ReplayPredictionStatus;
+  opened_cursor: number;
+  locked_cursor: number | null;
+  resolved_cursor: number | null;
+  correct_option_id: string | null;
+  void_reason: string | null;
+  resolution_summary: string | null;
+  situation: string;
+}
+
+export interface ReplayPredictionItem {
+  prediction: ReplayPrediction;
+  your_answer: string | null;
+  answered_cursor: number | null;
+  outcome: ReplayPredictionOutcome;
+  points_awarded: number;
+  /** Outcome revealed later than the current replay position (after a rewind). */
+  result_hidden_until: number | null;
+}
+
+export interface ReplayPredictionStats {
+  scoring_mode: 'demo';
+  points: number;
+  answered: number;
+  correct: number;
+  incorrect: number;
+  void: number;
+  pending: number;
+  accuracy: number | null;
+  current_streak: number;
+  longest_streak: number;
+}
+
+export interface ReplayPredictions {
+  cursor: number;
+  scoring_mode: 'demo';
+  scoring_note: string;
+  points_table: Record<ReplayPredictionType, number>;
+  pause_for_predictions: boolean;
+  paused_for_prediction: boolean;
+  resumes_after_play: number | null;
+  open: ReplayPredictionItem[];
+  locked: ReplayPredictionItem[];
+  resolved: ReplayPredictionItem[];
+  stats: ReplayPredictionStats;
+}
+
+export interface ReplayPredictionAnswer {
+  answer: { prediction_id: string; option_id: string; answered_cursor: number; answered_at: string };
+  created: boolean;
+  resumed_playback: boolean;
+  item: ReplayPredictionItem;
+}
+
+const PRED = (a: ReplayAuth) => `${BASE}/sessions/${a.sessionId}/predictions`;
+
+export const getReplayPredictions = (a: ReplayAuth) => apiGet<ReplayPredictions>(PRED(a), 6000, auth(a));
+
+/** Lock in an answer. Final once recorded (the same answer again is an idempotent retry). */
+export const answerReplayPrediction = (a: ReplayAuth, predictionId: string, optionId: string) =>
+  apiRequest<ReplayPredictionAnswer>(
+    'POST',
+    `${PRED(a)}/${encodeURIComponent(predictionId)}/answer`,
+    { option_id: optionId },
+    { headers: auth(a) },
+  );
+
+export const setPauseForPredictions = (a: ReplayAuth, enabled: boolean) =>
+  apiRequest<ReplayPredictions>('PUT', `${PRED(a)}/settings`, { pause_for_predictions: enabled }, { headers: auth(a) });
+
+/** Optional AI explanation of a resolved prediction (the outcome itself is deterministic). */
+export const explainReplayPrediction = (a: ReplayAuth, predictionId: string) =>
+  apiRequest<{ prediction_id: string; explanation: string }>(
+    'POST',
+    `${PRED(a)}/${encodeURIComponent(predictionId)}/explain`,
+    undefined,
+    { headers: auth(a), timeoutMs: 45000 },
+  );
