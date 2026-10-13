@@ -96,6 +96,11 @@ class Settings(BaseModel):
     # Supabase accounts (optional). Only the public project URL: login tokens are verified with the
     # project's PUBLIC signing keys (JWKS), so no Supabase secret is ever needed on the backend.
     supabase_url: str | None = None
+    #: Where historical games come from: "local" (committed CSV extracts, the default and the fallback)
+    #: or "supabase" (history.* tables, read with the backend-only sideline_reader role).
+    replay_data_source: str = "local"
+    #: Postgres connection string for the read-only sideline_reader role. Backend-only secret.
+    supabase_db_url: SecretStr | None = None
 
     @property
     def auth_configured(self) -> bool:
@@ -140,6 +145,8 @@ class Settings(BaseModel):
             ai_history_turns=_int("AI_HISTORY_TURNS", 6),
             ai_history_max_chars=_int("AI_HISTORY_MAX_CHARS", 3000),
             supabase_url=os.getenv("SUPABASE_URL", "").strip() or None,
+            replay_data_source=(os.getenv("REPLAY_DATA_SOURCE", "local").strip().lower() or "local"),
+            supabase_db_url=_optional_secret("SUPABASE_DB_URL"),
         )
 
 

@@ -1,5 +1,11 @@
 """Fixtures shared across test packages."""
 
+import os
+
+# Tests never touch the network or a developer's databases: always use the committed local extracts,
+# whatever backend/.env says. (Process env wins over .env files; see app/core/config.py.)
+os.environ["REPLAY_DATA_SOURCE"] = "local"
+
 import pytest
 from fastapi.testclient import TestClient
 

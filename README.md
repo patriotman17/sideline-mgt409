@@ -318,6 +318,26 @@ can't see any account table.
 - **For quick testing**, create a confirmed account in the dashboard (Authentication → Users → Add user
   → Auto Confirm User) and log in with it.
 
+## Historical data source (local or Supabase)
+
+By default the backend reads the committed nflverse extracts in `backend/data/nflverse/`. That needs no
+setup and is what graders use. Optionally the same data can live in Supabase:
+
+1. Apply the migrations (`npx supabase db push --linked`), which create a private `history` schema that
+   app users can't query, plus a read-only `sideline_reader` role.
+2. Import: `cd backend && .venv/bin/python scripts/import_history_to_supabase.py --season 2025 --week 5`
+   (add `--verify` to re-check every row against the local files).
+3. In the Supabase SQL editor, give the reader a password you choose:
+   `alter role sideline_reader with login password '…';`
+4. In `backend/.env`: `REPLAY_DATA_SOURCE=supabase` and
+   `SUPABASE_DB_URL=postgresql://sideline_reader.<project-ref>:<password>@<pooler-host>:5432/postgres`
+   (pooler host from the dashboard's **Connect** panel).
+
+Switch back any time with `REPLAY_DATA_SOURCE=local`. Games that are only in the local folder (not
+imported yet) still appear, and if Supabase can't be read the backend falls back to the local files
+automatically. Either way, game facts are computed by the same replay engine, and the
+app only receives what the replay has revealed.
+
 ## Data disclaimer
 
 Everything under `mobile/src/data/mock/` is fabricated for development: scores, stats, odds,

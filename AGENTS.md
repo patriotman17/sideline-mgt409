@@ -194,7 +194,22 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
   Thursday/Sunday/Monday tabs (follow the clock until tapped), your teams pinned (#1 first), TV-window
   sections via `lib/week.ts` (`toScoreGame`, `weekSections`; unit-tested), and the tab badge = live games.
   The fabricated mock games no longer appear on Scores (other tabs still use labeled sample data).
-  Classic 2023 playoff replays stay at the bottom. Still to do: the optional Supabase-backed dataset.
+  Classic 2023 playoff replays stay at the bottom.
+- **Historical data in Supabase (optional source):** migration `20261016000000_historical_nfl_data.sql`
+  creates a private **`history`** schema (not in the API's exposed schemas): `history.games` (schedule +
+  full nflverse provenance + `rows_sha256`) and `history.plays` (`(game_id, row_index)` PK, `row` jsonb =
+  the original extract row). RLS on both; **no grants to anon/authenticated**; the only access is SELECT
+  for the **`sideline_reader`** role (NOLOGIN in the migration; the owner sets its password privately).
+  Import: `scripts/import_history_to_supabase.py --season 2025 --week 5` (Supabase CLI as owner, one
+  transaction per game, refuses games with warnings, `--verify` re-reads every row, compares hashes and
+  rebuilds the engine events). Backend: `REPLAY_DATA_SOURCE=supabase` + `SUPABASE_DB_URL` (reader
+  connection string) → `catalog.build_catalog` loads games via `history_db` (parameterized psycopg,
+  read-only transaction, checksum re-check) and runs the **same** `build_game`; games that exist only
+  locally (e.g. the 2023 classics, not imported) are kept (`source="supabase+local"`); any failure logs
+  only the exception type and **falls back to local CSVs** (default), so guests and graders need nothing
+  extra. Tests always force `REPLAY_DATA_SOURCE=local` (`tests/conftest.py`), so they never touch a
+  database.
+  Clients never query `history.*` (that would leak future plays); they only get engine state via the API.
 - **Data license:** nflverse data is CC BY 4.0 — keep the attribution visible wherever it's shown.
 - **Session tokens:** `POST /sessions` returns `session_token` once; every other session request needs
   `X-Session-Token`. Only a SHA-256 hash is stored; bad token and unknown session both return 404.

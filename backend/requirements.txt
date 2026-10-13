@@ -4,4 +4,5 @@ pydantic-ai-slim[openai]
 python-dotenv
 httpx
 pyjwt[crypto]
+psycopg[binary]
 pytest
