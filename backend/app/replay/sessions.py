@@ -63,6 +63,7 @@ class ReplaySession:
         session_id: str | None = None,
         pause_for_predictions: bool = False,
         prediction_config: PredictionConfig = DEFAULT_CONFIG,
+        start_cursor: int = 0,
     ):
         self.id = session_id or uuid.uuid4().hex
         #: Secret returned once at creation; only its hash is kept. Required for every session request.
@@ -89,6 +90,14 @@ class ReplaySession:
         self._cursor = 0
         self._state = initial_state(game)
         self.last_access = clock()
+        if start_cursor > 0:
+            # Joined mid-game (e.g. from the synchronized week): reveal everything up to here at once,
+            # paused. Earlier questions were never answerable, so Picks hides them (``visible_from``).
+            self._advance_to(start_cursor)
+            self.predictions.visible_from = self._cursor
+            if self._status is not PlaybackStatus.FINISHED:
+                self._status = PlaybackStatus.PAUSED
+            self._reanchor(clock())
 
     def check_token(self, token: str | None) -> bool:
         if not token:
@@ -296,13 +305,16 @@ class ReplaySessionManager:
         self._sessions: dict[str, ReplaySession] = {}
         self._lock = threading.Lock()
 
-    def create(self, game: Game, *, speed: float = 1.0, pause_for_predictions: bool = False) -> ReplaySession:
+    def create(
+        self, game: Game, *, speed: float = 1.0, pause_for_predictions: bool = False, start_cursor: int = 0
+    ) -> ReplaySession:
         session = ReplaySession(
             game,
             speed=speed,
             clock=self._clock,
             pause_for_predictions=pause_for_predictions,
             prediction_config=self._prediction_config,
+            start_cursor=start_cursor,
         )
         with self._lock:
             self._evict()

@@ -176,8 +176,25 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
 - **2025 Week 5 (classic week, in progress):** all 14 games extracted (2,454 rows, ~1 MB), 0 ingestion
   warnings, engine finals match nflverse, and every player's pass/rush/receiving yards match nflverse's
   independent yardage columns (`tests/replay/test_week5_2025.py`, golden file in `tests/replay/data/`).
-  They already appear in the replay list. Still to do: the Classic Week screen (Thu/Sun/Mon grouping),
-  the optional Supabase-backed dataset, and the synchronized-week proposal.
+  Extracts also include `time_of_day` (the real UTC time of each play; it describes only that play).
+- **Synchronized week** (`app/replay/week.py`, `api/routes/week.py` → `/api/v1/week/*`): one simulated
+  clock over every game of a week. `GameTimeline` maps clock time → cursor (`bisect` over per-play times;
+  marker rows inherit the previous time, times never run backwards), and state comes from the same pure
+  `replay()`. `WeekSlate` groups games into TV windows from the listed kickoff (actual kickoff floored to
+  5 min, ET): Thursday Night, Sunday · London (neutral site), 1:00 PM, 4:05 & 4:25 PM, Sunday Night,
+  Monday Night; presets jump 5 min before each window. `WeekSession` = per-viewer clock (paused at start,
+  speeds 1/10/60/300×, seek/clamp, finishes at the end), token-protected like replays (bad token = 404).
+  **No leakage:** scheduled games return no score/period; finals only once the clock reaches the last
+  play; the clock's upper bound is last kickoff + 4h30 (an estimate, never a real end time). Opening a
+  game from the week creates a replay with `start_cursor` (revealed at once, paused);
+  `PredictionLedger.visible_from` hides questions from before the join. Only weeks whose games all have
+  per-play times appear (`slates_from`; today: 2025 Week 5).
+- **Mobile Scores = the real week:** `state/WeekContext` (one in-memory week session, polled 1 s while
+  playing) → `(tabs)/index.tsx` with `WeekClock` (simulated ET time, play/pause, speeds, jump-to),
+  Thursday/Sunday/Monday tabs (follow the clock until tapped), your teams pinned (#1 first), TV-window
+  sections via `lib/week.ts` (`toScoreGame`, `weekSections`; unit-tested), and the tab badge = live games.
+  The fabricated mock games no longer appear on Scores (other tabs still use labeled sample data).
+  Classic 2023 playoff replays stay at the bottom. Still to do: the optional Supabase-backed dataset.
 - **Data license:** nflverse data is CC BY 4.0 — keep the attribution visible wherever it's shown.
 - **Session tokens:** `POST /sessions` returns `session_token` once; every other session request needs
   `X-Session-Token`. Only a SHA-256 hash is stored; bad token and unknown session both return 404.

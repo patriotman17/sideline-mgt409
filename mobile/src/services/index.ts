@@ -9,3 +9,4 @@ export * from './social';
 export * from './teams';
 export * from './replay';
 export * from './account';
+export * from './week';

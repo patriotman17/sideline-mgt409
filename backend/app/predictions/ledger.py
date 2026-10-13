@@ -35,6 +35,8 @@ class PredictionLedger:
         self._answers: dict[str, Answer] = {}
         self._resolution_order: list[str] = []
         self.high_water = 0
+        #: Questions opened before this play are hidden (the viewer joined mid-game and never saw them).
+        self.visible_from = 0
         self._last_snap: PlayEvent | None = None
         #: Pacing state — all derived from plays already revealed, so ranking stays deterministic.
         self._snaps = 0
@@ -211,6 +213,8 @@ def visible_items(ledger: PredictionLedger, cursor: int) -> list[PredictionItem]
     for p in reversed(ledger.all()):
         if p.opened_cursor > cursor:
             continue  # opened later in the game than the current position
+        if p.opened_cursor < ledger.visible_from:
+            continue  # before the viewer joined this game
         a = ledger.answer_for(p.id)
         revealed_at = p.resolved_cursor if p.resolved_cursor is not None else p.locked_cursor
         if revealed_at is not None and revealed_at > cursor:

@@ -1,6 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { countLiveGames } from '@/services';
+import { useWeek } from '@/state/WeekContext';
 import { colors } from '@/theme';
 
 /**
@@ -10,9 +10,9 @@ import { colors } from '@/theme';
  * Automatic content insets are disabled so screens control their own safe-area
  * padding (see components/ui/Screen.tsx), keeping spacing identical across platforms.
  */
-const LIVE_COUNT = countLiveGames();
-
 export default function TabsLayout() {
+  // Live games in the synchronized week (real data, revealed by the shared clock).
+  const LIVE_COUNT = useWeek().snapshot?.live_games ?? 0;
   return (
     <NativeTabs tintColor={colors.volt} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index" disableAutomaticContentInsets>

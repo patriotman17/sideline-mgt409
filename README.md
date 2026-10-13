@@ -102,6 +102,13 @@ npx expo-doctor       # dependency / config health
 
 ## What's in the app
 
+**Scores is the real 2025 Week 5.** One simulated clock replays the whole week the way it happened:
+Thursday night, the London morning game, six overlapping 1 PM games, the 4 PM games, Sunday and Monday
+night. Press play (1×–300×) or jump to a window; games go live, score and finish exactly as they did,
+and nothing is shown before the clock reaches it. Tap any game to watch it from that moment with Ask
+Sideline, Insights and Picks. Data: nflverse play-by-play (CC BY 4.0), including the real time of
+every play.
+
 - **Scores** — Yesterday / Today / Upcoming, team-color score rows, featured game for your team, and **Classic replays** (real historical games, needs the backend)
 - **Picks** — free-to-play picks (Live / My picks / Results) and your record
 - **Party** — watch-party room with the game's score row, reactions, and chat

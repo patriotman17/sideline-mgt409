@@ -1,154 +1,143 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { DayTabs, FeaturedGame, ReplayRow, ScoreRow, type ScoreDay } from '@/components/scores';
-import { Avatar, EmptyState, Screen, Skeleton } from '@/components/ui';
+import { DayTabs, ReplayRow, ScoreRow, WeekClock } from '@/components/scores';
+import { Avatar, Button, EmptyState, Screen, Skeleton } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
-import { splitKickoff } from '@/lib/format';
-import { getTeam, listGamesByDay, listMostRecentFinals, listReplayGames } from '@/services';
+import { WEEK_DAYS, dayOfClock, toScoreGame, weekSections, type WeekDay } from '@/lib/week';
+import { getTeam, listReplayGames } from '@/services';
+import type { WeekGame } from '@/services/week';
 import { usePersonalization } from '@/state/usePersonalization';
+import { useWeek } from '@/state/WeekContext';
 import { colors, withAlpha } from '@/theme';
-import type { Game } from '@/types';
-
-interface Section {
-  key: string;
-  title: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-  games: Game[];
-}
-
-const involves = (g: Game, teamIds: string[]) => teamIds.includes(g.away.teamId) || teamIds.includes(g.home.teamId);
-
-/** Group a day's games Apple Sports–style: your teams first, then by state. */
-function buildSections(day: ScoreDay, games: Game[], favoriteIds: string[], excludeId?: string): Section[] {
-  const pool = games.filter((g) => g.id !== excludeId);
-  // Your teams first, your #1 team (favoriteIds[0]) at the very top.
-  const primary = favoriteIds.slice(0, 1);
-  const mine = pool
-    .filter((g) => involves(g, favoriteIds))
-    .sort((a, b) => Number(involves(b, primary)) - Number(involves(a, primary)));
-  const rest = pool.filter((g) => !involves(g, favoriteIds));
-  const sections: Section[] = [];
-  if (mine.length) sections.push({ key: 'mine', title: 'Your teams', icon: 'star', games: mine });
-
-  if (day === 'upcoming') {
-    // Group by weekday, preserving schedule order.
-    const byDay = new Map<string, Game[]>();
-    rest.forEach((g) => {
-      const label = splitKickoff(g.kickoffLabel).day;
-      byDay.set(label, [...(byDay.get(label) ?? []), g]);
-    });
-    byDay.forEach((list, label) => sections.push({ key: label, title: label, games: list }));
-    return sections;
-  }
-
-  const live = rest.filter((g) => g.status === 'live');
-  const final = rest.filter((g) => g.status === 'final');
-  const later = rest.filter((g) => g.status === 'scheduled');
-  if (live.length) sections.push({ key: 'live', title: 'Live', games: live });
-  if (final.length) sections.push({ key: 'final', title: 'Final', games: final });
-  if (later.length) sections.push({ key: 'later', title: 'Later today', games: later });
-  return sections;
-}
 
 function SectionLabel({ title, icon }: { title: string; icon?: keyof typeof Ionicons.glyphMap }) {
   return (
-    <View className="mb-2 mt-5 flex-row items-center gap-1.5 px-5">
+    <View className="mb-2 mt-6 flex-row items-center gap-1.5 px-5">
       {icon ? <Ionicons name={icon} size={12} color={colors.sub} /> : null}
       <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-sub">{title}</Text>
     </View>
   );
 }
 
+/**
+ * Scores is the real 2025 Week 5, on one shared simulated clock (backend replay engine, nflverse
+ * data). Games go live and score exactly as they did; nothing is shown before the clock reaches it.
+ * Tapping a game opens its replay at the current moment.
+ */
 export default function ScoresScreen() {
   const { favoriteTeamIds, initials } = usePersonalization();
-  const [day, setDay] = useState<ScoreDay>('today');
-  const { data, loading, reload } = useAsync(
-    async () => ({
-      games: await listGamesByDay(day),
-      recent: day === 'yesterday' ? await listMostRecentFinals() : [],
-    }),
-    [day],
-  );
-
-  // Real historical games from the backend replay engine; hidden if the backend is offline.
+  const week = useWeek();
+  const { ensure } = week;
+  // null = follow the clock's day; a tap pins a day.
+  const [pinnedDay, setPinnedDay] = useState<WeekDay | null>(null);
   const { data: replays } = useAsync(listReplayGames);
-  const favoriteIds = favoriteTeamIds;
-  const games = data?.games ?? [];
-  const hero = day === 'today' ? games.find((g) => g.status === 'live' && involves(g, favoriteIds)) : undefined;
-  const sections = buildSections(day, games, favoriteIds, hero?.id);
-  const tint = favoriteIds.length ? getTeam(favoriteIds[0]).primary : colors.surface;
+
+  useEffect(() => {
+    ensure();
+  }, [ensure]);
+
+  const snap = week.snapshot;
+  const day = pinnedDay ?? (snap ? dayOfClock(snap.sim_time_label) : 'sun');
+  const sections = snap ? weekSections(snap.games, day, favoriteTeamIds) : [];
+  const weekIds = new Set(snap?.games.map((g) => g.game_id));
+  const classics =
+    replays?.filter((g) => !weekIds.has(g.game_id) && !g.game_id.startsWith('2025_05_')) ?? [];
+  const tint = favoriteTeamIds.length ? getTeam(favoriteTeamIds[0]).primary : colors.surface;
+
+  const open = (g: WeekGame) =>
+    router.push({
+      pathname: '/replay/[gameId]',
+      params: { gameId: g.game_id, ...(g.cursor > 0 ? { startCursor: String(g.cursor) } : {}) },
+    });
 
   return (
     <Screen
-      onRefresh={reload}
-      refreshing={loading && !!data}
       background={
-        <LinearGradient colors={[withAlpha(tint, 0.55), withAlpha(tint, 0)]} style={{ height: 340 }} />
+        <LinearGradient
+          colors={[withAlpha(tint, 0.55), withAlpha(tint, 0)]}
+          style={{ height: 340 }}
+        />
       }
     >
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pb-1 pt-2">
         <Text className="text-[15px] font-extrabold tracking-[6px] text-ink">SIDELINE</Text>
-        <Pressable onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel="Open your profile" hitSlop={8}>
+        <Pressable
+          onPress={() => router.push('/profile')}
+          accessibilityRole="button"
+          accessibilityLabel="Open your profile"
+          hitSlop={8}
+        >
           <Avatar initials={initials} color={colors.volt} size={32} />
         </Pressable>
       </View>
 
-      <DayTabs value={day} onChange={setDay} />
-      <Text className="mb-1 text-center text-[11px] text-mute">NFL · Week 5 · Sample data</Text>
-
-      {!data ? (
+      {week.error && !snap ? (
+        <EmptyState
+          icon="cloud-offline-outline"
+          title="Week 5 is unavailable"
+          body={`${week.error} Make sure the Sideline backend is running.`}
+        >
+          <Button label="Try again" onPress={week.retry} />
+        </EmptyState>
+      ) : !snap ? (
         <View className="mt-4 gap-2 px-3">
-          {[0, 1, 2, 3].map((i) => (
+          <Skeleton className="h-52 rounded-2xl" />
+          {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[78px]" />
           ))}
         </View>
       ) : (
         <>
-          {hero ? (
-            <View className="mt-3">
-              <FeaturedGame game={hero} />
-            </View>
-          ) : null}
+          <WeekClock
+            week={snap}
+            busy={week.busy}
+            onPlay={week.play}
+            onPause={week.pause}
+            onSpeed={week.setSpeed}
+            onJump={(preset) => {
+              setPinnedDay(null); // follow the clock to the new day
+              week.jumpTo(preset);
+            }}
+          />
+
+          <View className="mt-4">
+            <DayTabs<WeekDay> days={WEEK_DAYS} value={day} onChange={setPinnedDay} />
+          </View>
 
           {sections.map((s) => (
             <View key={s.key}>
               <SectionLabel title={s.title} icon={s.icon} />
               {s.games.map((g) => (
-                <ScoreRow key={g.id} game={g} />
+                <ScoreRow
+                  key={g.game_id}
+                  game={toScoreGame(g)}
+                  showRecords={false}
+                  onPress={() => open(g)}
+                />
               ))}
             </View>
           ))}
 
-          {day === 'yesterday' && games.length === 0 ? (
-            <>
-              <EmptyState icon="calendar-outline" title="No NFL games yesterday" body="Here’s the most recent result." />
-              <SectionLabel title="Thursday Night Football" />
-              {data.recent.map((g) => (
-                <ScoreRow key={g.id} game={g} />
-              ))}
-            </>
-          ) : null}
-
-          {day === 'today' && replays?.length ? (
-            <View>
-              <SectionLabel title="Classic replays" icon="play-circle" />
-              {replays.map((g) => (
-                <ReplayRow key={g.game_id} game={g} />
-              ))}
-              <Text className="mt-1 px-5 text-[11px] text-mute">Real play-by-play from nflverse (CC BY 4.0), replayed play by play.</Text>
-            </View>
-          ) : null}
-
-          {day !== 'yesterday' && sections.length === 0 && !hero ? (
-            <EmptyState icon="american-football-outline" title="No games scheduled" body="Check another day for the full slate." />
-          ) : null}
+          <Text className="mx-5 mt-3 text-center text-[11px] leading-4 text-mute">
+            {snap.attribution} Tap a game to watch it from this moment, with Ask Sideline, Insights
+            and Picks.
+          </Text>
         </>
       )}
+
+      {classics.length ? (
+        <View>
+          <SectionLabel title="Classic replays" icon="play-circle" />
+          {classics.map((g) => (
+            <ReplayRow key={g.game_id} game={g} />
+          ))}
+        </View>
+      ) : null}
     </Screen>
   );
 }

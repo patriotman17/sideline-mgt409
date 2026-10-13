@@ -17,7 +17,9 @@ import csv
 import json
 import re
 from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from app.replay.models import (
     POINTS,
@@ -67,6 +69,30 @@ def _float(row: Row, key: str) -> float | None:
         return float(value)
     except ValueError:
         return None
+
+
+def _utc(row: Row, key: str) -> datetime | None:
+    """ISO-8601 UTC timestamp ("2025-10-05T17:02:36.833Z") or None."""
+    raw = _str(row, key)
+    if not raw:
+        return None
+    try:
+        value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
+def _kickoff_from_start_time(row: Row) -> datetime | None:
+    """nflverse ``start_time`` ("10/5/25, 13:03:02") is the actual kickoff in US Eastern time."""
+    raw = _str(row, "start_time")
+    if not raw:
+        return None
+    try:
+        local = datetime.strptime(raw, "%m/%d/%y, %H:%M:%S").replace(tzinfo=ZoneInfo("America/New_York"))
+    except ValueError:
+        return None
+    return local.astimezone(UTC)
 
 
 def _int(row: Row, key: str) -> int | None:
@@ -300,6 +326,7 @@ def normalize_rows(rows: list[Row]) -> list[PlayEvent]:
             PlayEvent(
                 sequence=i,
                 source_play_id=_int(row, "play_id"),
+                occurred_at=_utc(row, "time_of_day"),
                 kind=kind,
                 quarter=_int(row, "qtr") or (events[-1].quarter if events else 1),
                 clock_seconds=_clock_seconds(row),
@@ -355,8 +382,11 @@ def build_game(rows: list[Row], provenance: Provenance) -> Game:
         roof=_str(first, "roof"),
         spread_line=_float(first, "spread_line"),
         total_line=_float(first, "total_line"),
+        neutral_site=_str(first, "location") == "Neutral",
     )
     events = tuple(normalize_rows(rows))
+    first_play_time = next((e.occurred_at for e in events if e.occurred_at), None)
+    info = info.model_copy(update={"kickoff_at": first_play_time or _kickoff_from_start_time(first)})
     game = Game(
         info=info,
         events=events,

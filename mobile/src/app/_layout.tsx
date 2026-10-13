@@ -17,6 +17,7 @@ import { LaunchScreen } from '@/components/auth';
 import { Button } from '@/components/ui';
 import { AppStoreProvider } from '@/state/AppStore';
 import { AuthProvider, useAuth } from '@/state/AuthContext';
+import { WeekProvider } from '@/state/WeekContext';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -48,10 +49,12 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={navTheme}>
         <AuthProvider>
-          <PerUserAppStore>
-            <StatusBar style="light" />
-            <RootNavigator />
-          </PerUserAppStore>
+          <WeekProvider>
+            <PerUserAppStore>
+              <StatusBar style="light" />
+              <RootNavigator />
+            </PerUserAppStore>
+          </WeekProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

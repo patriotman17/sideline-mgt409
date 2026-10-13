@@ -6,7 +6,9 @@ ATTRIBUTION = "Play-by-play data from nflverse (nflfastR / nflverse-data), CC BY
 
 #: Schedule metadata, extracted when the source has it (older extracts don't, and still load).
 #: ``start_time`` is the actual kickoff in US Eastern time; ``location`` is "Home" or "Neutral".
-OPTIONAL_COLUMNS = ["start_time", "location"]
+#: ``time_of_day`` is the real UTC time the play happened (it describes *that* play only, never a later
+#: outcome); it drives the synchronized week clock. Marker rows (game start, quarter ends) leave it blank.
+OPTIONAL_COLUMNS = ["start_time", "location", "time_of_day"]
 
 # Only the columns the ingestion pipeline reads (see app/replay/ingest.py).
 COLUMNS = [

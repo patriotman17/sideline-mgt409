@@ -19,7 +19,7 @@ const POLL_MS = 1000;
  * Owns one backend replay session for a game: creates it on mount, polls while
  * playing, exposes playback controls, and deletes the session on unmount.
  */
-export function useReplaySession(gameId: string) {
+export function useReplaySession(gameId: string, startCursor = 0) {
   const [snapshot, setSnapshot] = useState<ReplaySnapshot>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -31,7 +31,7 @@ export function useReplaySession(gameId: string) {
   // Create (and later clean up) the session.
   useEffect(() => {
     let active = true;
-    startReplay(gameId).then(
+    startReplay(gameId, 1, startCursor).then(
       ({ session_token, ...snap }) => {
         const created = { sessionId: snap.session_id, token: session_token };
         if (!active) {
@@ -51,7 +51,7 @@ export function useReplaySession(gameId: string) {
       sessionRef.current = null;
       if (current) endReplay(current).catch(() => {});
     };
-  }, [gameId, attempt]);
+  }, [gameId, startCursor, attempt]);
 
   // Poll while playing.
   const playing = snapshot?.playback.status === 'playing';

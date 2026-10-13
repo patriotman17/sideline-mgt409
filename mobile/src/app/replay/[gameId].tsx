@@ -69,8 +69,10 @@ function ControlButton({
 }
 
 export default function ReplayScreen() {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
-  const { snapshot, auth, error, busy, control, setSpeed, retry, refresh } = useReplaySession(gameId);
+  const { gameId, startCursor } = useLocalSearchParams<{ gameId: string; startCursor?: string }>();
+  // Opened from a live game in the synchronized week: join at that moment.
+  const joinAt = Math.max(0, Number.parseInt(startCursor ?? '0', 10) || 0);
+  const { snapshot, auth, error, busy, control, setSpeed, retry, refresh } = useReplaySession(gameId, joinAt);
   const [tab, setTab] = useState<ReplayTab>('plays');
   const { aiPreferences } = usePersonalization();
   const knowledge = aiPreferences?.knowledgeLevel;

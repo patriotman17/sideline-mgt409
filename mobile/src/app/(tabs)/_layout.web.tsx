@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router/js-tabs';
 import type { ColorValue } from 'react-native';
 
-import { countLiveGames } from '@/services';
+import { useWeek } from '@/state/WeekContext';
 import { colors } from '@/theme';
 
 /** Web fallback: native tabs have no system tab bar on web, so use a styled JS tab bar. */
@@ -16,6 +16,7 @@ function tabIcon(name: IconName, activeName: IconName) {
 }
 
 export default function WebTabsLayout() {
+  const liveCount = useWeek().snapshot?.live_games ?? 0;
   return (
     <Tabs
       screenOptions={{
@@ -29,7 +30,7 @@ export default function WebTabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Scores', tabBarIcon: tabIcon('american-football-outline', 'american-football'), tabBarBadge: countLiveGames() || undefined }}
+        options={{ title: 'Scores', tabBarIcon: tabIcon('american-football-outline', 'american-football'), tabBarBadge: liveCount || undefined }}
       />
       <Tabs.Screen name="picks" options={{ title: 'Picks', tabBarIcon: tabIcon('stats-chart-outline', 'stats-chart') }} />
       <Tabs.Screen name="party" options={{ title: 'Party', tabBarIcon: tabIcon('people-outline', 'people') }} />

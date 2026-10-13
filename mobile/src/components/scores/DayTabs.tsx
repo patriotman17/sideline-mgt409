@@ -11,11 +11,20 @@ const DAYS: { value: ScoreDay; label: string }[] = [
 ];
 
 /** Apple Sports–style text tabs: weight and color carry the selection, no pills. */
-export function DayTabs({ value, onChange }: { value: ScoreDay; onChange: (day: ScoreDay) => void }) {
+export function DayTabs<T extends string = ScoreDay>({
+  value,
+  onChange,
+  days = DAYS as unknown as { value: T; label: string }[],
+}: {
+  value: T;
+  onChange: (day: T) => void;
+  /** Defaults to Yesterday / Today / Upcoming. */
+  days?: { value: T; label: string }[];
+}) {
   const { tap } = useHaptics();
   return (
     <View className="flex-row justify-around px-6" accessibilityRole="tablist">
-      {DAYS.map((d) => {
+      {days.map((d) => {
         const active = d.value === value;
         return (
           <Pressable

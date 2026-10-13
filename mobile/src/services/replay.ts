@@ -114,8 +114,14 @@ const BASE = '/api/v1/replay';
 const auth = (a: ReplayAuth) => ({ 'X-Session-Token': a.token });
 
 export const listReplayGames = () => apiGet<ReplayGameSummary[]>(`${BASE}/games`);
-export const startReplay = (gameId: string, speed = 1) =>
-  apiRequest<CreatedReplaySession>('POST', `${BASE}/sessions`, { game_id: gameId, speed, autoplay: false });
+/** `startCursor` > 0 joins mid-game (from the synchronized week): earlier plays are revealed, paused. */
+export const startReplay = (gameId: string, speed = 1, startCursor = 0) =>
+  apiRequest<CreatedReplaySession>('POST', `${BASE}/sessions`, {
+    game_id: gameId,
+    speed,
+    autoplay: false,
+    ...(startCursor > 0 ? { start_cursor: startCursor } : {}),
+  });
 export const getReplay = (a: ReplayAuth) => apiGet<ReplaySnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));
 export const controlReplay = (a: ReplayAuth, action: ReplayControl) =>
   apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions/${a.sessionId}/${action}`, undefined, { headers: auth(a) });

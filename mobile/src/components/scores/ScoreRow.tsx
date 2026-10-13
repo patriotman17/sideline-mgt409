@@ -46,7 +46,7 @@ function Center({ game, hideScore }: { game: Game; hideScore: boolean }) {
   if (game.status === 'live') {
     return (
       <>
-        <Text className="text-[11px] font-medium text-mute">NFL · {game.network}</Text>
+        <Text className="text-[11px] font-medium text-mute">{game.network ? `NFL · ${game.network}` : 'NFL'}</Text>
         <View className="mt-0.5 flex-row items-center gap-1.5">
           <LiveDot />
           <Text className="font-score-bold text-[19px] text-ink" numberOfLines={1}>
@@ -69,7 +69,7 @@ function Center({ game, hideScore }: { game: Game; hideScore: boolean }) {
   const { time } = splitKickoff(game.kickoffLabel);
   return (
     <>
-      <Text className="text-[11px] font-medium text-mute">NFL · {game.network}</Text>
+      <Text className="text-[11px] font-medium text-mute">{game.network ? `NFL · ${game.network}` : 'NFL'}</Text>
       <Text className="mt-0.5 font-score-bold text-[20px] text-ink">{time}</Text>
       <Text className="text-[11px] text-mute">{game.spread}</Text>
     </>
@@ -80,7 +80,15 @@ function Center({ game, hideScore }: { game: Game; hideScore: boolean }) {
  * One game in the scoreboard. The background blends from the away team's color
  * to the home team's, so a matchup is recognizable before you read it.
  */
-export function ScoreRow({ game }: { game: Game }) {
+interface ScoreRowProps {
+  game: Game;
+  /** Defaults to the game sheet. The synchronized week opens the game's real replay instead. */
+  onPress?: () => void;
+  /** Team records for scheduled games (sample data has them; real historical weeks don't). */
+  showRecords?: boolean;
+}
+
+export function ScoreRow({ game, onPress, showRecords = true }: ScoreRowProps) {
   const { favoriteTeamIds, spoilerShield } = usePersonalization();
   const away = getTeam(game.away.teamId);
   const home = getTeam(game.home.teamId);
@@ -92,7 +100,7 @@ export function ScoreRow({ game }: { game: Game }) {
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
+      onPress={onPress ?? (() => router.push({ pathname: '/game/[id]', params: { id: game.id } }))}
       accessibilityRole="button"
       accessibilityLabel={`${away.name} ${scheduled ? '' : game.away.score} at ${home.name} ${scheduled ? '' : game.home.score}`}
       className="mx-3 mb-2 overflow-hidden rounded-2xl active:opacity-80"
@@ -107,7 +115,7 @@ export function ScoreRow({ game }: { game: Game }) {
       <View className="flex-row items-center px-2 py-2.5">
         <Side game={game} side="away" favorite={fav(away.id)} />
         {scheduled ? (
-          <Text className="w-[46px] text-center font-cond text-[15px] text-sub">{away.record}</Text>
+          <Text className="w-[46px] text-center font-cond text-[15px] text-sub">{showRecords ? away.record : ''}</Text>
         ) : (
           <Score value={game.away.score} dim={awayLost} hidden={hideScore} />
         )}
@@ -115,7 +123,7 @@ export function ScoreRow({ game }: { game: Game }) {
           <Center game={game} hideScore={hideScore} />
         </View>
         {scheduled ? (
-          <Text className="w-[46px] text-center font-cond text-[15px] text-sub">{home.record}</Text>
+          <Text className="w-[46px] text-center font-cond text-[15px] text-sub">{showRecords ? home.record : ''}</Text>
         ) : (
           <Score value={game.home.score} dim={homeLost} hidden={hideScore} />
         )}

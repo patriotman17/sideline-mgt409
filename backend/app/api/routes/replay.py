@@ -117,6 +117,8 @@ class CreateSessionRequest(BaseModel):
     autoplay: bool = False
     #: Opt-in: pause playback when a new prediction opens (default: a short pick window instead).
     pause_for_predictions: bool = False
+    #: Start part-way through (joining a game from the synchronized week): plays revealed at once, paused.
+    start_cursor: int = Field(default=0, ge=0)
 
 
 class SpeedRequest(BaseModel):
@@ -214,7 +216,12 @@ def create_session(body: CreateSessionRequest, catalog: CatalogDep, manager: Man
     game = catalog.get(body.game_id)
     if game is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Unknown game: {body.game_id}")
-    session = manager.create(game, speed=body.speed, pause_for_predictions=body.pause_for_predictions)
+    session = manager.create(
+        game,
+        speed=body.speed,
+        pause_for_predictions=body.pause_for_predictions,
+        start_cursor=min(body.start_cursor, len(game.events)),
+    )
     if body.autoplay:
         session.play()
     return CreatedSession(**snapshot(session).model_dump(), session_token=session.token)

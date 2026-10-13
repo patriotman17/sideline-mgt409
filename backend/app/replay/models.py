@@ -6,6 +6,7 @@ play-by-play values stay ``None`` rather than being invented.
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -138,6 +139,9 @@ class PlayEvent(Frozen):
 
     sequence: int
     source_play_id: int | None = None
+    #: Real UTC time this play happened (nflverse ``time_of_day``); drives the synchronized week clock.
+    #: Describes only this play. None for marker rows / older extracts.
+    occurred_at: datetime | None = None
     kind: PlayKind
     quarter: int
     clock_seconds: int | None = None
@@ -188,6 +192,10 @@ class GameInfo(Frozen):
     #: nflverse closing spread: positive means the home team was favored.
     spread_line: float | None = None
     total_line: float | None = None
+    #: Actual kickoff (UTC): the first timestamped play, else ``start_time``. Schedule info, known in advance.
+    kickoff_at: datetime | None = None
+    #: Played at a neutral site (e.g. the London games).
+    neutral_site: bool = False
 
 
 class Game(Frozen):
