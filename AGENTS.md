@@ -4,8 +4,10 @@ Guidance for humans and AI coding agents working in this repo.
 
 Sideline is an AI-powered mobile companion for watching live NFL games:
 live scores, play timelines, AI insights, predictions, AI chat, and watch parties.
-It is a standalone consumer product, unrelated to any coursework repo. Don't copy
-code, config, or credentials in from elsewhere.
+This repo is the **MGT 409 (AI Foundations for Managers) final project** submission of Sideline,
+a consumer product that is also being developed independently in a separate private repo. Course
+deliverables (report, slides, hosting on Render) live here. Don't copy code, config, or credentials
+in from other coursework or homework repos.
 
 ## Repo layout
 
@@ -81,7 +83,11 @@ Sideline/
 ## Env loading (backend)
 
 Precedence, highest first; existing values are never overwritten:
-1. Process environment → 2. `backend/.env` → 3. repo-root `.env`
+1. Process environment → 2. `backend/.env` → 3. repo-root `.env` → 4. `.env` one folder **above** the repo
+
+(4) is a course requirement: the app must find `.env` in the repo folder first, then one folder up, so the
+key can live outside the clone. `tests/test_config.py` covers the order. On Render, keys are set as
+environment variables in the dashboard (1), so no `.env` file is deployed.
 
 Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never bundled.
 

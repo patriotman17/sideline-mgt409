@@ -6,6 +6,8 @@ Environment is loaded with python-dotenv in this precedence order
 1. Real process environment variables
 2. ``backend/.env``  - backend-specific settings
 3. ``<repo>/.env``   - shared secrets (e.g. PORTKEY_API_KEY)
+4. ``<repo>/../.env`` - the folder one level above the repo, so the key can live
+   outside the clone entirely
 
 Secrets only ever live here on the server; the mobile app never sees them.
 """
@@ -23,13 +25,17 @@ from app import __version__
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPO_ROOT = BACKEND_DIR.parent
-ENV_FILES = (BACKEND_DIR / ".env", REPO_ROOT / ".env")
+ENV_FILES = (BACKEND_DIR / ".env", REPO_ROOT / ".env", REPO_ROOT.parent / ".env")
 
 
-def load_env_files() -> None:
-    for env_file in ENV_FILES:
+def load_env_files(files: tuple[Path, ...] = ENV_FILES) -> list[Path]:
+    """Load each existing file in order without overriding earlier values. Returns the files loaded."""
+    loaded = []
+    for env_file in files:
         if env_file.is_file():
             load_dotenv(env_file, override=False)
+            loaded.append(env_file)
+    return loaded
 
 
 def _optional_secret(name: str) -> SecretStr | None:

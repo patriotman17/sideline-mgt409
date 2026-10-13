@@ -3,6 +3,9 @@
 AI-powered mobile companion that makes watching live NFL games more interactive,
 personalized, and social.
 
+> **MGT 409 final project.** This is the course submission of Sideline (AI Foundations for Managers,
+> Fall 2026). It uses `PORTKEY_API_KEY` with `gpt-6-luna` only.
+
 > **Status:** Phase 1 UI (clearly labeled **mock data**), Phase 2A/2B: a deterministic
 > **historical replay engine** for real NFL play-by-play (nflverse), and Phase 2C: **Ask Sideline**,
 > an AI agent that answers questions and explains key moments using only what has happened so far
@@ -30,7 +33,17 @@ cp backend/.env.example backend/.env    # backend settings (APP_ENV, CORS_ORIGIN
 cp mobile/.env.example mobile/.env      # optional: EXPO_PUBLIC_API_URL (public, non-secret)
 ```
 
-Secrets go in the **root `.env`** and are read only by the backend. Never put secrets in
+Secrets go in a `.env` that only the backend reads. The backend looks for it **in the repo folder first,
+then one folder above the repo**, so you can keep your key outside the clone:
+
+```
+some-folder/
+├── .env              ← PORTKEY_API_KEY=... (works here)
+└── sideline-mgt409/
+    └── .env          ← ...or here (this one wins if both exist)
+```
+
+Secrets are read only by the backend. Never put secrets in
 `mobile/.env` — anything prefixed `EXPO_PUBLIC_` ships inside the app bundle.
 
 ## 2. Backend
@@ -183,7 +196,7 @@ tied players, Sideline asks which one (with tap-to-ask options) instead of guess
 restarting a replay hides chat messages from later in the game until the replay gets back there. Key moments (scores, lead changes, turnovers,
 big plays, fourth downs, missed kicks) are detected by deterministic rules and explained by the AI.
 
-**Setup:** put `PORTKEY_API_KEY` in the repo-root `.env`. Optional settings in `backend/.env`
+**Setup:** put `PORTKEY_API_KEY` in `.env` (repo folder or one folder above it). Optional settings in `backend/.env`
 (see `backend/.env.example`): `AI_MODEL` (default `gpt-6-luna`), `AI_DAILY_BUDGET_USD` (default 2.0),
 rate/token limits, price overrides. Without a key, the app shows a setup message instead of answers.
 
