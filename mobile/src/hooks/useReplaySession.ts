@@ -7,6 +7,7 @@ import {
   getReplay,
   setReplaySpeed,
   startReplay,
+  stepReplay,
   type ReplayAuth,
   type ReplayControl,
   type ReplaySnapshot,
@@ -82,6 +83,8 @@ export function useReplaySession(gameId: string, startCursor = 0) {
 
   const control = useCallback((action: ReplayControl) => run((a) => controlReplay(a, action)), [run]);
   const setSpeed = useCallback((speed: number) => run((a) => setReplaySpeed(a, speed)), [run]);
+  /** Reveal up to 50 more plays at once (following the synchronized week clock). */
+  const stepBy = useCallback((plays: number) => run((a) => stepReplay(a, plays)), [run]);
   /** Re-read playback now (e.g. the server auto-resumed after a prediction was answered). */
   const refresh = useCallback(() => run((a) => getReplay(a)), [run]);
 
@@ -92,5 +95,5 @@ export function useReplaySession(gameId: string, startCursor = 0) {
     setAttempt((n) => n + 1);
   }, []);
 
-  return { snapshot, auth, error, busy, control, setSpeed, retry, refresh };
+  return { snapshot, auth, error, busy, control, setSpeed, stepBy, retry, refresh };
 }

@@ -125,6 +125,14 @@ export const startReplay = (gameId: string, speed = 1, startCursor = 0) =>
 export const getReplay = (a: ReplayAuth) => apiGet<ReplaySnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));
 export const controlReplay = (a: ReplayAuth, action: ReplayControl) =>
   apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions/${a.sessionId}/${action}`, undefined, { headers: auth(a) });
+/** Reveal the next `plays` events (1-50) and pause. Used to follow the synchronized week. */
+export const stepReplay = (a: ReplayAuth, plays: number) =>
+  apiRequest<ReplaySnapshot>(
+    'POST',
+    `${BASE}/sessions/${a.sessionId}/step`,
+    { plays: Math.max(1, Math.min(50, Math.floor(plays))) },
+    { headers: auth(a) },
+  );
 export const setReplaySpeed = (a: ReplayAuth, speed: number) =>
   apiRequest<ReplaySnapshot>('PUT', `${BASE}/sessions/${a.sessionId}/speed`, { speed }, { headers: auth(a) });
 export const endReplay = (a: ReplayAuth) =>

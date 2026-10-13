@@ -4,11 +4,10 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { DayTabs, ReplayRow, ScoreRow, WeekClock } from '@/components/scores';
+import { DayTabs, ScoreRow, WeekClock } from '@/components/scores';
 import { Avatar, Button, EmptyState, Screen, Skeleton } from '@/components/ui';
-import { useAsync } from '@/hooks/useAsync';
 import { WEEK_DAYS, dayOfClock, toScoreGame, weekSections, type WeekDay } from '@/lib/week';
-import { getTeam, listReplayGames } from '@/services';
+import { getTeam } from '@/services';
 import type { WeekGame } from '@/services/week';
 import { usePersonalization } from '@/state/usePersonalization';
 import { useWeek } from '@/state/WeekContext';
@@ -34,7 +33,6 @@ export default function ScoresScreen() {
   const { ensure } = week;
   // null = follow the clock's day; a tap pins a day.
   const [pinnedDay, setPinnedDay] = useState<WeekDay | null>(null);
-  const { data: replays } = useAsync(listReplayGames);
 
   useEffect(() => {
     ensure();
@@ -43,15 +41,17 @@ export default function ScoresScreen() {
   const snap = week.snapshot;
   const day = pinnedDay ?? (snap ? dayOfClock(snap.sim_time_label) : 'sun');
   const sections = snap ? weekSections(snap.games, day, favoriteTeamIds) : [];
-  const weekIds = new Set(snap?.games.map((g) => g.game_id));
-  const classics =
-    replays?.filter((g) => !weekIds.has(g.game_id) && !g.game_id.startsWith('2025_05_')) ?? [];
   const tint = favoriteTeamIds.length ? getTeam(favoriteTeamIds[0]).primary : colors.surface;
 
   const open = (g: WeekGame) =>
     router.push({
       pathname: '/replay/[gameId]',
-      params: { gameId: g.game_id, ...(g.cursor > 0 ? { startCursor: String(g.cursor) } : {}) },
+      params: {
+        gameId: g.game_id,
+        ...(g.cursor > 0 ? { startCursor: String(g.cursor) } : {}),
+        // Live or upcoming games follow the week clock; finals open at your own pace.
+        ...(g.phase !== 'final' ? { live: '1' } : {}),
+      },
     });
 
   return (
@@ -130,14 +130,6 @@ export default function ScoresScreen() {
         </>
       )}
 
-      {classics.length ? (
-        <View>
-          <SectionLabel title="Classic replays" icon="play-circle" />
-          {classics.map((g) => (
-            <ReplayRow key={g.game_id} game={g} />
-          ))}
-        </View>
-      ) : null}
     </Screen>
   );
 }

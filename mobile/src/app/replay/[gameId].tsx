@@ -14,6 +14,7 @@ import {
   WinProbabilityBar,
 } from '@/components/game';
 import { ReplayAskPanel, ReplayInsightCard, ReplayPicksPanel, ReplayPredictionCard } from '@/components/replay';
+import { LiveDot } from '@/components/scores';
 import { Button, EmptyState, IconButton, Skeleton, TextTabs } from '@/components/ui';
 import { useReplayChat } from '@/hooks/useReplayChat';
 import { useReplayInsights } from '@/hooks/useReplayInsights';
@@ -22,6 +23,7 @@ import { useReplaySession } from '@/hooks/useReplaySession';
 import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { useHaptics } from '@/lib/haptics';
 import { usePersonalization } from '@/state/usePersonalization';
+import { useWeek } from '@/state/WeekContext';
 import { inlinePick } from '@/lib/replayPredictions';
 import {
   formatGameDate,
@@ -69,10 +71,34 @@ function ControlButton({
 }
 
 export default function ReplayScreen() {
-  const { gameId, startCursor } = useLocalSearchParams<{ gameId: string; startCursor?: string }>();
-  // Opened from a live game in the synchronized week: join at that moment.
+  const { gameId, startCursor, live } = useLocalSearchParams<{
+    gameId: string;
+    startCursor?: string;
+    live?: string;
+  }>();
+  // Opened from the synchronized week: join at that moment, then follow the week clock.
   const joinAt = Math.max(0, Number.parseInt(startCursor ?? '0', 10) || 0);
-  const { snapshot, auth, error, busy, control, setSpeed, retry, refresh } = useReplaySession(gameId, joinAt);
+  const { snapshot, auth, error, busy, control, setSpeed, stepBy, retry, refresh } = useReplaySession(
+    gameId,
+    joinAt,
+  );
+  const week = useWeek();
+  const weekGame = live === '1' ? week.snapshot?.games.find((g) => g.game_id === gameId) : undefined;
+  const weekPlaying = week.snapshot?.status === 'playing';
+  // Following = this game advances with the shared week clock. Any manual control detaches.
+  const [following, setFollowing] = useState(live === '1');
+  const weekCursor = weekGame?.cursor;
+  const replayCursor = snapshot?.playback.cursor;
+  useEffect(() => {
+    if (!following || busy || weekCursor === undefined || replayCursor === undefined) return;
+    if (weekCursor <= replayCursor) return;
+    const t = setTimeout(() => stepBy(weekCursor - replayCursor), 0); // catch up (50 plays per request)
+    return () => clearTimeout(t);
+  }, [following, busy, weekCursor, replayCursor, stepBy]);
+  const ownPace = (fn: () => void) => () => {
+    setFollowing(false);
+    fn();
+  };
   const [tab, setTab] = useState<ReplayTab>('plays');
   const { aiPreferences } = usePersonalization();
   const knowledge = aiPreferences?.knowledgeLevel;
@@ -125,6 +151,7 @@ export default function ReplayScreen() {
   const togglePlay = () => {
     tap();
     if (!playback) return;
+    setFollowing(false);
     if (isPlaying) control('pause');
     else if (playback.status === 'paused') control('resume');
     else if (finished) control('restart');
@@ -198,12 +225,51 @@ export default function ReplayScreen() {
               <View className="mx-4 mt-4 rounded-2xl bg-white/10 p-4">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[13px] font-semibold text-ink">
-                    {STATUS_LABEL[playback.status]}
+                    {following && weekGame
+                      ? weekPlaying
+                        ? 'Live with the week'
+                        : 'Week paused'
+                      : STATUS_LABEL[playback.status]}
                   </Text>
                   <Text className="font-cond text-[14px] text-sub">
                     Play {playback.cursor} of {playback.total_events}
                   </Text>
                 </View>
+                {weekGame ? (
+                  following ? (
+                    <View className="mt-2.5 flex-row items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
+                      {weekPlaying ? <LiveDot /> : <Ionicons name="pause" size={12} color={colors.sub} />}
+                      <Text className="flex-1 text-[13px] text-sub">
+                        In sync with {week.snapshot?.title} · {week.snapshot?.sim_time_label}
+                      </Text>
+                      <Pressable
+                        onPress={() => setFollowing(false)}
+                        accessibilityRole="button"
+                        hitSlop={8}
+                        className="active:opacity-70"
+                      >
+                        <Text className="text-[13px] font-semibold text-ink">My own pace</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => {
+                        tap();
+                        // Ahead of the week (you played on): start over and catch back up to live.
+                        if (weekCursor !== undefined && playback.cursor > weekCursor) control('restart');
+                        else if (playback.status === 'playing') control('pause');
+                        setFollowing(true);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Back to live with the week"
+                      className="mt-2.5 flex-row items-center gap-2 rounded-xl bg-white/5 px-3 py-2 active:opacity-70"
+                    >
+                      <Ionicons name="radio" size={14} color={colors.ink} />
+                      <Text className="flex-1 text-[13px] text-sub">Watching at your own pace</Text>
+                      <Text className="text-[13px] font-semibold text-ink">Back to live</Text>
+                    </Pressable>
+                  )
+                ) : null}
                 {playback.paused_for_prediction ? (
                   <Pressable
                     onPress={() => setTab('picks')}
@@ -228,7 +294,7 @@ export default function ReplayScreen() {
                   <ControlButton
                     icon="refresh"
                     label="Restart replay"
-                    onPress={() => control('restart')}
+                    onPress={ownPace(() => control('restart'))}
                     disabled={busy || playback.cursor === 0}
                   />
                   <Pressable
@@ -250,7 +316,7 @@ export default function ReplayScreen() {
                   <ControlButton
                     icon="play-skip-forward"
                     label="Next play"
-                    onPress={() => control('step')}
+                    onPress={ownPace(() => control('step'))}
                     disabled={busy || finished}
                   />
                 </View>
@@ -260,7 +326,7 @@ export default function ReplayScreen() {
                     return (
                       <Pressable
                         key={s}
-                        onPress={() => setSpeed(s)}
+                        onPress={ownPace(() => setSpeed(s))}
                         accessibilityRole="radio"
                         accessibilityState={{ selected: active }}
                         accessibilityLabel={`${s}x speed`}

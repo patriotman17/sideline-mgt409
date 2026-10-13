@@ -193,8 +193,13 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
   playing) → `(tabs)/index.tsx` with `WeekClock` (simulated ET time, play/pause, speeds, jump-to),
   Thursday/Sunday/Monday tabs (follow the clock until tapped), your teams pinned (#1 first), TV-window
   sections via `lib/week.ts` (`toScoreGame`, `weekSections`; unit-tested), and the tab badge = live games.
-  The fabricated mock games no longer appear on Scores (other tabs still use labeled sample data).
-  Classic 2023 playoff replays stay at the bottom.
+  The fabricated mock games no longer appear on Scores (other tabs still use labeled sample data), and
+  the 2023 classic replays were removed from the app (their extracts stay in the repo for tests/evals).
+- **Following the week in a game:** Scores opens live/upcoming games with `live=1`; the replay screen then
+  **follows the week clock**: it steps its replay session (`stepBy`, ≤50 plays per request) up to the
+  week's cursor for that game, so Ask AI / Insights / Picks stay in sync ("Live with the week"). Any
+  manual control (play/pause, next play, speed, restart, "My own pace") detaches; "Back to live" rejoins
+  (restarting first if you had played ahead). Finals open at your own pace.
 - **Historical data in Supabase (optional source):** migration `20261016000000_historical_nfl_data.sql`
   creates a private **`history`** schema (not in the API's exposed schemas): `history.games` (schedule +
   full nflverse provenance + `rows_sha256`) and `history.plays` (`(game_id, row_index)` PK, `row` jsonb =
