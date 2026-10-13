@@ -9,7 +9,9 @@ personalized, and social.
 > **Status:** Phase 1 UI (clearly labeled **mock data**), Phase 2A/2B: a deterministic
 > **historical replay engine** for real NFL play-by-play (nflverse), and Phase 2C: **Ask Sideline**,
 > an AI agent that answers questions and explains key moments using only what has happened so far
-> in the replay. No live commercial sports APIs, Supabase, or payments yet.
+> in the replay, Phase 2D: deterministic **predictions**, and optional **Supabase accounts** (email/password,
+> onboarding, profiles, favorite teams) with a no-account **Try Demo**. No live commercial sports APIs or
+> payments yet.
 
 | | |
 |---|---|
@@ -30,8 +32,11 @@ See [AGENTS.md](AGENTS.md) for architecture and conventions.
 ```bash
 cp .env.example .env                    # shared secrets, e.g. PORTKEY_API_KEY (backend only)
 cp backend/.env.example backend/.env    # backend settings (APP_ENV, CORS_ORIGINS…)
-cp mobile/.env.example mobile/.env      # optional: EXPO_PUBLIC_API_URL (public, non-secret)
+cp mobile/.env.example mobile/.env      # optional: EXPO_PUBLIC_API_URL + Supabase public values
 ```
+
+**Accounts are optional.** Leave the Supabase values blank and the app runs in guest demo mode
+(**Try Demo**): real replays, Ask AI and picks, no sign-up needed. See [Accounts](#accounts-optional).
 
 Secrets go in a `.env` that only the backend reads. The backend looks for it **in the repo folder first,
 then one folder above the repo**, so you can keep your key outside the clone:
@@ -101,11 +106,13 @@ npx expo-doctor       # dependency / config health
 - **Picks** — free-to-play picks (Live / My picks / Results) and your record
 - **Party** — watch-party room with the game's score row, reactions, and chat
 - **Discover** — stories, trending players, standings
-- **You** — profile, teams, badges, saved stories, settings, backend status
+- **Welcome** — Create Account · Log In · **Try Demo** (no account needed)
+- **Onboarding** (new accounts) — display name + unique username, football knowledge, AI explanation style, up to 8 favorite teams
+- **You** — profile, teams, badges, saved stories, settings, backend status; signed in: your real profile, Sideline AI preferences, edit profile, change password, log out
 - **Game sheet** — scoreboard + linescore; Summary, Plays, Picks, and Ask AI tabs
 - **Replay sheet** — historical game replayed play by play with play / pause / restart / next play and 1×–10× speed, plus **Plays · Picks · Insights · Ask AI** tabs (Picks = real, auto-scored predictions)
 
-Everything except replays uses local mock data and resets on reload.
+Everything except replays and accounts uses local mock data and resets on reload.
 
 ## Historical replays (Phase 2A/2B)
 
@@ -215,6 +222,94 @@ spend is capped per day. Every AI call is logged to `backend/logs/ai_audit.jsonl
 **Evals:** `cd backend && .venv/bin/python -m evals.run` (offline, free) or `--live` (≈$0.005) checks
 factual accuracy, tool selection, evidence grounding, future-data leakage, and cost/latency on known
 situations from both replay games.
+
+## Accounts (optional)
+
+Sideline works fully **without accounts**: tap **Try Demo** for real replays, Ask Sideline, insights and
+demo predictions. Graders and anyone running locally need only `PORTKEY_API_KEY`. With Supabase
+configured, people can create an account and Sideline remembers them across sessions and devices.
+
+### What an account adds
+Sign up with email confirmation, log in / out, password reset, and sessions that survive restarts. A
+4-step onboarding (name + unique @username → favorite teams + a #1 team → knowledge level, AI
+explanation style, spoiler shield, game alerts → review) saves a profile that drives the app:
+your teams first on Scores, a **My teams** filter and synced saved stories in Discover, your real
+profile in You (everything editable there), and Ask Sideline answers phrased for your knowledge level
+and preferred detail. Game facts always come from the replay engine, never from preferences.
+
+### Setup
+| Where | Variable | Notes |
+|---|---|---|
+| `mobile/.env` | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public by design (the "publishable" key). Never put the secret / service-role key in the app |
+| `backend/.env` | `SUPABASE_URL` | Only used to download the project's **public** signing keys and verify logins |
+
+1. `npx supabase login`, then `npx supabase link --project-ref <your-project-ref>`.
+2. `npx supabase db push --linked` applies `supabase/migrations/` (tables, constraints, triggers, RLS).
+3. `npx supabase config push` applies `supabase/config.toml` auth settings (review the diff it shows).
+4. Optional check: `npx supabase db query --linked -f supabase/tests/01_profiles_favorites_rls.sql`
+   (and `02_…`). They run as two throwaway users and always roll back; success prints `VERIFY_OK`.
+
+### Database
+| Table | Holds | Who can access it |
+|---|---|---|
+| `profiles` | username (unique), display name, #1 team, knowledge level, AI style, spoiler shield, alerts, onboarding status, timestamps | Only the owner (read + edit allowed fields) |
+| `favorite_teams` | up to 8 followed teams per user | Only the owner (read, add, remove) |
+| `saved_stories` | saved Discover stories (up to 200) | Only the owner (read, add, remove) |
+| `nfl_teams` | the 32 teams | Everyone can read; nobody can change |
+
+Row Level Security is on for every table, and each policy compares the row's owner with the user id
+inside the verified login token (`auth.uid()`), so one user can never read or change another's data,
+even by calling the database API directly. Users can't edit ids or timestamps, and guests (anonymous)
+can't see any account table.
+
+### How passwords are protected
+- **Supabase Auth does it all.** Passwords go straight from the app to Supabase over HTTPS. Supabase
+  stores only a **bcrypt** hash with a **unique random salt** per password (its managed work factor),
+  and verifies, confirms and resets accounts with its own expiring, single-use tokens.
+- **Why not our own bcrypt?** A second password system would be one more place for a leak or a mistake
+  (weak work factor, missing salt, timing bugs). Supabase's implementation is purpose-built, audited and
+  maintained, and keeps hashes in a schema our API can't read.
+- **Sideline never sees password hashes and never stores passwords.** No Sideline table has a password,
+  hash or salt column, and passwords never reach our backend, logs, audit trail or API responses.
+- **Rules:** 8+ characters with letters and numbers; spaces, symbols and emoji are fine; at most
+  **72 bytes in UTF-8** (bcrypt's limit, so accents and emoji count 2-4 each). Too-long passwords are
+  rejected with a clear message and never silently cut. Emails are trimmed and lowercased.
+- **No account fishing:** wrong logins say "Email or password is incorrect"; reset says "if an account
+  exists…". Resend / reset wait 60 s between emails, and Supabase rate-limits auth requests per IP.
+
+### Sessions and the API
+- **On the phone**, the session is AES-256 encrypted with a key kept in the iOS Keychain / Android
+  Keystore. **On the web**, it's in the browser's storage for this site. Supabase refreshes the
+  short-lived access token automatically; if that fails you're signed out. Logging out revokes this
+  device's session and clears your data from the app.
+- **The FastAPI backend** checks every account request's token against Supabase's public signing keys
+  (signature, issuer, audience, expiry), picks up key rotation automatically, and takes the user's
+  identity only from the verified token. `GET /api/v1/me` returns the signed-in user: 401 without a valid
+  token, 403 for a token that isn't a user's. Replay sessions keep their own separate `X-Session-Token`.
+- **No secrets in the app:** the bundle contains only the public URL and publishable key. The Supabase
+  secret / service-role key and the Portkey key are never used by the app, and `.env` files are git-ignored.
+
+### Who protects what
+| Protection | Sideline | Supabase |
+|---|---|---|
+| Password hashing (bcrypt + salt), verification, reset and confirmation tokens | | ✓ |
+| Auth rate limits and abuse protection | cooldown on email buttons | ✓ |
+| Password rules (8+, letters + digits, ≤ 72 bytes) and input validation | ✓ (in the app) | ✓ (server settings) |
+| Database schema, constraints, RLS policies, column permissions | ✓ (migrations) | enforces them |
+| Session storage (encrypted on device) and logout cleanup | ✓ | refresh-token revocation |
+| JWT verification in FastAPI, identity from the token only | ✓ | publishes signing keys |
+| Guest demo with no account data access | ✓ | |
+
+### Known limits
+- **Email codes need your own email sender.** The app confirms accounts and resets passwords with an
+  **8-digit code** typed into the app, so it works on any phone or computer. Supabase's free plan only
+  allows the code email templates (`supabase/templates/`) with a custom SMTP sender (e.g. a Gmail App
+  Password, set in Supabase → Authentication → Emails → SMTP Settings), then
+  `npx supabase config push`. Until then, Supabase sends its default **link** emails: open the link
+  on the same device and browser you signed up on. The built-in sender also only reaches your Supabase
+  team, about 2 emails per hour.
+- **For quick testing**, create a confirmed account in the dashboard (Authentication → Users → Add user
+  → Auto Confirm User) and log in with it.
 
 ## Data disclaimer
 

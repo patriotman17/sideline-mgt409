@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { createId } from '@/lib/id';
 import { reconcileChat, visibleChat } from '@/lib/replayChat';
-import { ApiError, askReplay, getReplayConversation, resetReplayChat, type AskAnswer, type ReplayAuth } from '@/services';
+import {
+  ApiError,
+  askReplay,
+  getReplayConversation,
+  resetReplayChat,
+  type AskAnswer,
+  type AskPreferences,
+  type ReplayAuth,
+} from '@/services';
 
 export type ReplayChatItem =
   | { id: string; role: 'user'; text: string; cursor: number; requestId?: string }
@@ -19,7 +27,7 @@ export type ReplayChatItem =
  * the replay reaches them again), matching what the server uses as context; after a
  * rewind the hook also re-syncs with the server's conversation.
  */
-export function useReplayChat(auth: ReplayAuth | null, cursor: number) {
+export function useReplayChat(auth: ReplayAuth | null, cursor: number, preferences?: AskPreferences | null) {
   const [items, setItems] = useState<ReplayChatItem[]>([]);
   const [pending, setPending] = useState(false);
   const inFlight = useRef(false);
@@ -59,7 +67,7 @@ export function useReplayChat(auth: ReplayAuth | null, cursor: number) {
         ...(retryOf ? [] : [{ id: userId, role: 'user' as const, text: question, cursor: askedAt }]),
       ]);
       try {
-        const result = await askReplay(auth, question);
+        const result = await askReplay(auth, question, preferences);
         const at = result.as_of.cursor; // authoritative position of this turn
         setItems((prev) => [
           ...prev.map((i) => (i.id === userId ? { ...i, cursor: at, requestId: result.request_id } : i)),
@@ -83,7 +91,7 @@ export function useReplayChat(auth: ReplayAuth | null, cursor: number) {
         setPending(false);
       }
     },
-    [auth],
+    [auth, preferences],
   );
 
   const retry = useCallback(

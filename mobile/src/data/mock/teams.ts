@@ -24,4 +24,15 @@ export const MOCK_TEAMS: Team[] = [
   { id: 'sea', abbr: 'SEA', city: 'Seattle', name: 'Seahawks', conference: 'NFC', division: 'NFC West', primary: '#002244', secondary: '#69BE28', record: '2-2' },
   { id: 'tb', abbr: 'TB', city: 'Tampa Bay', name: 'Buccaneers', conference: 'NFC', division: 'NFC South', primary: '#D50A0A', secondary: '#34302B', record: '2-2' },
   { id: 'atl', abbr: 'ATL', city: 'Atlanta', name: 'Falcons', conference: 'NFC', division: 'NFC South', primary: '#A71930', secondary: '#000000', record: '1-3' },
+  // The remaining ten teams (colors approximate; records fabricated like the rest).
+  { id: 'cle', abbr: 'CLE', city: 'Cleveland', name: 'Browns', conference: 'AFC', division: 'AFC North', primary: '#311D00', secondary: '#FF3C00', record: '1-3' },
+  { id: 'ind', abbr: 'IND', city: 'Indianapolis', name: 'Colts', conference: 'AFC', division: 'AFC South', primary: '#002C5F', secondary: '#A2AAAD', record: '2-2' },
+  { id: 'jax', abbr: 'JAX', city: 'Jacksonville', name: 'Jaguars', conference: 'AFC', division: 'AFC South', primary: '#006778', secondary: '#D7A22A', record: '2-2' },
+  { id: 'ten', abbr: 'TEN', city: 'Tennessee', name: 'Titans', conference: 'AFC', division: 'AFC South', primary: '#0C2340', secondary: '#4B92DB', record: '1-3' },
+  { id: 'lv', abbr: 'LV', city: 'Las Vegas', name: 'Raiders', conference: 'AFC', division: 'AFC West', primary: '#000000', secondary: '#A5ACAF', record: '1-3' },
+  { id: 'nyg', abbr: 'NYG', city: 'New York', name: 'Giants', conference: 'NFC', division: 'NFC East', primary: '#0B2265', secondary: '#A71930', record: '1-3' },
+  { id: 'car', abbr: 'CAR', city: 'Carolina', name: 'Panthers', conference: 'NFC', division: 'NFC South', primary: '#0085CA', secondary: '#101820', record: '1-3' },
+  { id: 'no', abbr: 'NO', city: 'New Orleans', name: 'Saints', conference: 'NFC', division: 'NFC South', primary: '#D3BC8D', secondary: '#101820', record: '2-2' },
+  { id: 'ari', abbr: 'ARI', city: 'Arizona', name: 'Cardinals', conference: 'NFC', division: 'NFC West', primary: '#97233F', secondary: '#000000', record: '2-2' },
+  { id: 'la', abbr: 'LA', city: 'Los Angeles', name: 'Rams', conference: 'NFC', division: 'NFC West', primary: '#003594', secondary: '#FFA300', record: '2-2' },
 ];

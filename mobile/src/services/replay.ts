@@ -184,8 +184,19 @@ export interface ReplayInsights {
 }
 
 /** Ask Sideline about the game as of the session's current play. AI runs only on the backend. */
-export const askReplay = (a: ReplayAuth, question: string) =>
-  apiRequest<AskAnswer>('POST', `${BASE}/sessions/${a.sessionId}/ask`, { question }, { headers: auth(a), timeoutMs: 45000 });
+/** Phrasing preferences from the user's profile (enums the backend validates). Never game facts. */
+export interface AskPreferences {
+  knowledge_level: 'casual' | 'regular' | 'expert';
+  explanation_style: 'simple' | 'balanced' | 'detailed';
+}
+
+export const askReplay = (a: ReplayAuth, question: string, preferences?: AskPreferences | null) =>
+  apiRequest<AskAnswer>(
+    'POST',
+    `${BASE}/sessions/${a.sessionId}/ask`,
+    { question, ...(preferences ? { preferences } : {}) },
+    { headers: auth(a), timeoutMs: 45000 },
+  );
 
 /** The server's chat as it applies at the session's current replay position. */
 export const getReplayConversation = (a: ReplayAuth) =>

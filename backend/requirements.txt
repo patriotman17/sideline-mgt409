@@ -3,4 +3,5 @@ uvicorn[standard]
 pydantic-ai-slim[openai]
 python-dotenv
 httpx
+pyjwt[crypto]
 pytest

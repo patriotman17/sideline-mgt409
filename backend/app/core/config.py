@@ -93,6 +93,18 @@ class Settings(BaseModel):
     ai_history_turns: int = 6
     ai_history_max_chars: int = 3000
 
+    # Supabase accounts (optional). Only the public project URL: login tokens are verified with the
+    # project's PUBLIC signing keys (JWKS), so no Supabase secret is ever needed on the backend.
+    supabase_url: str | None = None
+
+    @property
+    def auth_configured(self) -> bool:
+        return bool(self.supabase_url)
+
+    @property
+    def supabase_issuer(self) -> str | None:
+        return f"{self.supabase_url.rstrip('/')}/auth/v1" if self.supabase_url else None
+
     @property
     def ai_configured(self) -> bool:
         return self.portkey_api_key is not None and bool(self.ai_model)
@@ -127,6 +139,7 @@ class Settings(BaseModel):
             ai_reasoning_effort=os.getenv("AI_REASONING_EFFORT", "none"),
             ai_history_turns=_int("AI_HISTORY_TURNS", 6),
             ai_history_max_chars=_int("AI_HISTORY_MAX_CHARS", 3000),
+            supabase_url=os.getenv("SUPABASE_URL", "").strip() or None,
         )
 
 

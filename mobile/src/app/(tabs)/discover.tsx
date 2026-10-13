@@ -6,25 +6,30 @@ import { FeatureStory, StandingsTable, StoryCard, TrendingPlayerCard } from '@/c
 import { Chip, EmptyState, ListGroup, Screen, ScreenHeader, SectionHeader, Skeleton } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { getDiscoverFeed, getTeam } from '@/services';
-import { useAppActions, useAppState } from '@/state/AppStore';
+import { usePersonalization } from '@/state/usePersonalization';
 import { colors } from '@/theme';
 import type { StoryCategory } from '@/types';
 
-const CATEGORIES: ('All' | 'Saved' | StoryCategory)[] = ['All', 'News', 'Analysis', 'Fantasy', 'Highlights', 'Saved'];
+type Filter = 'All' | 'My teams' | 'Saved' | StoryCategory;
+const CATEGORIES: Filter[] = ['All', 'News', 'Analysis', 'Fantasy', 'Highlights', 'Saved'];
 
 export default function DiscoverScreen() {
   const { data, loading, reload } = useAsync(getDiscoverFeed);
-  const { savedStoryIds, profile } = useAppState();
-  const { toggleSaveStory } = useAppActions();
+  const { savedStoryIds, toggleSaveStory, favoriteTeamIds } = usePersonalization();
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>('All');
+  const [category, setCategory] = useState<Filter>('All');
+  // "My teams" only when there are stories about a followed team in the (sample) feed.
+  const hasTeamStories = !!data?.stories.some((s) => s.teamId && favoriteTeamIds.includes(s.teamId));
+  const filters: Filter[] = hasTeamStories ? ['All', 'My teams', ...CATEGORIES.slice(1)] : CATEGORIES;
 
   const q = query.trim().toLowerCase();
   const browsing = !q && category === 'All';
   const stories =
     data?.stories.filter((s) => {
       if (category === 'Saved' && !savedStoryIds.includes(s.id)) return false;
-      if (category !== 'All' && category !== 'Saved' && s.category !== category) return false;
+      if (category === 'My teams' && !(s.teamId && favoriteTeamIds.includes(s.teamId))) return false;
+      if (category !== 'All' && category !== 'Saved' && category !== 'My teams' && s.category !== category)
+        return false;
       if (!q) return true;
       const team = s.teamId ? getTeam(s.teamId) : undefined;
       return [s.title, s.summary, team?.name, team?.city, team?.abbr].some((f) => f?.toLowerCase().includes(q));
@@ -56,7 +61,7 @@ export default function DiscoverScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-4 pt-3">
-        {CATEGORIES.map((c) => (
+        {filters.map((c) => (
           <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
         ))}
       </ScrollView>
@@ -104,7 +109,7 @@ export default function DiscoverScreen() {
             <>
               <SectionHeader title="Standings" />
               {data.standings.map((d) => (
-                <StandingsTable key={d.name} division={d} highlightTeamIds={profile.favoriteTeamIds} />
+                <StandingsTable key={d.name} division={d} highlightTeamIds={favoriteTeamIds} />
               ))}
             </>
           ) : null}

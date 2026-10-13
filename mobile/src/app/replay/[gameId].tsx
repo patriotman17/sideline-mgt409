@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,6 +21,7 @@ import { useReplayPredictions } from '@/hooks/useReplayPredictions';
 import { useReplaySession } from '@/hooks/useReplaySession';
 import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { useHaptics } from '@/lib/haptics';
+import { usePersonalization } from '@/state/usePersonalization';
 import { inlinePick } from '@/lib/replayPredictions';
 import {
   formatGameDate,
@@ -71,7 +72,14 @@ export default function ReplayScreen() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
   const { snapshot, auth, error, busy, control, setSpeed, retry, refresh } = useReplaySession(gameId);
   const [tab, setTab] = useState<ReplayTab>('plays');
-  const chat = useReplayChat(auth, snapshot?.playback.cursor ?? 0);
+  const { aiPreferences } = usePersonalization();
+  const knowledge = aiPreferences?.knowledgeLevel;
+  const style = aiPreferences?.explanationStyle;
+  const askPreferences = useMemo(
+    () => (knowledge && style ? { knowledge_level: knowledge, explanation_style: style } : null),
+    [knowledge, style],
+  );
+  const chat = useReplayChat(auth, snapshot?.playback.cursor ?? 0, askPreferences);
   const insights = useReplayInsights(auth, snapshot?.playback.cursor, tab === 'insights');
   const picks = useReplayPredictions(auth, snapshot?.playback.cursor ?? 0, snapshot?.playback.status, refresh);
   const scrollRef = useRef<ScrollView>(null);

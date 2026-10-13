@@ -42,7 +42,9 @@ def test_list_games_has_no_results(client):
     res = client.get(f"{BASE}/games")
     assert res.status_code == 200
     games = {g["game_id"]: g for g in res.json()}
-    assert set(games) == {DIVISIONAL, SUPER_BOWL}
+    assert {DIVISIONAL, SUPER_BOWL} <= set(games)
+    assert len([g for g in games if g.startswith("2025_05_")]) == 14  # the full 2025 Week 5 slate
+    assert all(g["data_warnings"] == 0 for g in games.values())
     div = games[DIVISIONAL]
     assert (div["away"]["abbr"], div["home"]["abbr"], div["title"]) == ("KC", "BUF", "AFC Divisional Round")
     assert "CC BY 4.0" in div["license"]

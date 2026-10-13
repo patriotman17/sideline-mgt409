@@ -236,6 +236,41 @@ export interface UserProfile {
   badges: { id: string; label: string; icon: string; earned: boolean }[];
 }
 
+export type KnowledgeLevel = 'casual' | 'regular' | 'expert';
+export type ExplanationStyle = 'simple' | 'balanced' | 'detailed';
+
+/** A signed-in user's profile row (Supabase `public.profiles`, camelCased). */
+export interface AccountProfile {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  knowledgeLevel: KnowledgeLevel;
+  explanationStyle: ExplanationStyle;
+  spoilerShield: boolean;
+  notificationsEnabled: boolean;
+  onboardedAt: string | null;
+  /** One of the user's favorite teams (enforced by the database), or null. App team id (lowercase). */
+  primaryTeamId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Fields a user may change (matches the column-level grants on `profiles`). */
+export type AccountProfileUpdate = Partial<
+  Pick<
+    AccountProfile,
+    'username' | 'displayName' | 'knowledgeLevel' | 'explanationStyle' | 'spoilerShield' | 'notificationsEnabled' | 'onboardedAt' | 'primaryTeamId'
+  >
+>;
+
+export interface NflTeam {
+  abbr: string;
+  city: string;
+  name: string;
+  conference: 'AFC' | 'NFC';
+  division: string;
+}
+
 export interface UserSettings {
   notifications: boolean;
   spoilerShield: boolean;

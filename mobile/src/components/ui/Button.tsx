@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, Text } from 'react-native';
+import { ActivityIndicator, Pressable, Text } from 'react-native';
 
 import { useHaptics } from '@/lib/haptics';
 import { colors } from '@/theme';
@@ -11,6 +11,8 @@ interface ButtonProps {
   icon?: keyof typeof Ionicons.glyphMap;
   size?: 'sm' | 'md';
   disabled?: boolean;
+  /** Shows a spinner and blocks presses (e.g. while a request is in flight). */
+  loading?: boolean;
   className?: string;
 }
 
@@ -20,7 +22,7 @@ const VARIANTS = {
   ghost: { box: '', text: 'text-volt', icon: colors.volt },
 };
 
-export function Button({ label, onPress, variant = 'primary', icon, size = 'md', disabled, className = '' }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', icon, size = 'md', disabled, loading, className = '' }: ButtonProps) {
   const { tap } = useHaptics();
   const v = VARIANTS[variant];
   return (
@@ -29,13 +31,15 @@ export function Button({ label, onPress, variant = 'primary', icon, size = 'md',
         tap();
         onPress();
       }}
-      disabled={disabled}
+      disabled={disabled || loading}
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
       className={`flex-row items-center justify-center gap-2 rounded-full active:opacity-80 ${v.box} ${
         size === 'sm' ? 'px-4 py-2' : 'px-5 py-3.5'
       } ${disabled ? 'opacity-40' : ''} ${className}`}
     >
-      {icon ? <Ionicons name={icon} size={size === 'sm' ? 14 : 18} color={v.icon} /> : null}
+      {loading ? <ActivityIndicator size="small" color={v.icon} /> : null}
+      {icon && !loading ? <Ionicons name={icon} size={size === 'sm' ? 14 : 18} color={v.icon} /> : null}
       <Text className={`font-bold ${v.text} ${size === 'sm' ? 'text-[13px]' : 'text-[15px]'}`}>{label}</Text>
     </Pressable>
   );

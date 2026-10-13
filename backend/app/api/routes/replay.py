@@ -14,6 +14,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
+from app.agents.agent import AnswerStyle
 from app.agents.budget import RateLimited as RateLimitedError
 from app.agents.insights import Insight, latest_insights
 from app.agents.service import AIError, AIService, AskResult, AsOf, as_of
@@ -100,6 +101,8 @@ class CreatedSession(ReplaySnapshot):
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
+    #: Optional phrasing preferences (from the user's profile). Enums only; defaults for guests.
+    preferences: AnswerStyle | None = None
 
 
 class InsightsResponse(BaseModel):
@@ -280,6 +283,7 @@ async def ask(body: AskRequest, session: SessionDep, ai: AIDep) -> AskResult:
             question=body.question,
             session_id=session.id,
             conversation=session.conversation,
+            style=body.preferences,
         )
     except AIError as exc:
         raise _ai_http_error(exc) from None

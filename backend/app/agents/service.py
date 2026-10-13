@@ -31,7 +31,15 @@ from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModelSettings
 from pydantic_ai.usage import UsageLimits
 
-from app.agents.agent import PROMPT_VERSION, AgentDeps, Clarification, SidelineAnswer, sideline_agent
+from app.agents.agent import (
+    DEFAULT_STYLE,
+    PROMPT_VERSION,
+    AgentDeps,
+    AnswerStyle,
+    Clarification,
+    SidelineAnswer,
+    sideline_agent,
+)
 from app.agents.audit import AuditLog, AuditRecord, AuditStatus
 from app.agents.budget import BudgetExceeded, RateLimited, RateLimiter, SpendTracker
 from app.agents.cache import TTLCache
@@ -190,12 +198,20 @@ class AIService:
         }
 
     async def ask(
-        self, *, game: Game, cursor: int, question: str, session_id: str, conversation: Conversation | None = None
+        self,
+        *,
+        game: Game,
+        cursor: int,
+        question: str,
+        session_id: str,
+        conversation: Conversation | None = None,
+        style: AnswerStyle | None = None,
     ) -> AskResult:
         """Answer ``question`` as of ``cursor``. With a ``conversation``, earlier turns from the same
         session (asked at or before ``cursor``) are sent as context and the new turn is recorded."""
         view = ReplayView.at(game, cursor)
         q = clean_text(question, max_length=500)
+        style = style or DEFAULT_STYLE
         s = self.settings
         context = (
             conversation.context(view.cursor, max_turns=s.ai_history_turns, max_chars=s.ai_history_max_chars)
@@ -215,6 +231,7 @@ class AIService:
             question=q,
             history_turns=len(context.turns),
             context_fingerprint=context.fingerprint or None,
+            answer_style=style.key,
         )
         try:
             self.limiter.hit(session_id)
@@ -230,7 +247,15 @@ class AIService:
 
         # Same position + same question + same conversation context -> same answer. Different
         # context (e.g. "how many yards does he have?" about a different player) never collides.
-        key = ("ask", view.state_version, PROMPT_VERSION, s.ai_model, context.fingerprint, normalize_question(q))
+        key = (
+            "ask",
+            view.state_version,
+            PROMPT_VERSION,
+            s.ai_model,
+            style.key,
+            context.fingerprint,
+            normalize_question(q),
+        )
         cached = self.answer_cache.get(key)
         if cached is not None:
             self.audit.write(base.model_copy(update={"status": "cached"}))
@@ -239,7 +264,7 @@ class AIService:
                 update={"request_id": request_id, "status": "cached", "usage": Usage(), "latency_ms": 0.0}
             )
 
-        run = await self._run(view, prompt=q, base=base, history=history_messages(context))
+        run = await self._run(view, prompt=q, base=base, history=history_messages(context), style=style)
         # Only ties the answer actually names make a later pronoun ambiguous.
         named_ties = [p for p in run.tied_leaders if p in run.answer.answer]
         ambiguous = named_ties if len(named_ties) > 1 else []
@@ -369,7 +394,13 @@ class AIService:
         return AIError(code, message, status_code)
 
     async def _run(
-        self, view: ReplayView, *, prompt: str, base: AuditRecord, history: list[ModelMessage] | None = None
+        self,
+        view: ReplayView,
+        *,
+        prompt: str,
+        base: AuditRecord,
+        history: list[ModelMessage] | None = None,
+        style: AnswerStyle = DEFAULT_STYLE,
     ) -> _Run:
         started = time.perf_counter()
         if not self.settings.ai_configured:
@@ -379,7 +410,7 @@ class AIService:
         except BudgetExceeded as exc:
             raise self._fail(base, "budget_exceeded", str(exc), 429, started) from None
 
-        deps = AgentDeps(view=view)
+        deps = AgentDeps(view=view, style=style)
         s = self.settings
         limits = UsageLimits(
             request_limit=s.ai_request_limit,

@@ -14,6 +14,7 @@ licensed CC BY 4.0. Attribution is required wherever the data is shown.
 Usage (from backend/):
     .venv/bin/python scripts/fetch_nflverse_games.py --season 2023 \
         --game 2023_20_KC_BUF --game 2023_22_SF_KC
+    .venv/bin/python scripts/fetch_nflverse_games.py --season 2025 --week 5   # every REG game that week
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ import httpx
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_DIR))
 
-from app.replay.source import ATTRIBUTION, COLUMNS, LICENSE, RELEASE_URL  # noqa: E402
+from app.replay.source import ATTRIBUTION, COLUMNS, LICENSE, OPTIONAL_COLUMNS, RELEASE_URL  # noqa: E402
 
 CACHE_DIR = BACKEND_DIR / ".cache" / "nflverse"
 OUT_DIR = BACKEND_DIR / "data" / "nflverse"
@@ -64,29 +65,41 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def extract(source: Path, game_ids: set[str]) -> dict[str, list[dict[str, str]]]:
+def extract(
+    source: Path, game_ids: set[str], *, week: int | None = None, season_type: str = "REG"
+) -> tuple[dict[str, list[dict[str, str]]], list[str]]:
+    """Rows for the requested games (or every ``season_type`` game in ``week``), in source order.
+    Returns (rows by game id, columns written)."""
     found: dict[str, list[dict[str, str]]] = {gid: [] for gid in game_ids}
     with gzip.open(source, "rt", newline="", encoding="utf-8") as fh:
         reader = csv.DictReader(fh)
-        missing = [c for c in COLUMNS if c not in (reader.fieldnames or [])]
+        fields = reader.fieldnames or []
+        missing = [c for c in COLUMNS if c not in fields]
         if missing:
             raise SystemExit(f"Source schema is missing expected columns: {missing}")
+        columns = COLUMNS + [c for c in OPTIONAL_COLUMNS if c in fields]
         for row in reader:
             gid = row["game_id"]
+            if week is not None and row["week"] == str(week) and row["season_type"] == season_type:
+                found.setdefault(gid, [])
             if gid in found:
-                found[gid].append({c: row[c] for c in COLUMNS})
-    return found
+                found[gid].append({c: row[c] for c in columns})
+    return found, columns
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--season", type=int, required=True)
-    parser.add_argument("--game", action="append", required=True, help="nflverse game_id, e.g. 2023_20_KC_BUF")
+    parser.add_argument("--game", action="append", default=[], help="nflverse game_id, e.g. 2023_20_KC_BUF")
+    parser.add_argument("--week", type=int, help="Extract every game of this week (with --season-type)")
+    parser.add_argument("--season-type", default="REG", choices=["REG", "POST"])
     args = parser.parse_args()
+    if not args.game and args.week is None:
+        parser.error("pass --game and/or --week")
 
     source, url = download(args.season)
     checksum = sha256(source)
-    games = extract(source, set(args.game))
+    games, columns = extract(source, set(args.game), week=args.week, season_type=args.season_type)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     retrieved = datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -96,7 +109,7 @@ def main() -> int:
             continue
         out = OUT_DIR / f"{gid}.csv"
         with out.open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.DictWriter(fh, fieldnames=COLUMNS)
+            writer = csv.DictWriter(fh, fieldnames=columns)
             writer.writeheader()
             writer.writerows(rows)
         provenance = {
@@ -108,7 +121,7 @@ def main() -> int:
             "license": LICENSE,
             "attribution": ATTRIBUTION,
             "rows": len(rows),
-            "columns": COLUMNS,
+            "columns": columns,
         }
         (OUT_DIR / f"{gid}.source.json").write_text(json.dumps(provenance, indent=2) + "\n")
         print(f"{gid}: {len(rows)} plays -> {out.relative_to(BACKEND_DIR)}")

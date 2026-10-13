@@ -6,7 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import { TeamBadge } from '@/components/game';
 import { splitKickoff } from '@/lib/format';
 import { getTeam } from '@/services';
-import { useAppState } from '@/state/AppStore';
+import { usePersonalization } from '@/state/usePersonalization';
 import { colors, withAlpha } from '@/theme';
 import type { Game } from '@/types';
 import { LiveDot } from './LiveDot';
@@ -81,14 +81,14 @@ function Center({ game, hideScore }: { game: Game; hideScore: boolean }) {
  * to the home team's, so a matchup is recognizable before you read it.
  */
 export function ScoreRow({ game }: { game: Game }) {
-  const { profile, settings } = useAppState();
+  const { favoriteTeamIds, spoilerShield } = usePersonalization();
   const away = getTeam(game.away.teamId);
   const home = getTeam(game.home.teamId);
   const scheduled = game.status === 'scheduled';
-  const hideScore = settings.spoilerShield && game.status === 'final';
+  const hideScore = spoilerShield && game.status === 'final';
   const awayLost = game.status === 'final' && !hideScore && game.away.score < game.home.score;
   const homeLost = game.status === 'final' && !hideScore && game.home.score < game.away.score;
-  const fav = (id: string) => profile.favoriteTeamIds.includes(id);
+  const fav = (id: string) => favoriteTeamIds.includes(id);
 
   return (
     <Pressable

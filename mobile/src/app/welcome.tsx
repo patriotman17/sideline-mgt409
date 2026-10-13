@@ -1,0 +1,89 @@
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { FadeIn } from '@/components/auth';
+import { Button } from '@/components/ui';
+import { useAuth } from '@/state/AuthContext';
+
+const POINTS = [
+  { title: 'Real games, replayed', body: 'Play-by-play NFL replays at your pace.' },
+  { title: 'An AI that never spoils', body: 'Ask anything. It only knows what’s happened so far.' },
+  { title: 'Call the big moments', body: 'Make picks on 4th downs, drives and finishes.' },
+];
+
+export default function WelcomeScreen() {
+  const { accountsEnabled, startDemo } = useAuth();
+  const [starting, setStarting] = useState(false);
+
+  const tryDemo = async () => {
+    setStarting(true);
+    await startDemo(); // the router guard opens the app
+  };
+
+  return (
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg">
+      <View className="w-full max-w-[460px] flex-1 self-center px-7">
+        <View className="flex-1 justify-center">
+          <FadeIn>
+            <Text
+              className="font-score-bold text-[76px] uppercase leading-[72px] tracking-[-1px] text-ink"
+              accessibilityRole="header"
+            >
+              Sideline
+            </Text>
+          </FadeIn>
+          <FadeIn delay={90}>
+            <Text className="mt-4 text-[26px] font-semibold leading-[32px] tracking-[-0.3px] text-ink">
+              Every game, explained.{'\n'}
+              <Text className="text-sub">Nothing spoiled.</Text>
+            </Text>
+          </FadeIn>
+
+          <FadeIn delay={180} className="mt-10 gap-5">
+            {POINTS.map((p, i) => (
+              <View key={p.title} className="flex-row gap-4">
+                <Text className="w-5 pt-0.5 font-cond text-[15px] text-mute">0{i + 1}</Text>
+                <View className="flex-1 border-t border-white/10 pt-2.5">
+                  <Text className="text-[15px] font-semibold text-ink">{p.title}</Text>
+                  <Text className="mt-0.5 text-[14px] leading-[19px] text-sub">{p.body}</Text>
+                </View>
+              </View>
+            ))}
+          </FadeIn>
+        </View>
+
+        <FadeIn delay={260} className="gap-3 pb-2">
+          {accountsEnabled ? (
+            <>
+              <Button label="Create Account" onPress={() => router.push('/sign-up')} />
+              <Button label="Log In" variant="secondary" onPress={() => router.push('/sign-in')} />
+            </>
+          ) : (
+            <Text className="mb-1 text-center text-[13px] leading-[18px] text-mute">
+              Accounts aren’t set up on this server. The demo has everything: replays, Ask AI, and
+              picks.
+            </Text>
+          )}
+          {accountsEnabled ? (
+            <Pressable
+              onPress={tryDemo}
+              disabled={starting}
+              accessibilityRole="button"
+              accessibilityLabel="Try Demo, no account needed"
+              className="items-center py-2.5 active:opacity-60"
+            >
+              <Text className="text-[15px] font-semibold text-ink">
+                {starting ? 'Opening demo…' : 'Try Demo'}
+                <Text className="font-normal text-mute"> · no account needed</Text>
+              </Text>
+            </Pressable>
+          ) : (
+            <Button label="Try Demo" loading={starting} onPress={tryDemo} />
+          )}
+        </FadeIn>
+      </View>
+    </SafeAreaView>
+  );
+}

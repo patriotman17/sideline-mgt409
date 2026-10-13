@@ -14,26 +14,32 @@ in from other coursework or homework repos.
 ```
 Sideline/
 ├── .env / .env.example       # Shared secrets (PORTKEY_API_KEY). Read ONLY by the backend.
-├── AGENTS.md  README.md
+├── AGENTS.md  README.md  .mcp.json (Supabase MCP, project-scoped to Sideline)
+├── supabase/                 # config.toml (auth settings) · migrations/*.sql (schema + RLS) · tests/*.sql (RLS checks)
 ├── mobile/                   # Expo SDK 57 · React Native · TypeScript · Expo Router · NativeWind v4
 │   ├── AGENTS.md             # Expo-specific agent rules (versioned docs, expo install, CNG)
 │   ├── app.json  babel.config.js  metro.config.js  tailwind.config.js  global.css
 │   └── src/
 │       ├── app/              # ROUTES ONLY (Expo Router). (tabs)/ = Scores, Picks, Party, Discover, You; game/[id].tsx
+│       │                     #   welcome · sign-in · sign-up · forgot-password · reset-password · onboarding · auth/callback
 │       ├── components/
 │       │   ├── ui/           # Design-system primitives (Card, Chip, Button, SegmentedControl…)
 │       │   ├── game/         # Scoreboard, FieldTracker, Timeline, InsightCard, PredictionCard, AIChat…
+│       │   ├── auth/         # AuthLayout, TextField, ChoiceList, TeamPicker
 │       │   ├── party/  discover/  profile/
 │       ├── data/mock/        # FABRICATED sample data. Only imported by src/services/ (and seeding)
 │       ├── services/         # Data-access seam: mock today → FastAPI tomorrow. Same signatures.
+│       │                     #   supabase.ts (client + encrypted session storage) · account.ts (auth, profile, teams)
 │       ├── state/AppStore.tsx# Local user state (picks, chats, parties, follows, settings)
+│       ├── state/AuthContext.tsx # Auth status, session, profile, favorite teams (drives route guards)
 │       ├── hooks/  lib/  theme/  types/
 └── backend/                  # Python 3.12 · FastAPI · Pydantic AI (later)
     ├── requirements.txt  requirements-dev.txt  pyproject.toml (ruff/mypy)  pytest.ini  .env(.example)
     ├── app/
     │   ├── main.py           # create_app(): CORS, routers
     │   ├── core/config.py    # Settings via python-dotenv (+ SecretStr)
-    │   ├── api/routes/       # health.py, replay.py
+    │   ├── core/auth.py      # Supabase JWT verification (public JWKS) → CurrentUser dependency
+    │   ├── api/routes/       # health.py, replay.py, predictions.py, ai.py, account.py (/me)
     │   ├── api/router.py     # /api/v1 aggregator
     │   ├── replay/           # Phase 2A/2B: nflverse ingestion + deterministic replay engine
     │   │   ├── source.py     #   nflverse URL, license, column list
@@ -90,6 +96,9 @@ key can live outside the clone. `tests/test_config.py` covers the order. On Rend
 environment variables in the dashboard (1), so no `.env` file is deployed.
 
 Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never bundled.
+
+`SUPABASE_URL` (backend, optional) is the only Supabase value the backend needs: it fetches the project's
+**public** JWT signing keys from it. No Supabase secret / service-role key is used anywhere.
 
 ## Mobile conventions
 
@@ -160,7 +169,15 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
 - **Sessions:** unguessable ids, isolated state, idle TTL (2h) and a cap (500, LRU eviction).
   Speeds 0.25×–50×; 1× = one event per 3 s. Polling (1 s) from the app; WebSockets later.
 - **Adding a game:** `cd backend && .venv/bin/python scripts/fetch_nflverse_games.py --season 2023
-  --game <game_id>`; commit the `.csv` + `.source.json`; run tests (ingestion must report 0 warnings).
+  --game <game_id>` (or `--season 2025 --week 5` for a whole regular-season week); commit the `.csv` +
+  `.source.json`; run tests (ingestion must report 0 warnings). Extracts also carry the optional
+  `start_time` (actual kickoff, ET) and `location` ("Neutral" = e.g. London) columns when the source has
+  them; older extracts without them still load.
+- **2025 Week 5 (classic week, in progress):** all 14 games extracted (2,454 rows, ~1 MB), 0 ingestion
+  warnings, engine finals match nflverse, and every player's pass/rush/receiving yards match nflverse's
+  independent yardage columns (`tests/replay/test_week5_2025.py`, golden file in `tests/replay/data/`).
+  They already appear in the replay list. Still to do: the Classic Week screen (Thu/Sun/Mon grouping),
+  the optional Supabase-backed dataset, and the synchronized-week proposal.
 - **Data license:** nflverse data is CC BY 4.0 — keep the attribution visible wherever it's shown.
 - **Session tokens:** `POST /sessions` returns `session_token` once; every other session request needs
   `X-Session-Token`. Only a SHA-256 hash is stored; bad token and unknown session both return 404.
@@ -284,6 +301,88 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   replay screen's **Picks** tab. Mock predictions in the game
   sheet / Picks tab stay separate and labeled "Sample data".
 
+## Accounts (Supabase)
+
+Optional email/password accounts. **Guest demo must always work with zero Supabase config**: with no
+`EXPO_PUBLIC_SUPABASE_*` values the welcome screen shows only Try Demo and the app makes no Supabase
+requests; with no `SUPABASE_URL` the backend's account endpoints return 503 `auth_not_configured` while
+replays / Ask AI / insights / predictions are unaffected. Guest mode never reads or writes account data.
+
+- **Passwords are Supabase Auth's job, never ours.** Supabase hashes with bcrypt and a random salt per
+  password inside `auth.users` (unreadable by API roles). Sideline never hashes, stores, logs, or returns
+  passwords, hashes, or salts; no public table has such a column (checked by `supabase/tests/02_*`).
+  Don't add client-side hashing or a second password store. Rules (`lib/account.ts`, mirrored in
+  `supabase/config.toml`): ≥ 8 characters with letters + digits, any other characters allowed, **≤ 72
+  UTF-8 bytes** (bcrypt's input limit; `utf8ByteLength`) so a password is used exactly as typed or
+  rejected, never truncated. Text fields for passwords have no `maxLength`. Emails are trimmed +
+  lowercased (`normalizeEmail`) everywhere. Reset says "if an account exists…"; login says "Email or
+  password is incorrect" (no enumeration). Resend/reset buttons wait 60 s (`useCooldown`), matching
+  Supabase's per-user email limit; Supabase also rate-limits sign-in/sign-up/verify per IP.
+- **Schema** (`supabase/migrations/`, applied with `npx supabase db push --linked`; never edit an applied
+  migration, add a new one):
+  - `nfl_teams`: 32 teams (nflverse abbrs, Rams = `LA`), read-only to everyone.
+  - `profiles`: 1:1 with `auth.users`, created by the `on_auth_user_created` trigger. `username` unique
+    `^[a-z0-9_]{3,20}$`; `display_name` 1-40; `knowledge_level` casual/regular/expert (regular);
+    `ai_explanation_style` simple/balanced/detailed (balanced); `spoiler_shield` (false);
+    `notifications_enabled` (true); `primary_team_abbr` (composite FK to the user's *own*
+    `favorite_teams` row, cleared automatically on unfollow); `onboarded_at` (requires username + name);
+    `created_at` / `updated_at` (trigger).
+  - `favorite_teams` (user, team; max 8 via trigger) · `saved_stories` (user, story id slug; max 200).
+  - Future (not created yet): prediction history, points, badges, friends, parties each get their own
+    RLS table keyed on `profiles.id`; **demo replay scores and live competitive scores stay in separate
+    tables** so demo points never reach live leaderboards. AI conversations stay server-side in replay
+    sessions (`agents/conversation.py`) with their leakage rules; don't move them to Supabase.
+- **RLS on every table; never disable it.** Policies compare `(select auth.uid())` (from the verified
+  JWT) with the row owner. Column-level grants: clients may update only username, display_name,
+  knowledge_level, ai_explanation_style, spoiler_shield, notifications_enabled, primary_team_abbr,
+  onboarded_at; insert only `(user_id, team_abbr)` / `(user_id, story_id)`; never ids or timestamps;
+  can't insert/delete profiles. `nfl_teams` is SELECT-only. `is_username_available(text)` is SECURITY
+  DEFINER (boolean only, `authenticated` only; the one intentional advisor warning).
+- **Verify DB changes** with the rolled-back suites in `supabase/tests/` (two throwaway users + anon; the
+  final `VERIFY_OK` error is success) and `npx supabase db advisors --linked`.
+- **Auth settings** live in `supabase/config.toml` `[auth]` (confirmations on, password rules, secure
+  password change, redirect URLs `sideline://**`, `exp://**`, localhost:8081). `npx supabase config push`
+  changes **production** auth: show the diff and get approval first.
+- **Mobile:** `services/supabase.ts` (publishable key only; PKCE; native sessions AES-256 encrypted with a
+  per-write key in Keychain/Keystore via expo-secure-store, ciphertext in AsyncStorage; web uses
+  localStorage; auto-refresh only while the app is foregrounded; one client across Fast Refresh) →
+  `services/account.ts` (the only module touching Supabase tables; parameterized supabase-js queries,
+  never SQL strings) → `state/AuthContext.tsx` (`status`: loading · signed_out · guest ·
+  needs_onboarding · ready, from the pure, unit-tested `authStatus`). `Stack.Protected` guards route by
+  status; `auth/callback` and `reset-password` handle email links (`exchangeCodeForSession`) in any
+  state. Returning users skip Welcome (branded `LaunchScreen` while the profile loads). Logout =
+  `signOut({ scope: 'local' })` + clearing profile/teams/stories; the local app store is remounted per
+  user (`PerUserAppStore`). Backend calls as a user go through `asSignedInUser` (refresh once on 401).
+- **Personalization** via `state/usePersonalization.ts` (account when signed in, demo profile otherwise):
+  Scores puts your teams first (#1 team on top), score rows honor spoiler shield, Discover has a
+  **My teams** filter (stories with a followed `teamId`) and synced saved stories, You shows the real
+  profile, and Ask Sideline sends `preferences {knowledge_level, explanation_style}`.
+- **Ask Sideline preferences** (`agents/agent.py::AnswerStyle`): validated enums only, turned into fixed
+  server-written sentences by `style_instructions` (no client text reaches the prompt); phrasing only, so
+  facts still come from the tools. Part of the answer-cache key and recorded in the audit log as
+  `answer_style`. `PROMPT_VERSION` 2c.5.
+- **Backend:** `core/auth.py` verifies `Authorization: Bearer <access_token>` against
+  `<SUPABASE_URL>/auth/v1/.well-known/jwks.json` (PyJWKClient, cached 10 min, re-fetched for an unknown
+  `kid`, so key rotation just works): asymmetric algorithms only (HS256 / `none` rejected), signature,
+  `exp` (30 s leeway), `iss`, `aud=authenticated`, required claims. 401 for missing/invalid/expired, 403
+  for a genuine non-user token (e.g. `role=anon`), 503 if keys are unreachable or auth isn't configured.
+  Identity comes **only** from the verified `sub`; no endpoint accepts a user id. Use `CurrentUser` for any
+  private endpoint. Replay `X-Session-Token` auth is separate and unchanged. Tests sign real ES256 tokens
+  with a throwaway key (`tests/test_auth.py`), no network.
+- **Email codes, not links.** Sign-up confirmation and password reset are typed-in **8-digit codes**
+  (`verifyOtp` type `email` / `recovery`; `CodeField`, `codeError`, `EMAIL_CODE_LENGTH` = the project's
+  `otp_length`), so they work on any device. **Not live yet:** the code templates
+  (`supabase/templates/*.html`, `[auth.email.template.*]` in config.toml) can't be pushed on the free tier
+  with Supabase's default sender; that needs custom SMTP (e.g. a Gmail App Password) entered in the
+  dashboard. Until then Supabase sends its default **link** emails; the code screens say "Got a link
+  instead? Open it on this same device and browser", and `/auth/callback` + `/reset-password` still
+  handle links (same device/browser only, PKCE). The built-in sender only reaches Supabase-org members,
+  about 2/hour. Test accounts can be created in the dashboard (Authentication → Users → Add user →
+  Auto Confirm).
+- **Native PKCE:** `lib/cryptoPolyfill.ts` (imported first in `services/supabase.ts`) gives Hermes
+  `crypto.getRandomValues` + `crypto.subtle.digest` via expo-crypto. Without it supabase-js uses
+  `Math.random()` verifiers and "plain" challenges on iOS/Android.
+
 ## Checks (run before declaring work done)
 
 ```bash
@@ -306,5 +405,6 @@ npx expo export --platform ios --platform android --output-dir /tmp/sideline-exp
 | Next | Replay-backed AI beyond the replay screen (mock game sheet chat still uses `services/assistant.ts`) |
 | 2E Evaluations | Grow `evals/cases.py`; add regression thresholds to CI (live runs on prompt/tool changes) |
 | Live scores (commercial provider) | `backend/app/services/` provider emitting the same `PlayEvent` model |
-| Auth, profiles, picks persistence | Supabase → replace seeding in `state/AppStore.tsx` / `services/profile.ts` |
+| Auth + profiles ✅ (Supabase) | `supabase/migrations` → `services/account.ts` → `state/AuthContext.tsx` → welcome/onboarding/You; FastAPI `CurrentUser` |
+| Picks persistence | Supabase tables + RLS → replace seeding in `state/AppStore.tsx` / `services/profile.ts` |
 | Live watch parties | Supabase Realtime → `services/social.ts` + party actions in the store |

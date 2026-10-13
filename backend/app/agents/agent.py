@@ -21,7 +21,7 @@ from app.agents.stats import LeaderCategory
 from app.agents.view import ReplayView
 
 #: Bump when instructions/tools change so cached answers are invalidated.
-PROMPT_VERSION = "2c.4"
+PROMPT_VERSION = "2c.5"
 
 ToolName = Literal["get_game_state", "get_recent_plays", "get_team_stats", "get_player_stats", "get_game_context"]
 TOOL_NAMES: tuple[str, ...] = get_args(ToolName)
@@ -94,9 +94,48 @@ Rules (in priority order):
 """
 
 
+KnowledgeLevel = Literal["casual", "regular", "expert"]
+ExplanationStyle = Literal["simple", "balanced", "detailed"]
+
+
+class AnswerStyle(BaseModel):
+    """How to *phrase* answers (from the user's profile). Validated enums only, so no free text from
+    the client ever reaches the prompt, and it can't change which facts are used: facts always come
+    from the tools (the deterministic engine)."""
+
+    knowledge_level: KnowledgeLevel = "regular"
+    explanation_style: ExplanationStyle = "balanced"
+
+    @property
+    def key(self) -> str:
+        return f"{self.knowledge_level}/{self.explanation_style}"
+
+
+DEFAULT_STYLE = AnswerStyle()
+
+_KNOWLEDGE_NOTES: dict[KnowledgeLevel, str] = {
+    "casual": "The user is a casual fan: avoid jargon, and briefly explain any football term you use.",
+    "regular": "The user knows the rules and the main players: standard football terms are fine.",
+    "expert": "The user is an expert: use precise football terminology without explaining basics.",
+}
+_STYLE_NOTES: dict[ExplanationStyle, str] = {
+    "simple": "Keep answers to 1-2 short sentences.",
+    "balanced": "Answer in 2-4 sentences with a little context.",
+    "detailed": "Give a fuller breakdown (up to about 6 sentences) with the relevant numbers.",
+}
+
+
+def style_instructions(style: AnswerStyle) -> str:
+    return (
+        "Answer style (affects wording and length only; never invent or omit facts to fit it): "
+        f"{_KNOWLEDGE_NOTES[style.knowledge_level]} {_STYLE_NOTES[style.explanation_style]}"
+    )
+
+
 @dataclass
 class AgentDeps:
     view: ReplayView
+    style: AnswerStyle = field(default_factory=AnswerStyle)
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     #: Players sharing rank 1 in any leaderboard returned this run (used to detect ambiguous pronouns later).
     tied_leaders: list[str] = field(default_factory=list)
@@ -138,6 +177,12 @@ sideline_agent: Agent[AgentDeps, SidelineAnswer] = Agent(
     name="sideline",
     defer_model_check=True,
 )
+
+
+@sideline_agent.instructions
+def answer_style(ctx: RunContext[AgentDeps]) -> str:
+    """Per-request phrasing, built only from fixed server-side sentences."""
+    return style_instructions(ctx.deps.style)
 
 
 @sideline_agent.tool

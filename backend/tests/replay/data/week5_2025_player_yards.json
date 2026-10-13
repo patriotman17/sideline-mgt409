@@ -1,0 +1,925 @@
+{
+ "_about": "Per-player yards for 2025 Week 5 (REG), summed from nflverse's own passing_yards / rushing_yards / receiving_yards columns, which Sideline's extract does not use. An independent check of the engine's stats. Data: nflverse play-by-play, CC BY 4.0.",
+ "games": {
+  "2025_05_DAL_NYJ": {
+   "A.Beck": {
+    "rec": 1
+   },
+   "A.Lazard": {
+    "rec": 3
+   },
+   "A.Smith": {
+    "rec": 14
+   },
+   "B.Hall": {
+    "rec": 42,
+    "rush": 113
+   },
+   "D.Prescott": {
+    "pass": 237,
+    "rush": 28
+   },
+   "G.Pickens": {
+    "rec": 57
+   },
+   "G.Wilson": {
+    "rec": 71
+   },
+   "H.Luepke": {
+    "rec": 10
+   },
+   "I.Davis": {
+    "rec": 28,
+    "rush": 5
+   },
+   "J.Blue": {
+    "rush": 7
+   },
+   "J.Ferguson": {
+    "rec": 49
+   },
+   "J.Fields": {
+    "pass": 283,
+    "rush": 26
+   },
+   "J.Reynolds": {
+    "rec": 29
+   },
+   "J.Ruckert": {
+    "rec": 28
+   },
+   "J.Williams": {
+    "rec": 4,
+    "rush": 135
+   },
+   "L.Schoonmaker": {
+    "rec": 3
+   },
+   "M.Taylor": {
+    "rec": 67
+   },
+   "R.Flournoy": {
+    "rec": 114,
+    "rush": 10
+   }
+  },
+  "2025_05_DEN_PHI": {
+   "A.Brown": {
+    "rec": 43
+   },
+   "A.Dillon": {
+    "rush": 12
+   },
+   "A.Prentice": {
+    "rush": 8
+   },
+   "A.Trautman": {
+    "rec": 11
+   },
+   "B.Nix": {
+    "pass": 242,
+    "rush": 22
+   },
+   "C.Sutton": {
+    "rec": 99
+   },
+   "D.Goedert": {
+    "rec": 19
+   },
+   "D.Smith": {
+    "rec": 114
+   },
+   "E.Engram": {
+    "rec": 33
+   },
+   "G.Calcaterra": {
+    "rec": 18
+   },
+   "J.Dobbins": {
+    "rec": 5,
+    "rush": 79
+   },
+   "J.Dotson": {
+    "rec": 24
+   },
+   "J.Hurts": {
+    "pass": 280,
+    "rush": 3
+   },
+   "M.Mims": {
+    "rec": 10,
+    "rush": 9
+   },
+   "R.Harvey": {
+    "rec": 18,
+    "rush": 12
+   },
+   "S.Barkley": {
+    "rec": 58,
+    "rush": 30
+   },
+   "T.Badie": {
+    "rec": 16
+   },
+   "T.Franklin": {
+    "rec": 35
+   },
+   "T.Sherfield": {
+    "rec": 15
+   },
+   "W.Shipley": {
+    "rec": 4,
+    "rush": 0
+   }
+  },
+  "2025_05_DET_CIN": {
+   "A.Iosivas": {
+    "rec": 82
+   },
+   "A.St. Brown": {
+    "rec": 100
+   },
+   "B.Wright": {
+    "rec": 9
+   },
+   "C.Brown": {
+    "rec": 21,
+    "rush": 27
+   },
+   "D.Montgomery": {
+    "pass": 3,
+    "rec": 6,
+    "rush": 65
+   },
+   "D.Sample": {
+    "rec": -1
+   },
+   "I.TeSlaa": {
+    "rec": 12
+   },
+   "J.Browning": {
+    "pass": 251,
+    "rush": 31
+   },
+   "J.Chase": {
+    "rec": 110
+   },
+   "J.Gibbs": {
+    "rec": 33,
+    "rush": 54
+   },
+   "J.Goff": {
+    "pass": 258,
+    "rush": -2
+   },
+   "J.Williams": {
+    "rec": 9,
+    "rush": 1
+   },
+   "M.Gesicki": {
+    "rec": 15
+   },
+   "S.LaPorta": {
+    "rec": 92
+   },
+   "S.Perine": {
+    "rec": 2,
+    "rush": 27
+   },
+   "T.Higgins": {
+    "rec": 22
+   }
+  },
+  "2025_05_HOU_BAL": {
+   "B.Bates": {
+    "rec": 23
+   },
+   "B.Brooks": {
+    "rush": 15
+   },
+   "C.Kirk": {
+    "rec": 64
+   },
+   "C.Kolar": {
+    "rec": 10
+   },
+   "C.Rush": {
+    "pass": 179
+   },
+   "C.Stroud": {
+    "pass": 244,
+    "rush": 30
+   },
+   "D.Henry": {
+    "rush": 33
+   },
+   "D.Hopkins": {
+    "rec": 46
+   },
+   "D.Mills": {
+    "pass": 23,
+    "rush": 3
+   },
+   "D.Pierce": {
+    "rush": 21
+   },
+   "D.Schultz": {
+    "rec": 60
+   },
+   "H.Bryant": {
+    "rec": 5
+   },
+   "I.Likely": {
+    "rec": 12
+   },
+   "J.Higgins": {
+    "rec": 32
+   },
+   "J.Hill": {
+    "rec": 9,
+    "rush": 3
+   },
+   "J.Noel": {
+    "rec": 13,
+    "rush": 5
+   },
+   "K.Mitchell": {
+    "rec": 5,
+    "rush": 8
+   },
+   "M.Andrews": {
+    "rec": 22
+   },
+   "N.Chubb": {
+    "rush": 61
+   },
+   "N.Collins": {
+    "rec": 52,
+    "rush": 8
+   },
+   "W.Marks": {
+    "rush": 24
+   },
+   "X.Hutchinson": {
+    "rec": 18
+   },
+   "Z.Flowers": {
+    "rec": 72
+   },
+   "Z.Mitchell-Paden": {
+    "rec": 3
+   }
+  },
+  "2025_05_KC_JAX": {
+   "B.Smith": {
+    "rec": 32,
+    "rush": 4
+   },
+   "B.Strange": {
+    "rec": 22
+   },
+   "B.Thomas": {
+    "rec": 80
+   },
+   "B.Tuten": {
+    "rec": 5,
+    "rush": 6
+   },
+   "D.Brown": {
+    "rec": 15
+   },
+   "H.Long": {
+    "rec": 3
+   },
+   "I.Pacheco": {
+    "rec": 20,
+    "rush": 36
+   },
+   "J.Mundt": {
+    "rec": 7
+   },
+   "J.Smith-Schuster": {
+    "rec": 17
+   },
+   "K.Hunt": {
+    "rec": 8,
+    "rush": 49
+   },
+   "M.Brown": {
+    "rec": 48
+   },
+   "P.Mahomes": {
+    "pass": 318,
+    "rush": 60
+   },
+   "P.Washington": {
+    "rec": 16
+   },
+   "T.Etienne": {
+    "rec": 9,
+    "rush": 49
+   },
+   "T.Hunter": {
+    "rec": 64
+   },
+   "T.Kelce": {
+    "rec": 61
+   },
+   "T.Lawrence": {
+    "pass": 221,
+    "rush": 54
+   },
+   "T.Thornton": {
+    "rec": 90
+   },
+   "X.Worthy": {
+    "rec": 42,
+    "rush": 9
+   }
+  },
+  "2025_05_LV_IND": {
+   "A.Abdullah": {
+    "rush": 6
+   },
+   "A.Bachman": {
+    "rec": 9
+   },
+   "A.Dulin": {
+    "rec": 55
+   },
+   "A.Jeanty": {
+    "rec": 42,
+    "rush": 67
+   },
+   "A.Okwuegbunam": {
+    "rec": 36
+   },
+   "A.Richardson": {
+    "pass": 9,
+    "rec": 9
+   },
+   "D.Giddens": {
+    "rush": 22
+   },
+   "D.Jones": {
+    "pass": 212,
+    "rush": 2
+   },
+   "G.Smith": {
+    "pass": 228,
+    "rush": 8
+   },
+   "I.Thomas": {
+    "rec": 20
+   },
+   "J.Bech": {
+    "rec": 27
+   },
+   "J.Downs": {
+    "rec": 54
+   },
+   "J.Meyers": {
+    "rec": 32
+   },
+   "J.Taylor": {
+    "rec": 20,
+    "rush": 66
+   },
+   "M.Pittman": {
+    "rec": 39
+   },
+   "R.Mostert": {
+    "rush": 22
+   },
+   "T.Tucker": {
+    "rec": 62,
+    "rush": 9
+   },
+   "T.Warren": {
+    "rec": 44
+   }
+  },
+  "2025_05_MIA_CAR": {
+   "B.Tremayne": {
+    "rec": 9
+   },
+   "B.Young": {
+    "pass": 198,
+    "rush": 1
+   },
+   "D.Achane": {
+    "rec": 30,
+    "rush": 16
+   },
+   "D.Waller": {
+    "rec": 78
+   },
+   "H.Renfrow": {
+    "rec": 7
+   },
+   "J.Hill": {
+    "rec": 22
+   },
+   "J.Mitchell": {
+    "rec": 11
+   },
+   "J.Waddle": {
+    "rec": 110
+   },
+   "Ji.Horn": {
+    "rec": 21,
+    "rush": 10
+   },
+   "M.Evans": {
+    "rec": 4
+   },
+   "M.Washington": {
+    "rec": 0
+   },
+   "O.Gordon": {
+    "rush": -2
+   },
+   "R.Dowdle": {
+    "rec": 28,
+    "rush": 206
+   },
+   "T.Conner": {
+    "rec": 16
+   },
+   "T.Etienne": {
+    "rec": 7,
+    "rush": 22
+   },
+   "T.McMillan": {
+    "rec": 73
+   },
+   "T.Tagovailoa": {
+    "pass": 256,
+    "rush": 5
+   },
+   "T.Tremble": {
+    "rec": 7
+   },
+   "X.Legette": {
+    "rec": 31
+   }
+  },
+  "2025_05_MIN_CLE": {
+   "C.Akers": {
+    "pass": 32
+   },
+   "C.Wentz": {
+    "pass": 236,
+    "rush": 13
+   },
+   "D.Gabriel": {
+    "pass": 190,
+    "rush": 5
+   },
+   "D.Njoku": {
+    "rec": 67
+   },
+   "D.Sampson": {
+    "rec": 6,
+    "rush": -4
+   },
+   "H.Fannin": {
+    "rec": 13
+   },
+   "I.Bond": {
+    "rec": 29
+   },
+   "J.Addison": {
+    "rec": 41
+   },
+   "J.Ford": {
+    "rec": 20,
+    "rush": 18
+   },
+   "J.Jefferson": {
+    "rec": 123
+   },
+   "J.Jeudy": {
+    "rec": 15
+   },
+   "J.Mason": {
+    "rec": 4,
+    "rush": 52
+   },
+   "J.Nailor": {
+    "rec": 27,
+    "rush": 15
+   },
+   "J.Oliver": {
+    "rec": 35
+   },
+   "J.Thrash": {
+    "rec": 22
+   },
+   "M.Brosmer": {
+    "rush": -1
+   },
+   "M.Corley": {
+    "rush": 11
+   },
+   "Q.Judkins": {
+    "rec": 18,
+    "rush": 110
+   },
+   "T.Hockenson": {
+    "rec": 38
+   },
+   "Z.Scott": {
+    "rush": 18
+   }
+  },
+  "2025_05_NE_BUF": {
+   "A.Gibson": {
+    "rec": 5,
+    "rush": 21
+   },
+   "C.Samuel": {
+    "rec": 26
+   },
+   "D.Douglas": {
+    "rec": 17
+   },
+   "D.Kincaid": {
+    "rec": 108
+   },
+   "D.Knox": {
+    "rec": 15
+   },
+   "D.Maye": {
+    "pass": 273,
+    "rush": 12
+   },
+   "H.Henry": {
+    "rec": 46
+   },
+   "J.Allen": {
+    "pass": 253,
+    "rush": 53
+   },
+   "J.Cook": {
+    "rush": 49
+   },
+   "J.Palmer": {
+    "rec": 36
+   },
+   "K.Boutte": {
+    "rec": 43
+   },
+   "K.Coleman": {
+    "rec": 23
+   },
+   "K.Shakir": {
+    "rec": 45,
+    "rush": 5
+   },
+   "R.Davis": {
+    "rush": 1
+   },
+   "R.Stevenson": {
+    "rec": 13,
+    "rush": 14
+   },
+   "S.Diggs": {
+    "rec": 146
+   },
+   "T.Henderson": {
+    "rec": 3,
+    "rush": 24
+   },
+   "Ty.Johnson": {
+    "rush": 10
+   }
+  },
+  "2025_05_NYG_NO": {
+   "A.Kamara": {
+    "rec": 28,
+    "rush": 27
+   },
+   "B.Collins": {
+    "rec": 7
+   },
+   "B.Cooks": {
+    "rec": 5
+   },
+   "C.Olave": {
+    "rec": 59
+   },
+   "C.Skattebo": {
+    "rec": 45,
+    "rush": 59
+   },
+   "D.Bellinger": {
+    "rec": 52
+   },
+   "D.Singletary": {
+    "rec": 4,
+    "rush": 20
+   },
+   "D.Slayton": {
+    "rec": 31
+   },
+   "D.Vele": {
+    "rec": 13
+   },
+   "J.Dart": {
+    "pass": 202,
+    "rush": 55
+   },
+   "J.Johnson": {
+    "rec": 17
+   },
+   "K.Miller": {
+    "rec": 8,
+    "rush": 41
+   },
+   "R.Shaheed": {
+    "rec": 114
+   },
+   "S.Rattler": {
+    "pass": 225,
+    "rec": 0,
+    "rush": 21
+   },
+   "T.Hill": {
+    "pass": 19,
+    "rush": -1
+   },
+   "T.Johnson": {
+    "rec": 33
+   },
+   "W.Robinson": {
+    "rec": 30,
+    "rush": 2
+   }
+  },
+  "2025_05_SF_LA": {
+   "B.Corum": {
+    "rush": 13
+   },
+   "B.Robinson": {
+    "rush": 12
+   },
+   "C.McCaffrey": {
+    "rec": 82,
+    "rush": 57
+   },
+   "D.Adams": {
+    "rec": 88
+   },
+   "D.Allen": {
+    "rec": 24
+   },
+   "D.Robinson": {
+    "rec": 39
+   },
+   "J.Tonges": {
+    "rec": 41
+   },
+   "J.Whittington": {
+    "rec": 33
+   },
+   "K.Bourne": {
+    "rec": 142
+   },
+   "K.Juszczyk": {
+    "rec": 21,
+    "rush": -1
+   },
+   "K.Williams": {
+    "rec": 66,
+    "rush": 65
+   },
+   "L.Farrell": {
+    "rec": 8
+   },
+   "M.Jones": {
+    "pass": 342,
+    "rush": 5
+   },
+   "M.Stafford": {
+    "pass": 389,
+    "rush": 0
+   },
+   "M.Valdes-Scantling": {
+    "rec": 9
+   },
+   "P.Nacua": {
+    "rec": 85
+   },
+   "S.Moore": {
+    "rush": 1
+   },
+   "T.Atwell": {
+    "rec": 72
+   },
+   "T.Ferguson": {
+    "rec": 21
+   }
+  },
+  "2025_05_TB_SEA": {
+   "A.Barner": {
+    "rec": 53
+   },
+   "B.Mayfield": {
+    "pass": 379,
+    "rush": 15
+   },
+   "C.Godwin": {
+    "rec": 26
+   },
+   "C.Kupp": {
+    "rec": 59
+   },
+   "C.Otton": {
+    "rec": 81
+   },
+   "D.Young": {
+    "rec": 36
+   },
+   "E.Arroyo": {
+    "rec": 10
+   },
+   "E.Egbuka": {
+    "rec": 163
+   },
+   "J.Milroe": {
+    "rush": 0
+   },
+   "J.Smith-Njigba": {
+    "rec": 132
+   },
+   "K.Johnson": {
+    "rush": 2
+   },
+   "K.Walker": {
+    "rec": 0,
+    "rush": 86
+   },
+   "R.White": {
+    "rec": 30,
+    "rush": 41
+   },
+   "S.Darnold": {
+    "pass": 341
+   },
+   "S.Shepard": {
+    "rec": 24,
+    "rush": -5
+   },
+   "S.Tucker": {
+    "rec": -4,
+    "rush": 3
+   },
+   "T.Horton": {
+    "rec": 39
+   },
+   "T.Johnson": {
+    "rec": 59
+   },
+   "Z.Charbonnet": {
+    "rec": 12,
+    "rush": 36
+   }
+  },
+  "2025_05_TEN_ARI": {
+   "C.Dike": {
+    "rec": 17
+   },
+   "C.Okonkwo": {
+    "rec": 48
+   },
+   "C.Ridley": {
+    "rec": 131
+   },
+   "C.Ward": {
+    "pass": 265,
+    "rush": -6
+   },
+   "E.Ayomanor": {
+    "rec": 18
+   },
+   "E.Demercado": {
+    "rush": 81
+   },
+   "E.Higgins": {
+    "rec": 10
+   },
+   "G.Dortch": {
+    "rec": 12
+   },
+   "G.Helm": {
+    "rec": 34
+   },
+   "J.Chestnut": {
+    "rush": 3
+   },
+   "K.Murray": {
+    "pass": 220,
+    "rush": 25
+   },
+   "M.Carter": {
+    "rec": 22,
+    "rush": 51
+   },
+   "M.Harrison": {
+    "rec": 98
+   },
+   "Mi.Wilson": {
+    "rec": 16
+   },
+   "T.Lockett": {
+    "rec": 6
+   },
+   "T.McBride": {
+    "rec": 41
+   },
+   "T.Pollard": {
+    "rec": 11,
+    "rush": 67
+   },
+   "T.Spears": {
+    "rush": 14
+   },
+   "Z.Jones": {
+    "rec": 8
+   },
+   "Z.Knight": {
+    "rec": 13,
+    "rush": 11
+   }
+  },
+  "2025_05_WAS_LAC": {
+   "C.Rodriguez": {
+    "rush": 7
+   },
+   "D.Samuel": {
+    "rec": 96
+   },
+   "H.Haskins": {
+    "rec": 2,
+    "rush": 13
+   },
+   "J.Bates": {
+    "rec": 9
+   },
+   "J.Croskey-Merritt": {
+    "rec": 39,
+    "rush": 111
+   },
+   "J.Daniels": {
+    "pass": 231,
+    "rush": 39
+   },
+   "J.Herbert": {
+    "pass": 166,
+    "rush": 60
+   },
+   "J.Lane": {
+    "rec": 16
+   },
+   "J.McNichols": {
+    "rec": 12,
+    "rush": 6
+   },
+   "K.Allen": {
+    "rec": 58
+   },
+   "K.Vidal": {
+    "rec": 1,
+    "rush": 18
+   },
+   "L.McCaffrey": {
+    "rec": 50
+   },
+   "L.McConkey": {
+    "rec": 39
+   },
+   "O.Gadsden": {
+    "rec": 14
+   },
+   "O.Hampton": {
+    "rec": 26,
+    "rush": 44
+   },
+   "Q.Johnston": {
+    "rec": 40,
+    "rush": 9
+   },
+   "T.Conklin": {
+    "rec": 30
+   },
+   "T.Lance": {
+    "pass": 44,
+    "rush": 11
+   },
+   "T.Martin": {
+    "rec": 9
+   }
+  }
+ }
+}

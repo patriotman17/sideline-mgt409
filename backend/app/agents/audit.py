@@ -70,6 +70,8 @@ class AuditRecord(BaseModel):
     grounding_issues: list[str] = Field(default_factory=list)
     history_turns: int = 0
     context_fingerprint: str | None = None
+    #: "knowledge/style" phrasing preset (e.g. "casual/simple"); never free text.
+    answer_style: str | None = None
     error_type: str | None = None
     error: str | None = None
 

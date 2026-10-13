@@ -9,7 +9,7 @@ import { Avatar, EmptyState, Screen, Skeleton } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { splitKickoff } from '@/lib/format';
 import { getTeam, listGamesByDay, listMostRecentFinals, listReplayGames } from '@/services';
-import { useAppState } from '@/state/AppStore';
+import { usePersonalization } from '@/state/usePersonalization';
 import { colors, withAlpha } from '@/theme';
 import type { Game } from '@/types';
 
@@ -25,7 +25,11 @@ const involves = (g: Game, teamIds: string[]) => teamIds.includes(g.away.teamId)
 /** Group a day's games Apple Sports–style: your teams first, then by state. */
 function buildSections(day: ScoreDay, games: Game[], favoriteIds: string[], excludeId?: string): Section[] {
   const pool = games.filter((g) => g.id !== excludeId);
-  const mine = pool.filter((g) => involves(g, favoriteIds));
+  // Your teams first, your #1 team (favoriteIds[0]) at the very top.
+  const primary = favoriteIds.slice(0, 1);
+  const mine = pool
+    .filter((g) => involves(g, favoriteIds))
+    .sort((a, b) => Number(involves(b, primary)) - Number(involves(a, primary)));
   const rest = pool.filter((g) => !involves(g, favoriteIds));
   const sections: Section[] = [];
   if (mine.length) sections.push({ key: 'mine', title: 'Your teams', icon: 'star', games: mine });
@@ -60,7 +64,7 @@ function SectionLabel({ title, icon }: { title: string; icon?: keyof typeof Ioni
 }
 
 export default function ScoresScreen() {
-  const { profile } = useAppState();
+  const { favoriteTeamIds, initials } = usePersonalization();
   const [day, setDay] = useState<ScoreDay>('today');
   const { data, loading, reload } = useAsync(
     async () => ({
@@ -72,7 +76,7 @@ export default function ScoresScreen() {
 
   // Real historical games from the backend replay engine; hidden if the backend is offline.
   const { data: replays } = useAsync(listReplayGames);
-  const favoriteIds = profile.favoriteTeamIds;
+  const favoriteIds = favoriteTeamIds;
   const games = data?.games ?? [];
   const hero = day === 'today' ? games.find((g) => g.status === 'live' && involves(g, favoriteIds)) : undefined;
   const sections = buildSections(day, games, favoriteIds, hero?.id);
@@ -90,7 +94,7 @@ export default function ScoresScreen() {
       <View className="flex-row items-center justify-between px-5 pb-1 pt-2">
         <Text className="text-[15px] font-extrabold tracking-[6px] text-ink">SIDELINE</Text>
         <Pressable onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel="Open your profile" hitSlop={8}>
-          <Avatar initials={profile.initials} color={colors.volt} size={32} />
+          <Avatar initials={initials} color={colors.volt} size={32} />
         </Pressable>
       </View>
 

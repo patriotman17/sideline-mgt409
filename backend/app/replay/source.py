@@ -4,6 +4,10 @@ RELEASE_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/p
 LICENSE = "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)"
 ATTRIBUTION = "Play-by-play data from nflverse (nflfastR / nflverse-data), CC BY 4.0."
 
+#: Schedule metadata, extracted when the source has it (older extracts don't, and still load).
+#: ``start_time`` is the actual kickoff in US Eastern time; ``location`` is "Home" or "Neutral".
+OPTIONAL_COLUMNS = ["start_time", "location"]
+
 # Only the columns the ingestion pipeline reads (see app/replay/ingest.py).
 COLUMNS = [
     "game_id",
