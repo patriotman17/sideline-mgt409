@@ -218,3 +218,47 @@ def test_expired_sessions_take_their_predictions_with_them(divisional, clock):
     clock.advance(61)
     with pytest.raises(SessionNotFound):
         manager.get(s.id)
+
+
+# ---------------------------------------------------------------- big-moment holds (own pace)
+
+
+def _first_big(game):
+    from tests.predictions.helpers import final
+
+    return next(p for p in final(game).all() if p.big_moment)
+
+
+def test_big_moments_hold_twelve_real_seconds_at_any_speed(divisional, clock):
+    big = _first_big(divisional)
+    s = session(divisional, clock, speed=50)
+    s.step(big.opened_cursor - 1)
+    s.play()
+    clock.advance(SECONDS_PER_PLAY / 50 + 0.001)  # the moment's play is revealed
+    assert s.snapshot()[2] == big.opened_cursor and s.moment_hold_active()
+    left = s.pick_window_left()
+    assert left is not None and 12 < left <= 12 + SECONDS_PER_PLAY / 50 + 1e-6  # not scaled by 50x
+    clock.advance(11)
+    assert s.snapshot()[2] == big.opened_cursor  # still holding
+    s.submit_prediction(big.id, big.options[0].id)  # answering ends the hold
+    assert not s.moment_hold_active()
+    clock.advance(SECONDS_PER_PLAY / 50 + 0.001)
+    assert s.snapshot()[2] > big.opened_cursor
+
+
+def test_moment_hold_levels(divisional, clock):
+    big = _first_big(divisional)
+    off = ReplaySession(divisional, clock=clock, moment_holds="off")
+    off.step(big.opened_cursor - 1)
+    off.play()
+    clock.advance(SECONDS_PER_PLAY)
+    assert not off.moment_hold_active()  # only the short pick window
+    every = ReplaySession(divisional, clock=clock, moment_holds="all")
+    assert every.pause_for_predictions
+    every.play()
+    clock.advance(SECONDS_PER_PLAY * 3)
+    assert every.snapshot()[0] is PlaybackStatus.PAUSED and every.pause_reason == "prediction"
+    s = session(divisional, clock)
+    assert s.moment_holds == "big"
+    s.set_pause_for_predictions(True)
+    assert str(s.moment_holds) == "all"

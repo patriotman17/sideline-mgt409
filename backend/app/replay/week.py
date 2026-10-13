@@ -26,9 +26,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from functools import lru_cache
+from typing import Literal
 from zoneinfo import ZoneInfo
 
-from app.replay.engine import replay
+from app.predictions.config import DEFAULT_CONFIG
+from app.predictions.ledger import PredictionLedger
+from app.predictions.models import Prediction
+from app.replay.engine import apply_event, initial_state, replay
 from app.replay.models import Game, GameState
 
 Clock = Callable[[], float]
@@ -118,12 +122,51 @@ class Preset:
 
 
 @dataclass(frozen=True)
+class Moment:
+    """A featured prediction in a game, as it looks when it opens. ``locked_cursor`` is only used to
+    tell whether the moment is still open at a cursor (= no snap revealed since); it's never exposed."""
+
+    prediction: Prediction
+    opened_cursor: int
+    locked_cursor: int
+    open_at: datetime
+
+    @property
+    def big(self) -> bool:
+        return self.prediction.big_moment
+
+    def open_at_cursor(self, cursor: int) -> bool:
+        return self.opened_cursor <= cursor < self.locked_cursor
+
+
+def game_moments(game: Game, timeline: GameTimeline) -> tuple[Moment, ...]:
+    """Every featured question of a game, from the same deterministic ledger a replay session runs,
+    so the week and an opened replay agree on what's asked and when."""
+    ledger = PredictionLedger(game.info, DEFAULT_CONFIG)
+    state = initial_state(game)
+    opened: list[Prediction] = []
+    for i, event in enumerate(game.events):
+        state = apply_event(state, event, game)
+        opened += [p.model_copy() for p in ledger.observe(event, state, i + 1)]
+    out = []
+    for p in opened:
+        final = ledger.get(p.id)
+        locked = final.locked_cursor if final and final.locked_cursor else len(game.events) + 1
+        out.append(Moment(p, p.opened_cursor, locked, timeline.times[p.opened_cursor - 1]))
+    return tuple(out)
+
+
+@dataclass(frozen=True)
 class SlateGame:
     game: Game
     timeline: GameTimeline
     kickoff: datetime
     window_key: str
     window_label: str
+    moments: tuple[Moment, ...] = ()
+
+    def open_moment(self, cursor: int) -> Moment | None:
+        return next((m for m in self.moments if m.open_at_cursor(cursor)), None)
 
 
 class WeekSlate:
@@ -138,7 +181,8 @@ class WeekSlate:
             if kickoff is None:
                 raise WeekError(f"{g.info.game_id} has no kickoff time")
             key, label = window_for(g)
-            items.append(SlateGame(g, GameTimeline(g), kickoff, key, label))
+            timeline = GameTimeline(g)
+            items.append(SlateGame(g, timeline, kickoff, key, label, game_moments(g, timeline)))
         self.season, self.week = season, week
         self.games = sorted(items, key=lambda s: (s.kickoff, s.game.info.game_id))
         self.by_id = {s.game.info.game_id: s for s in self.games}
@@ -181,7 +225,22 @@ def slates_from(games: list[Game]) -> dict[tuple[int, int], WeekSlate]:
 class ClockStatus(StrEnum):
     PAUSED = "paused"
     PLAYING = "playing"
+    #: Stopped on a big moment in a watched game; resumes by itself after the hold (or on release).
+    HELD = "held"
     FINISHED = "finished"
+
+
+HoldLevel = Literal["big", "all"]
+#: Real seconds the clock holds on a moment (same as a replay's big-moment hold).
+HOLD_SECONDS = DEFAULT_CONFIG.big_moment_hold_seconds
+MAX_WATCHED = 4
+
+
+@dataclass(frozen=True)
+class Hold:
+    game_id: str
+    moment: Moment
+    release_wall: float
 
 
 def validate_week_speed(speed: float) -> float:
@@ -212,6 +271,11 @@ class WeekSession:
         self._anchor_sim = self._clamp(start_at or slate.starts_at)
         self._anchor_wall = clock()
         self.last_access = self._anchor_wall
+        #: game_id -> which moments stop the clock there ("big" or "all").
+        self._watched: dict[str, HoldLevel] = {}
+        self._hold: Hold | None = None
+        #: Moments already held (or skipped by pausing) in this pass, so each stops the clock once.
+        self._consumed: set[str] = set()
 
     def check_token(self, token: str | None) -> bool:
         return bool(token) and hmac.compare_digest(hashlib.sha256((token or "").encode()).digest(), self._token_hash)
@@ -226,35 +290,118 @@ class WeekSession:
         return self._clamp(self._anchor_sim + timedelta(seconds=elapsed))
 
     def _sync(self) -> datetime:
+        """Advance the clock to now, stopping on any big moment that opens in a watched game."""
         wall = self._clock()
         self.last_access = wall
-        sim = self._now_sim(wall)
-        if self._status is ClockStatus.PLAYING and sim >= self.slate.ends_at:
-            self._status, self._anchor_sim, self._anchor_wall = ClockStatus.FINISHED, sim, wall
-        return sim
+        while True:
+            if self._status is ClockStatus.HELD:
+                hold = self._hold
+                if hold is None or wall < hold.release_wall:
+                    return self._anchor_sim
+                self._end_hold(at_wall=hold.release_wall)  # hold over: continue from that moment
+                continue
+            if self._status is not ClockStatus.PLAYING:
+                return self._anchor_sim
+            target = self._now_sim(wall)
+            hit = self._next_moment(self._anchor_sim, target)
+            if hit is not None:
+                game_id, moment = hit
+                # Stop exactly when the moment opened (in wall time), then hold for real seconds.
+                hit_wall = self._anchor_wall + (moment.open_at - self._anchor_sim).total_seconds() / self._speed
+                self._status, self._anchor_sim, self._anchor_wall = ClockStatus.HELD, moment.open_at, hit_wall
+                self._hold = Hold(game_id, moment, hit_wall + HOLD_SECONDS)
+                continue
+            if target >= self.slate.ends_at:
+                self._status, self._anchor_sim, self._anchor_wall = ClockStatus.FINISHED, target, wall
+            return target
+
+    def _next_moment(self, after: datetime, until: datetime) -> tuple[str, Moment] | None:
+        best: tuple[str, Moment] | None = None
+        for game_id, level in self._watched.items():
+            for m in self.slate.by_id[game_id].moments:
+                if m.prediction.id in self._consumed or not (after < m.open_at <= until):
+                    continue
+                if level == "big" and not m.big:
+                    continue
+                if best is None or m.open_at < best[1].open_at:
+                    best = (game_id, m)
+        return best
+
+    def _end_hold(self, *, at_wall: float, then: ClockStatus = ClockStatus.PLAYING) -> None:
+        if self._hold is not None:
+            self._consumed.add(self._hold.moment.prediction.id)
+        self._hold = None
+        self._status, self._anchor_wall = then, at_wall
 
     def snapshot(self) -> tuple[ClockStatus, float, datetime]:
         with self._lock:
             sim = self._sync()
             return self._status, self._speed, sim
 
+    def hold(self) -> tuple[Hold, float] | None:
+        """The current hold and its real seconds left (None when not held)."""
+        with self._lock:
+            self._sync()
+            if self._status is not ClockStatus.HELD or self._hold is None:
+                return None
+            return self._hold, max(0.0, self._hold.release_wall - self._clock())
+
+    def watch(self, game_ids: list[str], level: HoldLevel = "big") -> None:
+        """Games whose moments stop the clock (the one you're viewing, your #1 team's). Empty = never."""
+        unknown = [g for g in game_ids if g not in self.slate.by_id]
+        if unknown:
+            raise ValueError(f"Unknown game ids: {unknown}")
+        if len(set(game_ids)) > MAX_WATCHED:
+            raise ValueError(f"Watch at most {MAX_WATCHED} games")
+        with self._lock:
+            self._sync()
+            self._watched = dict.fromkeys(game_ids, level)
+            if self._hold is not None and self._hold.game_id not in self._watched:
+                self._end_hold(at_wall=self._clock())
+
+    @property
+    def watched(self) -> dict[str, HoldLevel]:
+        return dict(self._watched)
+
+    def release(self) -> None:
+        """End a hold early (e.g. the viewer answered)."""
+        with self._lock:
+            self._sync()
+            if self._status is ClockStatus.HELD:
+                self._end_hold(at_wall=self._clock())
+
     def play(self) -> None:
         with self._lock:
             sim = self._sync()
+            if self._status is ClockStatus.HELD:
+                self._end_hold(at_wall=self._clock())
+                return
             if sim >= self.slate.ends_at:
                 sim = self.slate.starts_at  # replay the week from the start
+                self._consumed.clear()
             self._status, self._anchor_sim, self._anchor_wall = ClockStatus.PLAYING, sim, self._clock()
 
     def pause(self) -> None:
         with self._lock:
             sim = self._sync()
-            if self._status is ClockStatus.PLAYING:
+            if self._status is ClockStatus.HELD:
+                self._end_hold(at_wall=self._clock(), then=ClockStatus.PAUSED)
+            elif self._status is ClockStatus.PLAYING:
                 self._status, self._anchor_sim, self._anchor_wall = ClockStatus.PAUSED, sim, self._clock()
 
     def seek(self, at: datetime) -> None:
         with self._lock:
             self._sync()
+            if self._status is ClockStatus.HELD:
+                self._end_hold(at_wall=self._clock())
             self._anchor_sim, self._anchor_wall = self._clamp(at), self._clock()
+            # Moments at or after the new time can stop the clock again.
+            self._consumed = {
+                pid
+                for s in self.slate.games
+                for m in s.moments
+                if (pid := m.prediction.id) in self._consumed and m.open_at < self._anchor_sim
+            }
             if self._status is ClockStatus.FINISHED:
                 self._status = ClockStatus.PAUSED
 
@@ -262,7 +409,8 @@ class WeekSession:
         with self._lock:
             sim = self._sync()
             self._speed = validate_week_speed(speed)
-            self._anchor_sim, self._anchor_wall = sim, self._clock()
+            if self._status is not ClockStatus.HELD:  # a hold keeps its own real-time countdown
+                self._anchor_sim, self._anchor_wall = sim, self._clock()
 
 
 class WeekSessionNotFound(KeyError):

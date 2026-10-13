@@ -23,6 +23,8 @@ from app.replay.week import (
     SPEEDS,
     ClockStatus,
     GamePhase,
+    HoldLevel,
+    Moment,
     WeekSession,
     WeekSessionManager,
     WeekSessionNotFound,
@@ -65,6 +67,32 @@ class PresetOut(BaseModel):
     at: datetime
 
 
+class MomentOption(BaseModel):
+    id: str
+    label: str
+
+
+class MomentOut(BaseModel):
+    """A featured question that is open right now (it closes at the next snap). Same id as in the
+    game's replay, so answering there works. Never includes its outcome."""
+
+    prediction_id: str
+    type: str
+    question: str
+    options: list[MomentOption]
+    tags: list[str]
+    big_moment: bool
+    team: str | None
+    situation: str
+    points: int
+
+
+class HoldOut(BaseModel):
+    game_id: str
+    seconds_left: float
+    moment: MomentOut
+
+
 class WeekGame(BaseModel):
     game_id: str
     away: Team
@@ -92,6 +120,8 @@ class WeekGame(BaseModel):
     yardline_100: int | None = None
     ball_on: str | None = None
     home_win_probability: float | None = None
+    #: The featured question open right now in this game, if any.
+    moment: MomentOut | None = None
 
 
 class WeekSnapshot(BaseModel):
@@ -109,6 +139,9 @@ class WeekSnapshot(BaseModel):
     presets: list[PresetOut]
     games: list[WeekGame]
     live_games: int
+    #: Set while the clock is stopped on a big moment in a watched game.
+    hold: HoldOut | None = None
+    watched: list[str] = Field(default_factory=list)
     attribution: str
     license: str
 
@@ -135,6 +168,12 @@ class WeekSpeedRequest(BaseModel):
     speed: float
 
 
+class WatchRequest(BaseModel):
+    #: The game you're viewing and/or your #1 team's game. Empty list = the clock never stops.
+    game_ids: list[str] = Field(default_factory=list, max_length=4)
+    level: HoldLevel = "big"
+
+
 # ---------------------------------------------------------------- helpers
 
 
@@ -155,8 +194,24 @@ def _period_label(phase: GamePhase, quarter: int, clock: int | None, game_status
     return f"{q} {clock // 60}:{clock % 60:02d}" if clock is not None else q
 
 
+def _moment_out(m: Moment) -> MomentOut:
+    p = m.prediction
+    return MomentOut(
+        prediction_id=p.id,
+        type=p.type.value,
+        question=p.question,
+        options=[MomentOption(id=o.id, label=o.label) for o in p.options],
+        tags=p.tags,
+        big_moment=p.big_moment,
+        team=p.team,
+        situation=p.situation,
+        points=p.points,
+    )
+
+
 def week_snapshot(session: WeekSession) -> WeekSnapshot:
     clock_status, speed, sim = session.snapshot()
+    held = session.hold()
     slate = session.slate
     games: list[WeekGame] = []
     for s in slate.games:
@@ -186,6 +241,8 @@ def week_snapshot(session: WeekSession) -> WeekSnapshot:
                     "period_label": _period_label(phase, st.quarter, st.clock_seconds, st.status.value),
                 }
             )
+        if phase is GamePhase.LIVE and (open_moment := s.open_moment(cursor)) is not None:
+            g = g.model_copy(update={"moment": _moment_out(open_moment)})
         if phase is GamePhase.LIVE:
             g = g.model_copy(
                 update={
@@ -213,6 +270,12 @@ def week_snapshot(session: WeekSession) -> WeekSnapshot:
         presets=[PresetOut(key=p.key, label=p.label, at=p.at) for p in slate.presets],
         games=games,
         live_games=sum(g.phase is GamePhase.LIVE for g in games),
+        hold=(
+            HoldOut(game_id=held[0].game_id, seconds_left=round(held[1], 1), moment=_moment_out(held[0].moment))
+            if held
+            else None
+        ),
+        watched=list(session.watched),
         attribution=ATTRIBUTION,
         license=LICENSE,
     )
@@ -297,6 +360,23 @@ def seek_week(body: SeekRequest, session: WeekDep) -> WeekSnapshot:
         session.seek(body.at)
     else:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Pass 'at' or 'preset'")
+    return week_snapshot(session)
+
+
+@router.put("/sessions/{session_id}/watch", response_model=WeekSnapshot)
+def watch_games(body: WatchRequest, session: WeekDep) -> WeekSnapshot:
+    """Which games' big moments stop this viewer's clock (12 s holds; answering releases early)."""
+    try:
+        session.watch(body.game_ids, body.level)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+    return week_snapshot(session)
+
+
+@router.post("/sessions/{session_id}/release", response_model=WeekSnapshot)
+def release_hold(session: WeekDep) -> WeekSnapshot:
+    """End the current hold now (e.g. the viewer answered)."""
+    session.release()
     return week_snapshot(session)
 
 

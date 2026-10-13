@@ -44,6 +44,7 @@ function overview(parts: Partial<ReplayPredictions>): ReplayPredictions {
     scoring_note: '',
     points_table: { next_play_gain_5: 10, next_score: 15, drive_touchdown: 20, fourth_down_conversion: 25 },
     pause_for_predictions: false,
+    moment_holds: 'big',
     paused_for_prediction: false,
     resumes_after_play: null,
     open: [],

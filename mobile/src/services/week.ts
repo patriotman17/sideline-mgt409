@@ -8,7 +8,27 @@ import { apiGet, apiRequest } from './http';
 const BASE = '/api/v1/week';
 
 export type WeekPhase = 'scheduled' | 'live' | 'final';
-export type WeekClockStatus = 'paused' | 'playing' | 'finished';
+/** "held" = stopped on a big moment in a watched game; it resumes by itself after the hold. */
+export type WeekClockStatus = 'paused' | 'playing' | 'held' | 'finished';
+
+/** A featured question open right now (same id as in the game's replay). Never includes its outcome. */
+export interface WeekMoment {
+  prediction_id: string;
+  type: string;
+  question: string;
+  options: { id: string; label: string }[];
+  tags: string[];
+  big_moment: boolean;
+  team: string | null;
+  situation: string;
+  points: number;
+}
+
+export interface WeekHold {
+  game_id: string;
+  seconds_left: number;
+  moment: WeekMoment;
+}
 
 export interface WeekTeam {
   abbr: string;
@@ -44,6 +64,7 @@ export interface WeekGame {
   yardline_100: number | null;
   ball_on: string | null;
   home_win_probability: number | null;
+  moment?: WeekMoment | null;
 }
 
 export interface WeekPreset {
@@ -68,6 +89,8 @@ export interface WeekSnapshot {
   presets: WeekPreset[];
   games: WeekGame[];
   live_games: number;
+  hold?: WeekHold | null;
+  watched?: string[];
   attribution: string;
   license: string;
 }
@@ -103,6 +126,21 @@ export const controlWeek = (a: WeekAuth, action: 'play' | 'pause') =>
 
 export const seekWeek = (a: WeekAuth, target: { preset: string } | { at: string }) =>
   apiRequest<WeekSnapshot>('POST', `${BASE}/sessions/${a.sessionId}/seek`, target, {
+    headers: auth(a),
+  });
+
+/** Games whose moments stop this viewer's clock (the one being watched, the #1 team's). */
+export const watchWeek = (a: WeekAuth, gameIds: string[], level: 'big' | 'all' = 'big') =>
+  apiRequest<WeekSnapshot>(
+    'PUT',
+    `${BASE}/sessions/${a.sessionId}/watch`,
+    { game_ids: gameIds, level },
+    { headers: auth(a) },
+  );
+
+/** End a hold now (the viewer answered). */
+export const releaseWeek = (a: WeekAuth) =>
+  apiRequest<WeekSnapshot>('POST', `${BASE}/sessions/${a.sessionId}/release`, undefined, {
     headers: auth(a),
   });
 

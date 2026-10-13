@@ -6,7 +6,8 @@ import {
   answerReplayPrediction,
   explainReplayPrediction,
   getReplayPredictions,
-  setPauseForPredictions,
+  setMomentHolds as setReplayMomentHolds,
+  type MomentHolds,
   type ReplayAuth,
   type ReplayPredictions,
 } from '@/services';
@@ -66,11 +67,12 @@ export function useReplayPredictions(
     [auth, pending, load, onPlaybackResumed],
   );
 
-  const setPauseForPicks = useCallback(
-    async (enabled: boolean) => {
+  /** Off · Big moments · Every question, for this replay session. */
+  const setMomentHolds = useCallback(
+    async (level: MomentHolds) => {
       if (!auth) return;
       try {
-        setData(await setPauseForPredictions(auth, enabled));
+        setData(await setReplayMomentHolds(auth, level));
       } catch {
         load();
       }
@@ -95,5 +97,5 @@ export function useReplayPredictions(
 
   const view = useMemo(() => picksView(data, pending), [data, pending]);
 
-  return { data, view, error, reload: load, answer, setPauseForPicks, explain, explanations };
+  return { data, view, error, reload: load, answer, setMomentHolds, explain, explanations };
 }

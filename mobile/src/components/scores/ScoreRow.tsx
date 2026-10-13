@@ -86,9 +86,11 @@ interface ScoreRowProps {
   onPress?: () => void;
   /** Team records for scheduled games (sample data has them; real historical weeks don't). */
   showRecords?: boolean;
+  /** Small lime chip under the score line, e.g. "Big moment". */
+  badge?: string;
 }
 
-export function ScoreRow({ game, onPress, showRecords = true }: ScoreRowProps) {
+export function ScoreRow({ game, onPress, showRecords = true, badge }: ScoreRowProps) {
   const { favoriteTeamIds, spoilerShield } = usePersonalization();
   const away = getTeam(game.away.teamId);
   const home = getTeam(game.home.teamId);
@@ -121,6 +123,12 @@ export function ScoreRow({ game, onPress, showRecords = true }: ScoreRowProps) {
         )}
         <View className="min-w-0 flex-1 items-center">
           <Center game={game} hideScore={hideScore} />
+          {badge ? (
+            <View className="mt-1 flex-row items-center gap-1 rounded-full bg-volt px-2 py-0.5">
+              <Ionicons name="flash" size={10} color={colors.bg} />
+              <Text className="text-[10px] font-bold uppercase text-bg">{badge}</Text>
+            </View>
+          ) : null}
         </View>
         {scheduled ? (
           <Text className="w-[46px] text-center font-cond text-[15px] text-sub">{showRecords ? home.record : ''}</Text>

@@ -17,7 +17,7 @@ from app.agents.service import AIError
 from app.api.routes.replay import AIDep, SessionDep
 from app.predictions.ledger import PredictionError, PredictionItem, visible_items
 from app.predictions.models import POINTS, Answer, PredictionStats, PredictionStatus, PredictionType
-from app.replay.sessions import ReplaySession
+from app.replay.sessions import MomentHolds, ReplaySession
 
 router = APIRouter(tags=["predictions"])
 
@@ -33,6 +33,7 @@ class PredictionsOverview(BaseModel):
     scoring_note: str = SCORING_NOTE
     points_table: dict[PredictionType, int] = Field(default_factory=lambda: dict(POINTS))
     pause_for_predictions: bool
+    moment_holds: MomentHolds
     paused_for_prediction: bool
     #: After a rewind/restart: new predictions resume only after this play (where the session left off).
     resumes_after_play: int | None
@@ -60,7 +61,9 @@ class HistoryResponse(BaseModel):
 
 
 class SettingsRequest(BaseModel):
-    pause_for_predictions: bool
+    #: Preferred: "off" | "big" | "all". ``pause_for_predictions`` is the older on/off form ("all"/"big").
+    moment_holds: MomentHolds | None = None
+    pause_for_predictions: bool | None = None
 
 
 class ExplainResponse(BaseModel):
@@ -97,6 +100,7 @@ def overview(session: SessionDep, resolved_limit: Annotated[int, Query(ge=0, le=
         return PredictionsOverview(
             cursor=cursor,
             pause_for_predictions=session.pause_for_predictions,
+            moment_holds=session.moment_holds,
             paused_for_prediction=session.pause_reason == "prediction",
             resumes_after_play=high_water if cursor < high_water else None,
             open=[i for i in items if i.prediction.status is PredictionStatus.OPEN],
@@ -147,7 +151,12 @@ def answer(prediction_id: str, body: AnswerRequest, session: SessionDep) -> Answ
 
 @router.put("/sessions/{session_id}/predictions/settings", response_model=PredictionsOverview)
 def settings(body: SettingsRequest, session: SessionDep) -> PredictionsOverview:
-    session.set_pause_for_predictions(body.pause_for_predictions)
+    if body.moment_holds is not None:
+        session.set_moment_holds(body.moment_holds)
+    elif body.pause_for_predictions is not None:
+        session.set_pause_for_predictions(body.pause_for_predictions)
+    else:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Pass moment_holds or pause_for_predictions")
     return overview(session)
 
 

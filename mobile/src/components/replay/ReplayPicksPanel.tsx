@@ -1,9 +1,11 @@
-import { Switch, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+
+import { ChoiceList } from '@/components/auth';
 
 import { Button } from '@/components/ui';
 import { formatAccuracy, type PicksView } from '@/lib/replayPredictions';
-import type { ReplayPredictions } from '@/services';
-import { colors } from '@/theme';
+import type { MomentHolds, ReplayPredictions } from '@/services';
+import { MOMENT_HOLD_OPTIONS } from '@/lib/moments';
 import { ReplayPredictionCard } from './ReplayPredictionCard';
 
 interface Props {
@@ -12,7 +14,8 @@ interface Props {
   error: string | undefined;
   onRetry: () => void;
   onAnswer: (predictionId: string, optionId: string) => void;
-  onTogglePause: (enabled: boolean) => void;
+  momentHolds: MomentHolds;
+  onMomentHolds: (level: MomentHolds) => void;
   onExplain: (predictionId: string) => void;
   secondsToSnap?: number | null;
   explanations: Record<string, { text?: string; error?: string; loading?: boolean }>;
@@ -21,7 +24,11 @@ interface Props {
 function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
     <View className="flex-1 items-center">
-      <Text className={`font-score text-[26px] leading-[30px] ${accent ? 'text-volt' : 'text-ink'}`}>{value}</Text>
+      <Text
+        className={`font-score text-[26px] leading-[30px] ${accent ? 'text-volt' : 'text-ink'}`}
+      >
+        {value}
+      </Text>
       <Text className="text-[11px] text-sub">{label}</Text>
     </View>
   );
@@ -43,7 +50,8 @@ export function ReplayPicksPanel({
   error,
   onRetry,
   onAnswer,
-  onTogglePause,
+  momentHolds,
+  onMomentHolds,
   onExplain,
   secondsToSnap,
   explanations,
@@ -53,7 +61,13 @@ export function ReplayPicksPanel({
       <View className="mx-4 rounded-2xl bg-loss/10 p-4">
         <Text className="text-[14px] font-semibold text-ink">Couldn’t load predictions</Text>
         <Text className="mt-1 text-[13px] text-sub">{error}</Text>
-        <Button label="Retry" size="sm" variant="secondary" className="mt-3 self-start" onPress={onRetry} />
+        <Button
+          label="Retry"
+          size="sm"
+          variant="secondary"
+          className="mt-3 self-start"
+          onPress={onRetry}
+        />
       </View>
     );
   }
@@ -74,28 +88,23 @@ export function ReplayPicksPanel({
         Demo scoring · points stay in this replay. Answer before the play; picks are final.
       </Text>
 
-      <View className="mt-3 flex-row items-center justify-between rounded-2xl bg-white/10 px-4 py-2.5">
-        <View className="flex-1 pr-3">
-          <Text className="text-[14px] font-semibold text-ink">Pause for picks</Text>
-          <Text className="text-[12px] text-mute">
-            {data.pause_for_predictions
-              ? 'The replay stops until you answer'
-              : 'Off: you get a few extra seconds before the next snap'}
-          </Text>
-        </View>
-        <Switch
-          value={data.pause_for_predictions}
-          onValueChange={onTogglePause}
-          trackColor={{ true: colors.volt, false: colors.raised }}
-          thumbColor="#fff"
-          accessibilityLabel="Pause for picks"
+      <View className="mt-3 rounded-2xl bg-white/10 p-4">
+        <Text className="text-[14px] font-semibold text-ink">Moment holds</Text>
+        <Text className="mb-3 mt-0.5 text-[12px] text-mute">
+          {MOMENT_HOLD_OPTIONS.find((o) => o.value === momentHolds)?.hint}
+        </Text>
+        <ChoiceList
+          compact
+          options={MOMENT_HOLD_OPTIONS}
+          value={momentHolds}
+          onChange={onMomentHolds}
         />
       </View>
 
       {data.resumes_after_play !== null ? (
         <Text className="mt-3 text-[12px] leading-[17px] text-mute">
-          You’ve rewound. New questions resume after play {data.resumes_after_play}, where you left off — earlier
-          ones can’t be re-answered.
+          You’ve rewound. New questions resume after play {data.resumes_after_play}, where you left
+          off — earlier ones can’t be re-answered.
         </Text>
       ) : null}
 
@@ -112,10 +121,12 @@ export function ReplayPicksPanel({
         </Section>
       ) : (
         <View className="mt-5 items-center rounded-2xl bg-white/5 px-6 py-6">
-          <Text className="text-center text-[15px] font-semibold text-ink">No open questions right now</Text>
+          <Text className="text-center text-[15px] font-semibold text-ink">
+            No open questions right now
+          </Text>
           <Text className="mt-1 text-center text-[13px] leading-[18px] text-sub">
-            A handful of featured questions per game, saved for the big moments: 4th-down calls, red-zone
-            snaps, and late, close situations. They’ll pop up under the replay controls.
+            A handful of featured questions per game, saved for the big moments: 4th-down calls,
+            red-zone snaps, and late, close situations. They’ll pop up under the replay controls.
           </Text>
         </View>
       )}

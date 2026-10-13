@@ -183,3 +183,111 @@ def test_joined_replays_hide_questions_from_before_the_join(catalog):
     fresh = ReplaySession(g, clock=FakeClock())
     fresh.step(91)
     assert any(i.prediction.opened_cursor < 91 for i in visible_items(fresh.predictions, fresh.cursor))
+
+
+# ---------------------------------------------------------------- big-moment holds
+
+
+def _week(slate, clock, game_id, *, speed=300.0, level="big"):
+    w = WeekSession(slate, clock=clock, speed=speed, start_at=next(p.at for p in slate.presets if p.key == "sun-early"))
+    w.watch([game_id], level)
+    w.play()
+    return w
+
+
+def test_moments_match_a_replay_sessions_featured_questions(slate):
+    """The week asks exactly what an opened replay asks (same ids, same plays)."""
+    for s in slate.games:
+        session = ReplaySession(s.game, clock=FakeClock())
+        session.step(len(s.game.events))
+        replay_ids = [p.id for p in session.predictions.all()]
+        assert [m.prediction.id for m in s.moments] == replay_ids, s.game.info.game_id
+        assert all(m.prediction.big_moment == (m.prediction.importance >= 85) for m in s.moments)
+    assert sum(m.big for s in slate.games for m in s.moments) == 18
+
+
+def test_clock_stops_exactly_on_a_watched_big_moment_and_holds_12_real_seconds(slate):
+    gid = "2025_05_DEN_PHI"
+    first_big = next(m for m in slate.by_id[gid].moments if m.big)
+    clock = FakeClock()
+    w = _week(slate, clock, gid)
+    clock.advance(1)
+    while w.snapshot()[0] is not ClockStatus.HELD:
+        clock.advance(1)
+    _, _, sim = w.snapshot()
+    assert sim == first_big.open_at
+    assert slate.state(gid, sim)[1] == first_big.opened_cursor  # the game sits exactly on the moment
+    hold, left = w.hold()
+    assert hold.moment.prediction.id == first_big.prediction.id and 0 < left <= 12
+    clock.advance(left - 0.1)
+    assert w.snapshot()[0] is ClockStatus.HELD and w.snapshot()[2] == sim  # nothing moves during a hold
+    clock.advance(0.2)
+    assert w.snapshot()[0] is ClockStatus.PLAYING  # resumes by itself
+    assert w.snapshot()[2] > sim
+
+
+def test_release_pause_and_unwatching_end_a_hold_and_each_moment_holds_once(slate):
+    gid = "2025_05_DEN_PHI"
+    clock = FakeClock()
+    w = _week(slate, clock, gid)
+    while w.snapshot()[0] is not ClockStatus.HELD:
+        clock.advance(1)
+    first = w.hold()[0].moment.prediction.id
+    w.release()
+    assert w.snapshot()[0] is ClockStatus.PLAYING
+    clock.advance(0.5)
+    hold = w.hold()
+    assert hold is None or hold[0].moment.prediction.id != first  # never the same moment twice
+    while w.snapshot()[0] is not ClockStatus.HELD:
+        clock.advance(1)
+    w.pause()
+    assert w.snapshot()[0] is ClockStatus.PAUSED and w.hold() is None
+    w.play()
+    while w.snapshot()[0] is not ClockStatus.HELD:
+        clock.advance(1)
+    w.watch([])
+    assert w.snapshot()[0] is ClockStatus.PLAYING
+
+
+def test_unwatched_games_and_blowouts_never_stop_the_clock(slate):
+    clock = FakeClock()
+    w = _week(slate, clock, "2025_05_DAL_NYJ")  # a blowout: no big moments
+    for _ in range(120):
+        clock.advance(1)
+        assert w.snapshot()[0] is not ClockStatus.HELD
+    with pytest.raises(ValueError):
+        w.watch(["not-a-game"])
+
+
+def test_all_level_holds_ordinary_questions_too(slate):
+    gid = "2025_05_DAL_NYJ"
+    clock = FakeClock()
+    w = _week(slate, clock, gid, level="all")
+    while w.snapshot()[0] is not ClockStatus.HELD:
+        clock.advance(1)
+    assert not w.hold()[0].moment.big
+
+
+def test_api_reports_open_moments_and_holds_without_outcomes(api):
+    client, clock = api
+    data, auth = start(client, preset="sun-early", speed=300)
+    sid = data["session_id"]
+    r = client.put(f"{BASE}/sessions/{sid}/watch", json={"game_ids": ["2025_05_DEN_PHI"]}, headers=auth)
+    assert r.status_code == 200 and r.json()["watched"] == ["2025_05_DEN_PHI"]
+    assert client.put(f"{BASE}/sessions/{sid}/watch", json={"game_ids": ["x"]}, headers=auth).status_code == 422
+    client.post(f"{BASE}/sessions/{sid}/play", headers=auth)
+    snap = None
+    for _ in range(200):
+        clock.advance(1)
+        snap = client.get(f"{BASE}/sessions/{sid}", headers=auth).json()
+        if snap["status"] == "held":
+            break
+    assert snap and snap["status"] == "held"
+    hold = snap["hold"]
+    assert hold["game_id"] == "2025_05_DEN_PHI" and hold["moment"]["big_moment"] and hold["seconds_left"] <= 12
+    game = next(g for g in snap["games"] if g["game_id"] == "2025_05_DEN_PHI")
+    assert game["moment"]["prediction_id"] == hold["moment"]["prediction_id"]
+    for leaked in ("correct_option_id", "resolution_summary", "locked_cursor", "resolved_cursor"):
+        assert leaked not in str(hold) and leaked not in str(game["moment"])
+    released = client.post(f"{BASE}/sessions/{sid}/release", headers=auth).json()
+    assert released["status"] == "playing" and released["hold"] is None

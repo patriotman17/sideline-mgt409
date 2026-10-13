@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { DayTabs, ScoreRow, WeekClock } from '@/components/scores';
+import { DayTabs, MomentBanner, ScoreRow, WeekClock } from '@/components/scores';
 import { Avatar, Button, EmptyState, Screen, Skeleton } from '@/components/ui';
 import { WEEK_DAYS, dayOfClock, toScoreGame, weekSections, type WeekDay } from '@/lib/week';
 import { getTeam } from '@/services';
@@ -41,6 +41,11 @@ export default function ScoresScreen() {
   const snap = week.snapshot;
   const day = pinnedDay ?? (snap ? dayOfClock(snap.sim_time_label) : 'sun');
   const sections = snap ? weekSections(snap.games, day, favoriteTeamIds) : [];
+  // The clock is holding on a big moment in your #1 team's game (you're on Scores, not in a game).
+  const heldGame =
+    snap?.status === 'held' && snap.hold && !week.viewingGameId
+      ? snap.games.find((g) => g.game_id === snap.hold?.game_id)
+      : undefined;
   const tint = favoriteTeamIds.length ? getTeam(favoriteTeamIds[0]).primary : colors.surface;
 
   const open = (g: WeekGame) =>
@@ -105,6 +110,15 @@ export default function ScoresScreen() {
             }}
           />
 
+          {heldGame && snap.hold ? (
+            <MomentBanner
+              hold={snap.hold}
+              matchup={`${heldGame.away.abbr} @ ${heldGame.home.abbr}`}
+              onOpen={() => open(heldGame)}
+              onSkip={week.release}
+            />
+          ) : null}
+
           <View className="mt-4">
             <DayTabs<WeekDay> days={WEEK_DAYS} value={day} onChange={setPinnedDay} />
           </View>
@@ -117,6 +131,7 @@ export default function ScoresScreen() {
                   key={g.game_id}
                   game={toScoreGame(g)}
                   showRecords={false}
+                  badge={g.moment?.big_moment ? 'Big moment' : undefined}
                   onPress={() => open(g)}
                 />
               ))}
@@ -129,7 +144,6 @@ export default function ScoresScreen() {
           </Text>
         </>
       )}
-
     </Screen>
   );
 }

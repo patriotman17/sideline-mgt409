@@ -16,11 +16,12 @@ import time
 import uuid
 from collections.abc import Callable
 from enum import StrEnum
+from typing import Literal
 
 from app.agents.conversation import Conversation
 from app.predictions.config import DEFAULT_CONFIG, PredictionConfig
 from app.predictions.ledger import PredictionLedger
-from app.predictions.models import Answer
+from app.predictions.models import Answer, Prediction
 from app.replay.engine import apply_event, initial_state, replay
 from app.replay.models import Game, GameState, PlayEvent
 
@@ -30,6 +31,11 @@ Clock = Callable[[], float]
 SECONDS_PER_PLAY = 3.0
 MIN_SPEED = 0.25
 MAX_SPEED = 50.0
+
+
+#: How predictions interrupt playback: "off" (a short pick window only), "big" (default: big moments
+#: hold the next snap for a few real seconds), "all" (pause at every question until answered).
+MomentHolds = Literal["off", "big", "all"]
 
 
 class PlaybackStatus(StrEnum):
@@ -64,6 +70,7 @@ class ReplaySession:
         pause_for_predictions: bool = False,
         prediction_config: PredictionConfig = DEFAULT_CONFIG,
         start_cursor: int = 0,
+        moment_holds: MomentHolds = "big",
     ):
         self.id = session_id or uuid.uuid4().hex
         #: Secret returned once at creation; only its hash is kept. Required for every session request.
@@ -74,9 +81,12 @@ class ReplaySession:
         self.conversation = Conversation()
         #: Prediction lifecycle for this session. Only ever moves forward (see ``_advance_to``).
         self.predictions = PredictionLedger(game.info, prediction_config)
-        #: Opt-in: stop playback at the play where a new prediction opens. Off by default — instead
-        #: playback holds briefly (a "pick window") before the next snap, like a broadcast beat.
-        self.pause_for_predictions = pause_for_predictions
+        #: "big" (default): big moments hold the next snap for a few real seconds; other questions get a
+        #: short pick window. "all" stops at every question until answered; "off" = pick window only.
+        self.moment_holds: MomentHolds = "all" if pause_for_predictions else moment_holds
+        #: True while the current hold is a big-moment hold (vs. an ordinary pick window).
+        self._moment_hold = False
+        self._last_opened: list[Prediction] = []
         #: Clock time when the current pick window ends (None = no window).
         self._pick_window_until: float | None = None
         #: Why playback is paused, when the server paused it ("prediction"); None otherwise.
@@ -133,6 +143,7 @@ class ReplaySession:
                 self._cursor = index + 1
                 if self._cursor > self.predictions.high_water:
                     opened = self.predictions.observe(event, self._state, self._cursor)
+                    self._last_opened = opened
                     if opened and stop_on_prediction and self._cursor < self.total_events:
                         stopped = True
                         break
@@ -151,12 +162,16 @@ class ReplaySession:
                 self._status = PlaybackStatus.PAUSED
                 self.pause_reason = "prediction"
                 break
-            # Pick window: the next snap waits a little longer. Anchored to when this play was
+            # The next snap waits: a big-moment hold (fixed REAL seconds, so there's time to answer at
+            # any speed) or an ordinary pick window (scaled by speed). Anchored to when this play was
             # *due* (not when it was polled), so the timeline is the same however often clients poll.
+            cfg = self.predictions.config
             spp = SECONDS_PER_PLAY / self._speed
             due = self._anchor_time + (self._cursor - self._anchor_cursor) * spp
+            big = self.moment_holds == "big" and any(p.big_moment for p in self._last_opened)
+            self._moment_hold = big
             self._anchor_cursor = self._cursor
-            self._anchor_time = due + self.predictions.config.pick_window_seconds / self._speed
+            self._anchor_time = due + (cfg.big_moment_hold_seconds if big else cfg.pick_window_seconds / self._speed)
             self._pick_window_until = self._anchor_time + spp  # when the next snap is due
         return now
 
@@ -273,10 +288,21 @@ class ReplaySession:
                 self._reanchor(now)  # answered during the pick window: carry on at normal pace
             return answer, created, resumed
 
+    @property
+    def pause_for_predictions(self) -> bool:
+        return self.moment_holds == "all"
+
     def set_pause_for_predictions(self, enabled: bool) -> None:
+        self.set_moment_holds("all" if enabled else "big")
+
+    def set_moment_holds(self, level: MomentHolds) -> None:
         with self._lock:
             self._sync()
-            self.pause_for_predictions = enabled
+            self.moment_holds = level
+
+    def moment_hold_active(self) -> bool:
+        """True while playback is waiting out a big-moment hold."""
+        return self._moment_hold and self.pick_window_left() is not None
 
     def locked(self) -> threading.RLock:
         """The session lock, for building consistent multi-part reads (e.g. prediction reports)."""
@@ -306,7 +332,13 @@ class ReplaySessionManager:
         self._lock = threading.Lock()
 
     def create(
-        self, game: Game, *, speed: float = 1.0, pause_for_predictions: bool = False, start_cursor: int = 0
+        self,
+        game: Game,
+        *,
+        speed: float = 1.0,
+        pause_for_predictions: bool = False,
+        start_cursor: int = 0,
+        moment_holds: MomentHolds = "big",
     ) -> ReplaySession:
         session = ReplaySession(
             game,
@@ -315,6 +347,7 @@ class ReplaySessionManager:
             pause_for_predictions=pause_for_predictions,
             prediction_config=self._prediction_config,
             start_cursor=start_cursor,
+            moment_holds=moment_holds,
         )
         with self._lock:
             self._evict()

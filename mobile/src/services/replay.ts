@@ -88,6 +88,8 @@ export interface ReplaySnapshot {
     paused_for_prediction: boolean;
     /** Seconds until the next snap while a "pick window" holds playback after a question opens. */
     pick_window_seconds_left: number | null;
+    /** True while that hold is a Big Moment hold (fixed real seconds). */
+    moment_hold: boolean;
     speed: number;
     seconds_per_play: number;
     cursor: number;
@@ -115,11 +117,12 @@ const auth = (a: ReplayAuth) => ({ 'X-Session-Token': a.token });
 
 export const listReplayGames = () => apiGet<ReplayGameSummary[]>(`${BASE}/games`);
 /** `startCursor` > 0 joins mid-game (from the synchronized week): earlier plays are revealed, paused. */
-export const startReplay = (gameId: string, speed = 1, startCursor = 0) =>
+export const startReplay = (gameId: string, speed = 1, startCursor = 0, momentHolds: MomentHolds = 'big') =>
   apiRequest<CreatedReplaySession>('POST', `${BASE}/sessions`, {
     game_id: gameId,
     speed,
     autoplay: false,
+    moment_holds: momentHolds,
     ...(startCursor > 0 ? { start_cursor: startCursor } : {}),
   });
 export const getReplay = (a: ReplayAuth) => apiGet<ReplaySnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));
@@ -382,6 +385,8 @@ export interface ReplayPrediction {
   /** Deterministic ranking score (higher = bigger moment) and why it was featured, e.g. "Red zone". */
   importance: number;
   tags: string[];
+  /** Top-tier moment: play holds for it (Moment holds = big). */
+  big_moment?: boolean;
 }
 
 export interface ReplayPredictionItem {
@@ -413,6 +418,7 @@ export interface ReplayPredictions {
   scoring_note: string;
   points_table: Record<ReplayPredictionType, number>;
   pause_for_predictions: boolean;
+  moment_holds: MomentHolds;
   paused_for_prediction: boolean;
   resumes_after_play: number | null;
   open: ReplayPredictionItem[];
@@ -440,6 +446,12 @@ export const answerReplayPrediction = (a: ReplayAuth, predictionId: string, opti
     { option_id: optionId },
     { headers: auth(a) },
   );
+
+/** How questions interrupt play: off · big (default: big moments hold ~12 s) · all (stop every time). */
+export type MomentHolds = 'off' | 'big' | 'all';
+
+export const setMomentHolds = (a: ReplayAuth, level: MomentHolds) =>
+  apiRequest<ReplayPredictions>('PUT', `${PRED(a)}/settings`, { moment_holds: level }, { headers: auth(a) });
 
 export const setPauseForPredictions = (a: ReplayAuth, enabled: boolean) =>
   apiRequest<ReplayPredictions>('PUT', `${PRED(a)}/settings`, { pause_for_predictions: enabled }, { headers: auth(a) });

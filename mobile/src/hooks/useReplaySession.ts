@@ -8,6 +8,7 @@ import {
   setReplaySpeed,
   startReplay,
   stepReplay,
+  type MomentHolds,
   type ReplayAuth,
   type ReplayControl,
   type ReplaySnapshot,
@@ -20,7 +21,9 @@ const POLL_MS = 1000;
  * Owns one backend replay session for a game: creates it on mount, polls while
  * playing, exposes playback controls, and deletes the session on unmount.
  */
-export function useReplaySession(gameId: string, startCursor = 0) {
+export function useReplaySession(gameId: string, startCursor = 0, momentHolds: MomentHolds = 'big') {
+  // The hold level only matters when the session is created; later changes go through Picks settings.
+  const [initialHolds] = useState(momentHolds);
   const [snapshot, setSnapshot] = useState<ReplaySnapshot>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -32,7 +35,7 @@ export function useReplaySession(gameId: string, startCursor = 0) {
   // Create (and later clean up) the session.
   useEffect(() => {
     let active = true;
-    startReplay(gameId, 1, startCursor).then(
+    startReplay(gameId, 1, startCursor, initialHolds).then(
       ({ session_token, ...snap }) => {
         const created = { sessionId: snap.session_id, token: session_token };
         if (!active) {
@@ -52,7 +55,7 @@ export function useReplaySession(gameId: string, startCursor = 0) {
       sessionRef.current = null;
       if (current) endReplay(current).catch(() => {});
     };
-  }, [gameId, startCursor, attempt]);
+  }, [gameId, startCursor, initialHolds, attempt]);
 
   // Poll while playing.
   const playing = snapshot?.playback.status === 'playing';

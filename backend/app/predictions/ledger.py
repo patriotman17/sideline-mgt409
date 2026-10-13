@@ -109,7 +109,7 @@ class PredictionLedger:
                 return None
         if not critical and self._per_quarter.get(r.state.quarter, 0) >= cfg.max_per_quarter:
             return None
-        return best
+        return best.model_copy(update={"big_moment": critical})
 
     # ------------------------------------------------------------ answers
 

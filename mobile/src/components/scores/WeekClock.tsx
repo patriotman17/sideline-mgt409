@@ -20,7 +20,8 @@ const speedLabel = (s: number) => `${s}×`;
 /** The shared week clock: simulated date/time, play/pause, speed, and jump-to TV windows. */
 export function WeekClock({ week, busy, onPlay, onPause, onSpeed, onJump }: Props) {
   const { tap } = useHaptics();
-  const playing = week.status === 'playing';
+  // A Big Moment hold counts as running: it resumes by itself.
+  const playing = week.status === 'playing' || week.status === 'held';
   const [day, time] = week.sim_time_label.split(' · ');
 
   return (

@@ -27,6 +27,9 @@ class PredictionConfig:
     max_per_quarter: int = 2
     #: Extra seconds (at 1x) the next snap waits after a question opens: a "pick window".
     pick_window_seconds: float = 8.0
+    #: Big moments (importance >= critical_score) hold the game this many REAL seconds (not scaled by
+    #: speed): long enough to read the situation and answer, at 1x or 300x. Answering ends it early.
+    big_moment_hold_seconds: float = 12.0
     base: dict[PredictionType, int] = field(
         default_factory=lambda: {
             PredictionType.FOURTH_DOWN_CONVERSION: 55,

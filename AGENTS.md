@@ -319,10 +319,24 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   `pick_window_seconds` (8 s at 1×, scaled by speed). It's anchored to when the play was *due*, not when
   a client polled, so the timeline is identical however often clients poll.
   `playback.pick_window_seconds_left` = seconds until that next snap; answering ends the window early.
-- **Pause for picks** (opt-in, default **off**, `PUT .../predictions/settings`): playback stops at the
-  play where a question opens (`playback.paused_for_prediction`); answering auto-resumes. `step` stops at
-  a new question only when it's on. Playback-mechanics tests use `tests/replay/conftest.PLAIN`
+- **Moment holds** (`moment_holds`: `off` · **`big`** (default) · `all`; set at session creation or via
+  `PUT .../predictions/settings {moment_holds}`): a featured question is a **big moment** when its
+  importance ≥ `critical_score` (`Prediction.big_moment`; about 2-6 per close game, 0 in blowouts; 18 in
+  2025 Week 5). `big`: big moments hold the next snap `big_moment_hold_seconds` (12) **real** seconds at
+  any speed (`playback.moment_hold`); others get the normal pick window. `all` = the old "pause for picks"
+  (stop at every question until answered; `pause_for_predictions` still maps to it). `off` = pick window
+  only. Answering ends a hold early. Playback-mechanics tests use `tests/replay/conftest.PLAIN`
   (`pick_window_seconds=0`) for exact 3 s timing.
+- **Week holds:** `week.game_moments` precomputes each game's featured questions with the same
+  deterministic ledger a replay runs (same ids). `PUT /week/sessions/{id}/watch {game_ids, level}` sets
+  which games may stop the viewer's clock (the app sends the game being viewed + the #1 team's game).
+  The clock stops **exactly** at a watched big moment (`status: "held"`, `hold {game_id, seconds_left,
+  moment}`), holds 12 real seconds, then resumes by itself; `POST .../release` (after answering), play,
+  pause, seek or unwatching end it; each moment holds once per pass. `WeekGame.moment` = the question
+  open right now (never its outcome). Mobile: `MomentCard` in the replay screen (countdown, big choices,
+  Skip), `MomentBanner` on Scores for the #1 team ("Make your call"), lime "Big moment" chips on rows,
+  `RevealToast` (✓ +points / ✗ / void) after the snap, and the Picks panel's **Moment holds** choice
+  (`lib/moments.ts`, unit-tested; remembered on the device by `WeekContext`).
 - **Points (demo scoring):** correct = 10 next play, 15 next score, 20 drive TD, 25 4th down;
   incorrect/void/unanswered = 0. Accuracy = correct / (correct + incorrect). Streaks count consecutive
   correct answers in resolution order; voids neither extend nor break them. Points are per replay

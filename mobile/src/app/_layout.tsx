@@ -17,7 +17,8 @@ import { LaunchScreen } from '@/components/auth';
 import { Button } from '@/components/ui';
 import { AppStoreProvider } from '@/state/AppStore';
 import { AuthProvider, useAuth } from '@/state/AuthContext';
-import { WeekProvider } from '@/state/WeekContext';
+import { usePersonalization } from '@/state/usePersonalization';
+import { WeekProvider, useWeek } from '@/state/WeekContext';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -52,6 +53,7 @@ export default function RootLayout() {
           <WeekProvider>
             <PerUserAppStore>
               <StatusBar style="light" />
+              <WeekPrimaryTeam />
               <RootNavigator />
             </PerUserAppStore>
           </WeekProvider>
@@ -73,6 +75,16 @@ export default function RootLayout() {
 function PerUserAppStore({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   return <AppStoreProvider key={session?.user.id ?? 'guest'}>{children}</AppStoreProvider>;
+}
+
+/** Your #1 team's big moments stop the week clock too (account or demo profile). */
+function WeekPrimaryTeam() {
+  const { primaryTeamId } = usePersonalization();
+  const { setPrimaryTeam } = useWeek();
+  useEffect(() => {
+    setPrimaryTeam(primaryTeamId);
+  }, [primaryTeamId, setPrimaryTeam]);
+  return null;
 }
 
 function RootNavigator() {

@@ -61,6 +61,8 @@ class Prediction(BaseModel):
     #: Deterministic ranking score and the reasons it was featured (e.g. "Red zone", "Late game").
     importance: int = 0
     tags: list[str] = Field(default_factory=list)
+    #: Top-tier moment (importance >= critical_score): the game holds for it ("Big Moment hold").
+    big_moment: bool = False
 
 
 class Answer(BaseModel):

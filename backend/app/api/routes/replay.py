@@ -27,6 +27,7 @@ from app.replay.sessions import (
     MIN_SPEED,
     SECONDS_PER_PLAY,
     InvalidTransition,
+    MomentHolds,
     PlaybackStatus,
     ReplaySession,
     ReplaySessionManager,
@@ -81,6 +82,8 @@ class PlaybackInfo(BaseModel):
     paused_for_prediction: bool = False
     #: Seconds left in the "pick window" — a short hold before the next snap after a question opens.
     pick_window_seconds_left: float | None = None
+    #: True while that hold is a big-moment hold (fixed real seconds, a bigger moment in the UI).
+    moment_hold: bool = False
     speed: float
     seconds_per_play: float
     cursor: int
@@ -119,6 +122,8 @@ class CreateSessionRequest(BaseModel):
     pause_for_predictions: bool = False
     #: Start part-way through (joining a game from the synchronized week): plays revealed at once, paused.
     start_cursor: int = Field(default=0, ge=0)
+    #: "big" (default): big moments hold play for a few seconds; "all": stop at every question; "off".
+    moment_holds: MomentHolds = "big"
 
 
 class SpeedRequest(BaseModel):
@@ -158,6 +163,7 @@ def snapshot(session: ReplaySession) -> ReplaySnapshot:
     with session.locked():
         playback_status, speed, cursor, state = session.snapshot()
         window_left = session.pick_window_left()
+        moment_hold = session.moment_hold_active()
     total = session.total_events
     return ReplaySnapshot(
         session_id=session.id,
@@ -166,6 +172,7 @@ def snapshot(session: ReplaySession) -> ReplaySnapshot:
             status=playback_status,
             paused_for_prediction=session.pause_reason == "prediction",
             pick_window_seconds_left=window_left,
+            moment_hold=moment_hold,
             speed=speed,
             seconds_per_play=SECONDS_PER_PLAY,
             cursor=cursor,
@@ -221,6 +228,7 @@ def create_session(body: CreateSessionRequest, catalog: CatalogDep, manager: Man
         speed=body.speed,
         pause_for_predictions=body.pause_for_predictions,
         start_cursor=min(body.start_cursor, len(game.events)),
+        moment_holds=body.moment_holds,
     )
     if body.autoplay:
         session.play()

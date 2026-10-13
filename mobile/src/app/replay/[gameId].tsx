@@ -13,7 +13,14 @@ import {
   Timeline,
   WinProbabilityBar,
 } from '@/components/game';
-import { ReplayAskPanel, ReplayInsightCard, ReplayPicksPanel, ReplayPredictionCard } from '@/components/replay';
+import {
+  MomentCard,
+  ReplayAskPanel,
+  ReplayInsightCard,
+  ReplayPicksPanel,
+  ReplayPredictionCard,
+  RevealToast,
+} from '@/components/replay';
 import { LiveDot } from '@/components/scores';
 import { Button, EmptyState, IconButton, Skeleton, TextTabs } from '@/components/ui';
 import { useReplayChat } from '@/hooks/useReplayChat';
@@ -24,6 +31,7 @@ import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { useHaptics } from '@/lib/haptics';
 import { usePersonalization } from '@/state/usePersonalization';
 import { useWeek } from '@/state/WeekContext';
+import { newReveals, type Reveal } from '@/lib/moments';
 import { inlinePick } from '@/lib/replayPredictions';
 import {
   formatGameDate,
@@ -78,13 +86,12 @@ export default function ReplayScreen() {
   }>();
   // Opened from the synchronized week: join at that moment, then follow the week clock.
   const joinAt = Math.max(0, Number.parseInt(startCursor ?? '0', 10) || 0);
-  const { snapshot, auth, error, busy, control, setSpeed, stepBy, retry, refresh } = useReplaySession(
-    gameId,
-    joinAt,
-  );
   const week = useWeek();
-  const weekGame = live === '1' ? week.snapshot?.games.find((g) => g.game_id === gameId) : undefined;
-  const weekPlaying = week.snapshot?.status === 'playing';
+  const { snapshot, auth, error, busy, control, setSpeed, stepBy, retry, refresh } =
+    useReplaySession(gameId, joinAt, week.momentHolds);
+  const weekGame =
+    live === '1' ? week.snapshot?.games.find((g) => g.game_id === gameId) : undefined;
+  const weekPlaying = week.snapshot?.status === 'playing' || week.snapshot?.status === 'held';
   // Following = this game advances with the shared week clock. Any manual control detaches.
   const [following, setFollowing] = useState(live === '1');
   const weekCursor = weekGame?.cursor;
@@ -95,6 +102,13 @@ export default function ReplayScreen() {
     const t = setTimeout(() => stepBy(weekCursor - replayCursor), 0); // catch up (50 plays per request)
     return () => clearTimeout(t);
   }, [following, busy, weekCursor, replayCursor, stepBy]);
+  // While following, this game's big moments stop the week clock.
+  const { setViewing } = week;
+  useEffect(() => {
+    if (!following) return;
+    setViewing(gameId);
+    return () => setViewing(null);
+  }, [following, gameId, setViewing]);
   const ownPace = (fn: () => void) => () => {
     setFollowing(false);
     fn();
@@ -109,7 +123,31 @@ export default function ReplayScreen() {
   );
   const chat = useReplayChat(auth, snapshot?.playback.cursor ?? 0, askPreferences);
   const insights = useReplayInsights(auth, snapshot?.playback.cursor, tab === 'insights');
-  const picks = useReplayPredictions(auth, snapshot?.playback.cursor ?? 0, snapshot?.playback.status, refresh);
+  const picks = useReplayPredictions(
+    auth,
+    snapshot?.playback.cursor ?? 0,
+    snapshot?.playback.status,
+    refresh,
+  );
+
+  // Instant result after the snap for questions you answered (shown once, for a few seconds).
+  const [seenReveals, setSeenReveals] = useState<Set<string>>(() => new Set());
+  const [reveal, setReveal] = useState<Reveal | null>(null);
+  const resolvedItems = picks.data?.resolved;
+  useEffect(() => {
+    const fresh = newReveals(resolvedItems ?? [], seenReveals);
+    if (!fresh.length) return;
+    const t = setTimeout(() => {
+      setSeenReveals((prev) => new Set([...prev, ...fresh.map((f) => f.id)]));
+      setReveal(fresh[fresh.length - 1]);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [resolvedItems, seenReveals]);
+  useEffect(() => {
+    if (!reveal) return;
+    const t = setTimeout(() => setReveal(null), 4000);
+    return () => clearTimeout(t);
+  }, [reveal]);
   const scrollRef = useRef<ScrollView>(null);
   const { ref: keyboardRef, overlap: keyboardOverlap } = useKeyboardOverlap();
   const { tap } = useHaptics();
@@ -145,7 +183,29 @@ export default function ReplayScreen() {
   const home = snapshot ? getTeam(replayTeamId(snapshot.game.home.abbr)) : undefined;
   const isPlaying = playback?.status === 'playing';
   // Featured question shown right under the controls (except on the Picks tab, which lists it already).
-  const featuredPick = tab === 'picks' ? undefined : inlinePick(picks.view);
+  // Big Moment hold: the week clock holding on this game (following), or this replay's own hold.
+  const weekHold = following && week.snapshot?.hold?.game_id === gameId ? week.snapshot.hold : null;
+  const ownHoldSeconds =
+    !following && snapshot?.playback.moment_hold
+      ? snapshot.playback.pick_window_seconds_left
+      : null;
+  const momentId =
+    weekHold?.moment.prediction_id ??
+    (ownHoldSeconds != null
+      ? picks.view.open.find((c) => c.item.prediction.big_moment)?.item.prediction.id
+      : undefined);
+  const momentCard = momentId
+    ? picks.view.open.find((c) => c.item.prediction.id === momentId)
+    : undefined;
+  const momentSeconds = weekHold?.seconds_left ?? ownHoldSeconds;
+  const answerMoment = async (optionId: string) => {
+    if (!momentCard) return;
+    await picks.answer(momentCard.item.prediction.id, optionId);
+    if (weekHold) week.release(); // answered: the week moves on now
+  };
+  const inline = tab === 'picks' ? undefined : inlinePick(picks.view);
+  const featuredPick =
+    inline && inline.item.prediction.id !== momentCard?.item.prediction.id ? inline : undefined;
   const finished = playback?.status === 'finished';
 
   const togglePlay = () => {
@@ -220,15 +280,27 @@ export default function ReplayScreen() {
               ) : null}
             </View>
 
+            {momentCard ? (
+              <MomentCard
+                card={momentCard}
+                secondsLeft={momentSeconds}
+                onAnswer={answerMoment}
+                onSkip={weekHold ? week.release : undefined}
+              />
+            ) : null}
+            {reveal ? <RevealToast reveal={reveal} /> : null}
+
             {/* Playback controls */}
             {playback ? (
               <View className="mx-4 mt-4 rounded-2xl bg-white/10 p-4">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[13px] font-semibold text-ink">
                     {following && weekGame
-                      ? weekPlaying
-                        ? 'Live with the week'
-                        : 'Week paused'
+                      ? weekHold
+                        ? 'Big moment · play holding'
+                        : weekPlaying
+                          ? 'Live with the week'
+                          : 'Week paused'
                       : STATUS_LABEL[playback.status]}
                   </Text>
                   <Text className="font-cond text-[14px] text-sub">
@@ -238,7 +310,11 @@ export default function ReplayScreen() {
                 {weekGame ? (
                   following ? (
                     <View className="mt-2.5 flex-row items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
-                      {weekPlaying ? <LiveDot /> : <Ionicons name="pause" size={12} color={colors.sub} />}
+                      {weekPlaying ? (
+                        <LiveDot />
+                      ) : (
+                        <Ionicons name="pause" size={12} color={colors.sub} />
+                      )}
                       <Text className="flex-1 text-[13px] text-sub">
                         In sync with {week.snapshot?.title} · {week.snapshot?.sim_time_label}
                       </Text>
@@ -256,7 +332,8 @@ export default function ReplayScreen() {
                       onPress={() => {
                         tap();
                         // Ahead of the week (you played on): start over and catch back up to live.
-                        if (weekCursor !== undefined && playback.cursor > weekCursor) control('restart');
+                        if (weekCursor !== undefined && playback.cursor > weekCursor)
+                          control('restart');
                         else if (playback.status === 'playing') control('pause');
                         setFollowing(true);
                       }}
@@ -402,7 +479,11 @@ export default function ReplayScreen() {
                     error={picks.error}
                     onRetry={picks.reload}
                     onAnswer={picks.answer}
-                    onTogglePause={picks.setPauseForPicks}
+                    momentHolds={week.momentHolds}
+                    onMomentHolds={(level) => {
+                      week.setMomentHolds(level);
+                      picks.setMomentHolds(level);
+                    }}
                     onExplain={picks.explain}
                     secondsToSnap={playback?.pick_window_seconds_left}
                     explanations={picks.explanations}
