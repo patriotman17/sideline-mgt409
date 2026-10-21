@@ -173,7 +173,7 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
   `.source.json`; run tests (ingestion must report 0 warnings). Extracts also carry the optional
   `start_time` (actual kickoff, ET) and `location` ("Neutral" = e.g. London) columns when the source has
   them; older extracts without them still load.
-- **2025 Week 5 (classic week, in progress):** all 14 games extracted (2,454 rows, ~1 MB), 0 ingestion
+- **2025 Week 5:** all 14 games extracted (2,454 rows, ~1 MB), 0 ingestion
   warnings, engine finals match nflverse, and every player's pass/rush/receiving yards match nflverse's
   independent yardage columns (`tests/replay/test_week5_2025.py`, golden file in `tests/replay/data/`).
   Extracts also include `time_of_day` (the real UTC time of each play; it describes only that play).
@@ -363,7 +363,8 @@ replays / Ask AI / insights / predictions are unaffected. Guest mode never reads
   password inside `auth.users` (unreadable by API roles). Sideline never hashes, stores, logs, or returns
   passwords, hashes, or salts; no public table has such a column (checked by `supabase/tests/02_*`).
   Don't add client-side hashing or a second password store. Rules (`lib/account.ts`, mirrored in
-  `supabase/config.toml`): ≥ 8 characters with letters + digits, any other characters allowed, **≤ 72
+  `supabase/config.toml`, `lower_upper_letters_digits_symbols`): ≥ 8 characters with lower + upper + digit +
+  a Supabase ASCII symbol (`PASSWORD_SYMBOLS`), any other characters allowed, **≤ 72
   UTF-8 bytes** (bcrypt's input limit; `utf8ByteLength`) so a password is used exactly as typed or
   rejected, never truncated. Text fields for passwords have no `maxLength`. Emails are trimmed +
   lowercased (`normalizeEmail`) everywhere. Reset says "if an account exists…"; login says "Email or
@@ -391,7 +392,7 @@ replays / Ask AI / insights / predictions are unaffected. Guest mode never reads
   DEFINER (boolean only, `authenticated` only; the one intentional advisor warning).
 - **Verify DB changes** with the rolled-back suites in `supabase/tests/` (two throwaway users + anon; the
   final `VERIFY_OK` error is success) and `npx supabase db advisors --linked`.
-- **Auth settings** live in `supabase/config.toml` `[auth]` (confirmations on, password rules, secure
+- **Auth settings** live in `supabase/config.toml` `[auth]` (confirmations **off** for the course demo, password rules, secure
   password change, redirect URLs `sideline://**`, `exp://**`, localhost:8081). `npx supabase config push`
   changes **production** auth: show the diff and get approval first.
 - **Mobile:** `services/supabase.ts` (publishable key only; PKCE; native sessions AES-256 encrypted with a
@@ -420,6 +421,11 @@ replays / Ask AI / insights / predictions are unaffected. Guest mode never reads
   Identity comes **only** from the verified `sub`; no endpoint accepts a user id. Use `CurrentUser` for any
   private endpoint. Replay `X-Session-Token` auth is separate and unchanged. Tests sign real ES256 tokens
   with a throwaway key (`tests/test_auth.py`), no network.
+- **Demo: no email.** Supabase's built-in sender only reaches the project's team, so for MGT 409
+  `enable_confirmations = false` (sign-up returns a session and goes straight to onboarding; the email
+  is unverified) and `EMAIL_DELIVERY = false` (`lib/account.ts`) hides "Forgot password?". The code
+  templates are commented out in config.toml because `config push` fails with them on the free tier.
+  Re-enable all three together once custom SMTP with a real domain exists.
 - **Email codes, not links.** Sign-up confirmation and password reset are typed-in **8-digit codes**
   (`verifyOtp` type `email` / `recovery`; `CodeField`, `codeError`, `EMAIL_CODE_LENGTH` = the project's
   `otp_length`), so they work on any device. **Not live yet:** the code templates

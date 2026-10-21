@@ -67,11 +67,14 @@ describe('validation mirrors the database constraints', () => {
     expect(displayNameError('Jordan Lee')).toBeNull();
   });
 
-  it('passwords: 8+ characters with letters and digits', () => {
-    expect(passwordError('short1')).toBeTruthy();
-    expect(passwordError('lettersonly')).toBeTruthy();
-    expect(passwordError('12345678')).toBeTruthy();
-    expect(passwordError('touchdown24')).toBeNull();
+  it('passwords: 8+ characters with lower, upper, digit and symbol (the live project rule)', () => {
+    expect(passwordError('Short1!')).toMatch(/8 characters/);
+    expect(passwordError('touchdown24')).toBe('Add an uppercase letter, a symbol like ! or #.');
+    expect(passwordError('TOUCHDOWN24!')).toBe('Add a lowercase letter.');
+    expect(passwordError('Touchdown!!')).toBe('Add a number.');
+    expect(passwordError('Touchdown24 ')).toMatch(/symbol/); // a space isn't one of Supabase's symbols
+    expect(passwordError('Touchdown24!')).toBeNull();
+    expect(passwordError('Touchdown24\\')).toBeNull(); // backslash counts
   });
 
   it('emails', () => {
@@ -128,29 +131,29 @@ describe('passwords: bcrypt-safe, measured in UTF-8 bytes, never truncated', () 
   });
 
   it('accepts exactly 72 bytes and rejects 73, whatever the characters', () => {
-    const ascii72 = 'a1'.repeat(36);
+    const ascii72 = 'Aa1!' + 'a1'.repeat(34);
     expect(utf8ByteLength(ascii72)).toBe(MAX_PASSWORD_BYTES);
     expect(passwordError(ascii72)).toBeNull();
     expect(passwordError(ascii72 + 'x')).toMatch(/72 bytes/);
     // 36 characters but 72 bytes (2-byte é): fine. One more é = 74 bytes: rejected.
-    const accented = 'é'.repeat(34) + 'a1';
+    const accented = 'é'.repeat(33) + 'Aa1!';
     expect(utf8ByteLength(accented)).toBe(70);
     expect(passwordError(accented + 'é')).toBeNull(); // 72 bytes
     expect(passwordError(accented + 'éé')).toMatch(/72 bytes/); // 74 bytes, only 37 characters
-    // Emoji: 18 footballs = 72 bytes but no letters/digits; with letters it's over the cap.
-    expect(passwordError('🏈'.repeat(17) + 'a1')).toBeNull(); // 68 + 2 = 70 bytes
-    expect(passwordError('🏈'.repeat(18) + 'a1')).toMatch(/72 bytes/); // 74 bytes
+    // Emoji are 4 bytes each: 16 footballs + 'Aa1!' = 68 bytes; 17 + 'Aa1!' = 72; 18 = 76.
+    expect(passwordError('🏈'.repeat(17) + 'Aa1!')).toBeNull(); // 72 bytes
+    expect(passwordError('🏈'.repeat(18) + 'Aa1!')).toMatch(/72 bytes/); // 76 bytes
   });
 
   it('allows long passphrases, spaces, and symbols up to the cap', () => {
-    expect(passwordError('correct horse battery staple 42!')).toBeNull();
+    expect(passwordError('Correct horse battery staple 42!')).toBeNull();
     expect(passwordError('P@$$w0rd-with_symbols#2026')).toBeNull();
-    expect(passwordError('short1')).toMatch(/8 characters/);
+    expect(passwordError('Short1!')).toMatch(/8 characters/);
   });
 
   it('counts the minimum in characters (emoji count once)', () => {
-    expect(passwordError('🏈🏈🏈🏈🏈🏈a1')).toBeNull(); // 8 characters
-    expect(passwordError('🏈🏈🏈🏈🏈a1')).toMatch(/8 characters/); // 7 characters
+    expect(passwordError('🏈🏈🏈🏈Aa1!')).toBeNull(); // 8 characters
+    expect(passwordError('🏈🏈🏈Aa1!')).toMatch(/8 characters/); // 7 characters
   });
 
   it('login only rejects what cannot be a valid password (no strength hints)', () => {

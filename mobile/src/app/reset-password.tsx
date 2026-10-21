@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AuthLayout, FormMessage, TextField } from '@/components/auth';
 import { Button } from '@/components/ui';
-import { friendlyAuthError, passwordError } from '@/lib/account';
+import { PASSWORD_HINT, friendlyAuthError, passwordError } from '@/lib/account';
 import { exchangeCode } from '@/services';
 import { useAuth } from '@/state/AuthContext';
 import { colors } from '@/theme';
@@ -96,7 +96,7 @@ export default function ResetPasswordScreen() {
         password
         value={password}
         onChangeText={setPassword}
-        hint="At least 8 characters, with letters and numbers."
+        hint={PASSWORD_HINT}
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"

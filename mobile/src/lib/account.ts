@@ -26,6 +26,13 @@ export function utf8ByteLength(text: string): number {
 /** Email codes (sign-up confirmation, password reset). Must match `auth.email.otp_length`. */
 export const EMAIL_CODE_LENGTH = 8;
 
+/**
+ * Whether the project can email people outside its Supabase team (custom SMTP). Off for the demo:
+ * sign-up skips confirmation (`enable_confirmations = false`) and "Forgot password?" is hidden, since
+ * Supabase's built-in sender only reaches team members. Turn on together with custom SMTP.
+ */
+export const EMAIL_DELIVERY = false;
+
 /** Keep digits only (handles pasted "1234 5678" or "Code: 12345678"). */
 export function normalizeCode(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, EMAIL_CODE_LENGTH);
@@ -71,20 +78,33 @@ export function emailError(email: string): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? null : 'Enter a valid email address.';
 }
 
-/** Mirrors the project's auth settings: 8+ characters with letters and digits. */
+/** Symbols Supabase Auth counts for `lower_upper_letters_digits_symbols` (ASCII only). */
+const PASSWORD_SYMBOLS = '!@#$%^&*()_+-=[]{};\'\\:"|<>?,./`~';
+
 /**
- * New-password rules (sign up, reset). Mirrors the project's auth settings: 8+ characters with
- * letters and digits; any other characters (spaces, symbols, emoji) are allowed. The 72-byte cap is
- * measured in UTF-8 bytes, so a password is accepted exactly as typed or rejected, never truncated.
+ * New-password rules (sign up, reset). Mirrors the project's auth settings
+ * (`password_requirements = "lower_upper_letters_digits_symbols"`): 8+ characters with a lowercase
+ * and an uppercase letter, a digit, and a symbol (ASCII, as Supabase checks them); any other
+ * characters (spaces, accents, emoji) are allowed too. The 72-byte cap is measured in UTF-8 bytes,
+ * so a password is accepted exactly as typed or rejected, never truncated.
  */
 export function passwordError(password: string): string | null {
   if ([...password].length < MIN_PASSWORD_LENGTH)
     return `At least ${MIN_PASSWORD_LENGTH} characters.`;
   if (utf8ByteLength(password) > MAX_PASSWORD_BYTES)
     return `Too long: passwords can be up to ${MAX_PASSWORD_BYTES} bytes (accents and emoji count as 2-4).`;
-  if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) return 'Use both letters and numbers.';
+  const missing = [
+    /[a-z]/.test(password) ? null : 'a lowercase letter',
+    /[A-Z]/.test(password) ? null : 'an uppercase letter',
+    /\d/.test(password) ? null : 'a number',
+    [...password].some((c) => PASSWORD_SYMBOLS.includes(c)) ? null : 'a symbol like ! or #',
+  ].filter(Boolean);
+  if (missing.length) return `Add ${missing.join(', ')}.`;
   return null;
 }
+
+/** Shown under new-password fields. */
+export const PASSWORD_HINT = 'At least 8 characters: upper and lowercase letters, a number, a symbol.';
 
 /** Log-in check: only what can't possibly be a valid password (no strength hints, nothing account-specific). */
 export function loginPasswordError(password: string): string | null {

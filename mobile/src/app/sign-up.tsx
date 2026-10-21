@@ -6,6 +6,7 @@ import { AuthLayout, CodeField, FormMessage, TextField } from '@/components/auth
 import { Button } from '@/components/ui';
 import {
   EMAIL_CODE_LENGTH,
+  PASSWORD_HINT,
   codeError,
   emailError,
   friendlyAuthError,
@@ -143,7 +144,7 @@ export default function SignUpScreen() {
         value={password}
         onChangeText={setPassword}
         error={passwordProblem}
-        hint="At least 8 characters, with letters and numbers."
+        hint={PASSWORD_HINT}
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"

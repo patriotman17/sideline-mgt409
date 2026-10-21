@@ -188,7 +188,7 @@ enable_manual_linking = false
 minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-password_requirements = "letters_digits"
+password_requirements = "lower_upper_letters_digits_symbols"  # matches the live project
 
 # Configure passkey sign-ins.
 # [auth.passkey]
@@ -229,7 +229,9 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = true
+# Off for the MGT 409 demo: without a sending domain (custom SMTP), Supabase's built-in sender only
+# reaches project team members, so strangers could never confirm. Turn back on with custom SMTP.
+enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -251,13 +253,15 @@ otp_expiry = 3600
 
 # Sideline emails carry an 8-digit code (no link), so confirmation and password reset work on any
 # device and email app. The app verifies codes with supabase.auth.verifyOtp (type "email" / "recovery").
-[auth.email.template.confirmation]
-subject = "Your Sideline confirmation code"
-content_path = "./supabase/templates/confirmation.html"
-
-[auth.email.template.recovery]
-subject = "Your Sideline password reset code"
-content_path = "./supabase/templates/recovery.html"
+# Commented out until custom SMTP is set up: free-tier projects can't change templates without it, and
+# `config push` fails if they're present.
+# [auth.email.template.confirmation]
+# subject = "Your Sideline confirmation code"
+# content_path = "./supabase/templates/confirmation.html"
+#
+# [auth.email.template.recovery]
+# subject = "Your Sideline password reset code"
+# content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

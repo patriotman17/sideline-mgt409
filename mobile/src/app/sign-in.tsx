@@ -4,7 +4,13 @@ import { Pressable, Text, type TextInput } from 'react-native';
 
 import { AuthLayout, FormMessage, TextField } from '@/components/auth';
 import { Button } from '@/components/ui';
-import { emailError, friendlyAuthError, loginPasswordError, normalizeEmail } from '@/lib/account';
+import {
+  EMAIL_DELIVERY,
+  emailError,
+  friendlyAuthError,
+  loginPasswordError,
+  normalizeEmail,
+} from '@/lib/account';
 import { useAuth } from '@/state/AuthContext';
 
 export default function SignInScreen() {
@@ -71,14 +77,16 @@ export default function SignInScreen() {
         returnKeyType="go"
         onSubmitEditing={submit}
       />
-      <Pressable
-        onPress={() => router.push({ pathname: '/forgot-password', params: { email } })}
-        accessibilityRole="button"
-        className="self-start active:opacity-70"
-        hitSlop={8}
-      >
-        <Text className="text-[14px] font-semibold text-volt">Forgot password?</Text>
-      </Pressable>
+      {EMAIL_DELIVERY ? (
+        <Pressable
+          onPress={() => router.push({ pathname: '/forgot-password', params: { email } })}
+          accessibilityRole="button"
+          className="self-start active:opacity-70"
+          hitSlop={8}
+        >
+          <Text className="text-[14px] font-semibold text-volt">Forgot password?</Text>
+        </Pressable>
+      ) : null}
       <FormMessage error={error} />
       {unconfirmed ? (
         <Button

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import { useCooldown } from '@/hooks/useCooldown';
 import {
   EMAIL_CODE_LENGTH,
+  PASSWORD_HINT,
   codeError,
   emailError,
   friendlyAuthError,
@@ -87,7 +88,7 @@ export default function ForgotPasswordScreen() {
           password
           value={password}
           onChangeText={setPassword}
-          hint="At least 8 characters, with letters and numbers."
+          hint={PASSWORD_HINT}
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"

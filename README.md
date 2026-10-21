@@ -244,7 +244,8 @@ demo predictions. Graders and anyone running locally need only `PORTKEY_API_KEY`
 configured, people can create an account and Sideline remembers them across sessions and devices.
 
 ### What an account adds
-Sign up with email confirmation, log in / out, password reset, and sessions that survive restarts. A
+Sign up (no email confirmation for the course demo, see Known limits), log in / out, and sessions that
+survive restarts. A
 4-step onboarding (name + unique @username → favorite teams + a #1 team → knowledge level, AI
 explanation style, spoiler shield, game alerts → review) saves a profile that drives the app:
 your teams first on Scores, a **My teams** filter and synced saved stories in Discover, your real
@@ -285,7 +286,8 @@ can't see any account table.
   maintained, and keeps hashes in a schema our API can't read.
 - **Sideline never sees password hashes and never stores passwords.** No Sideline table has a password,
   hash or salt column, and passwords never reach our backend, logs, audit trail or API responses.
-- **Rules:** 8+ characters with letters and numbers; spaces, symbols and emoji are fine; at most
+- **Rules:** 8+ characters with a lowercase and an uppercase letter, a number and a symbol (the
+  project's `lower_upper_letters_digits_symbols` setting); spaces, accents and emoji are fine too; at most
   **72 bytes in UTF-8** (bcrypt's limit, so accents and emoji count 2-4 each). Too-long passwords are
   rejected with a clear message and never silently cut. Emails are trimmed and lowercased.
 - **No account fishing:** wrong logins say "Email or password is incorrect"; reset says "if an account
@@ -308,22 +310,23 @@ can't see any account table.
 |---|---|---|
 | Password hashing (bcrypt + salt), verification, reset and confirmation tokens | | ✓ |
 | Auth rate limits and abuse protection | cooldown on email buttons | ✓ |
-| Password rules (8+, letters + digits, ≤ 72 bytes) and input validation | ✓ (in the app) | ✓ (server settings) |
+| Password rules (8+, lower + upper + digit + symbol, ≤ 72 bytes) and input validation | ✓ (in the app) | ✓ (server settings) |
 | Database schema, constraints, RLS policies, column permissions | ✓ (migrations) | enforces them |
 | Session storage (encrypted on device) and logout cleanup | ✓ | refresh-token revocation |
 | JWT verification in FastAPI, identity from the token only | ✓ | publishes signing keys |
 | Guest demo with no account data access | ✓ | |
 
 ### Known limits
-- **Email codes need your own email sender.** The app confirms accounts and resets passwords with an
-  **8-digit code** typed into the app, so it works on any phone or computer. Supabase's free plan only
-  allows the code email templates (`supabase/templates/`) with a custom SMTP sender (e.g. a Gmail App
-  Password, set in Supabase → Authentication → Emails → SMTP Settings), then
-  `npx supabase config push`. Until then, Supabase sends its default **link** emails: open the link
-  on the same device and browser you signed up on. The built-in sender also only reaches your Supabase
-  team, about 2 emails per hour.
-- **For quick testing**, create a confirmed account in the dashboard (Authentication → Users → Add user
-  → Auto Confirm User) and log in with it.
+- **No email is sent for the course demo.** Supabase's built-in sender only delivers to members of
+  the project's Supabase team (about 2 emails per hour), so strangers could never confirm an account.
+  For MGT 409, **email confirmation is off** (`enable_confirmations = false`): sign up goes straight to
+  onboarding, but the address isn't verified. **Forgot password is hidden** (`EMAIL_DELIVERY = false`
+  in `mobile/src/lib/account.ts`).
+- **To turn email back on:** add a custom SMTP sender with a domain you own (Supabase → Authentication →
+  Emails → SMTP Settings, e.g. Resend), uncomment the code templates in `supabase/config.toml`, set
+  `enable_confirmations = true`, `npx supabase config push`, and set `EMAIL_DELIVERY = true`. Sign-up
+  confirmation and password reset then use **8-digit codes** typed into the app (already built), so they
+  work on any phone or computer.
 
 ## Historical data source (local or Supabase)
 
