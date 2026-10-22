@@ -105,7 +105,7 @@ export function ScoreRow({ game, onPress, showRecords = true, badge }: ScoreRowP
       onPress={onPress ?? (() => router.push({ pathname: '/game/[id]', params: { id: game.id } }))}
       accessibilityRole="button"
       accessibilityLabel={`${away.name} ${scheduled ? '' : game.away.score} at ${home.name} ${scheduled ? '' : game.home.score}`}
-      className="mx-3 mb-2 overflow-hidden rounded-2xl active:opacity-80"
+      className="mx-3 mb-2 overflow-hidden rounded-2xl active:opacity-80 web:transition-transform web:duration-150 web:active:scale-[0.98]"
     >
       <LinearGradient
         colors={[withAlpha(away.primary, 0.55), colors.surface, colors.surface, withAlpha(home.primary, 0.55)]}

@@ -20,6 +20,7 @@ import {
   WinProbabilityBar,
 } from '@/components/game';
 import { Button, EmptyState, IconButton, MockBadge, Skeleton, TextTabs } from '@/components/ui';
+import { SheetView } from '@/components/web/SheetView';
 import { useAsync } from '@/hooks/useAsync';
 import { useGameChat } from '@/hooks/useGameChat';
 import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
@@ -40,9 +41,21 @@ const TAB_ALIASES: Record<string, DetailTab> = {
   chat: 'chat',
 };
 
-function SummaryLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+function SummaryLink({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" className="flex-row items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 active:opacity-70">
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      className="flex-row items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 active:opacity-70"
+    >
       <Ionicons name={icon} size={13} color={colors.ink} />
       <Text className="text-[13px] font-medium text-ink">{label}</Text>
     </Pressable>
@@ -74,7 +87,11 @@ export default function GameDetailScreen() {
   if (!loading && !data) {
     return (
       <SafeAreaView className="flex-1 bg-bg">
-        <EmptyState icon="alert-circle-outline" title="Game not found" body="This game may have been removed from the schedule.">
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Game not found"
+          body="This game may have been removed from the schedule."
+        >
           <Button label="Close" onPress={close} />
         </EmptyState>
       </SafeAreaView>
@@ -84,14 +101,20 @@ export default function GameDetailScreen() {
   const game = data?.game;
   const away = game ? getTeam(game.away.teamId) : undefined;
   const home = game ? getTeam(game.home.teamId) : undefined;
-  const openPicks = data?.predictions.filter((p) => p.status === 'open' && !picks[p.id]).length ?? 0;
+  const openPicks =
+    data?.predictions.filter((p) => p.status === 'open' && !picks[p.id]).length ?? 0;
   const [headline, ...moreInsights] = data?.insights ?? [];
 
   return (
-    <View className="flex-1 bg-bg">
+    <SheetView>
       {away && home ? (
         <LinearGradient
-          colors={[withAlpha(away.primary, 0.8), '#0B0B0D', '#0B0B0D', withAlpha(home.primary, 0.7)]}
+          colors={[
+            withAlpha(away.primary, 0.8),
+            '#0B0B0D',
+            '#0B0B0D',
+            withAlpha(home.primary, 0.7),
+          ]}
           locations={[0, 0.35, 0.6, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.7 }}
@@ -114,7 +137,9 @@ export default function GameDetailScreen() {
           <View className="flex-row items-center justify-between px-4 pb-1 pt-1.5">
             <IconButton icon="chevron-down" accessibilityLabel="Close game" onPress={close} />
             <View className="items-center">
-              <Text className="text-[12px] font-medium text-sub">NFL · Week {game?.week ?? ''}</Text>
+              <Text className="text-[12px] font-medium text-sub">
+                NFL · Week {game?.week ?? ''}
+              </Text>
               <MockBadge />
             </View>
             <IconButton
@@ -175,8 +200,16 @@ export default function GameDetailScreen() {
                   {headline && settings.aiCommentary ? (
                     <InsightCard insight={headline}>
                       <View className="mt-3 flex-row gap-2">
-                        <SummaryLink icon="chatbubble-ellipses-outline" label="Ask a follow-up" onPress={() => setTab('chat')} />
-                        <SummaryLink icon="play-outline" label="Key plays" onPress={() => setTab('plays')} />
+                        <SummaryLink
+                          icon="chatbubble-ellipses-outline"
+                          label="Ask a follow-up"
+                          onPress={() => setTab('chat')}
+                        />
+                        <SummaryLink
+                          icon="play-outline"
+                          label="Key plays"
+                          onPress={() => setTab('plays')}
+                        />
                       </View>
                     </InsightCard>
                   ) : null}
@@ -201,7 +234,11 @@ export default function GameDetailScreen() {
                 <View className="gap-5">
                   {game.status === 'live' && game.situation ? <FieldTracker game={game} /> : null}
                   <View className="-mx-4">
-                    <Timeline events={data.timeline} awayId={game.away.teamId} homeId={game.home.teamId} />
+                    <Timeline
+                      events={data.timeline}
+                      awayId={game.away.teamId}
+                      homeId={game.home.teamId}
+                    />
                   </View>
                 </View>
               ) : tab === 'picks' ? (
@@ -209,19 +246,27 @@ export default function GameDetailScreen() {
                   {data.predictions.map((p) => (
                     <PredictionCard key={p.id} prediction={p} />
                   ))}
-                  <Text className="mt-1 text-center text-[11px] text-mute">Free to play · Points only, no real money</Text>
+                  <Text className="mt-1 text-center text-[11px] text-mute">
+                    Free to play · Points only, no real money
+                  </Text>
                 </View>
               ) : (
                 <View className="-mx-4">
-                  <ChatMessages messages={chat.messages} typing={chat.typing} onSuggestion={chat.send} />
+                  <ChatMessages
+                    messages={chat.messages}
+                    typing={chat.typing}
+                    onSuggestion={chat.send}
+                  />
                 </View>
               )}
             </View>
           </ScrollView>
 
-          {tab === 'chat' && game ? <ChatComposer onSend={chat.send} disabled={chat.typing} /> : null}
+          {tab === 'chat' && game ? (
+            <ChatComposer onSend={chat.send} disabled={chat.typing} />
+          ) : null}
         </View>
       </SafeAreaView>
-    </View>
+    </SheetView>
   );
 }

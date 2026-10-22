@@ -24,6 +24,7 @@ import {
 } from '@/components/replay';
 import { LiveDot } from '@/components/scores';
 import { Button, EmptyState, IconButton, Skeleton, TextTabs } from '@/components/ui';
+import { SheetView } from '@/components/web/SheetView';
 import { useReplayChat } from '@/hooks/useReplayChat';
 import { useReplayInsights } from '@/hooks/useReplayInsights';
 import { useReplayPredictions } from '@/hooks/useReplayPredictions';
@@ -220,7 +221,7 @@ export default function ReplayScreen() {
   };
 
   return (
-    <View className="flex-1 bg-bg">
+    <SheetView>
       {away && home ? (
         <LinearGradient
           colors={[
@@ -549,6 +550,6 @@ export default function ReplayScreen() {
           ) : null}
         </View>
       </SafeAreaView>
-    </View>
+    </SheetView>
   );
 }

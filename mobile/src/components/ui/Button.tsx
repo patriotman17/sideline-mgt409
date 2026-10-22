@@ -34,7 +34,7 @@ export function Button({ label, onPress, variant = 'primary', icon, size = 'md',
       disabled={disabled || loading}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
-      className={`flex-row items-center justify-center gap-2 rounded-full active:opacity-80 ${v.box} ${
+      className={`flex-row items-center justify-center gap-2 rounded-full active:opacity-80 web:transition-transform web:duration-150 web:active:scale-[0.97] ${v.box} ${
         size === 'sm' ? 'px-4 py-2' : 'px-5 py-3.5'
       } ${disabled ? 'opacity-40' : ''} ${className}`}
     >

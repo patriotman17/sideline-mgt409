@@ -23,6 +23,16 @@ module.exports = {
         '2xl': '18px',
         '3xl': '24px',
       },
+      // Web only (used with the `web:` variant): sheet-style entrance for game/replay screens.
+      keyframes: {
+        'sheet-in': {
+          '0%': { transform: 'translateY(48px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
+      animation: {
+        'sheet-in': 'sheet-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
+      },
     },
   },
   plugins: [],
