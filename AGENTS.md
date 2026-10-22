@@ -443,7 +443,8 @@ replays / Ask AI / insights / predictions are unaffected. Guest mode never reads
 - **Verify DB changes** with the rolled-back suites in `supabase/tests/` (two throwaway users + anon; the
   final `VERIFY_OK` error is success) and `npx supabase db advisors --linked`.
 - **Auth settings** live in `supabase/config.toml` `[auth]` (confirmations **off** for the course demo, password rules, secure
-  password change, redirect URLs `sideline://**`, `exp://**`, localhost:8081). `npx supabase config push`
+  password change, site URL + redirect allowlist = the Render web app `https://sideline-web.onrender.com/**` and
+  `sideline://**`; development redirects (`exp://`, localhost) removed). `npx supabase config push`
   changes **production** auth: show the diff and get approval first.
 - **Mobile:** `services/supabase.ts` (publishable key only; PKCE; native sessions AES-256 encrypted with a
   per-write key in Keychain/Keystore via expo-secure-store, ciphertext in AsyncStorage; web uses

@@ -391,8 +391,8 @@ app only receives what the replay has revealed.
    for the backend). Render's `fromService` `host` is the private network name, so it can't be used for
    browser traffic. If Render gives your services other names, update those two values.
    Live: web **https://sideline-web.onrender.com** · API https://sideline-api-6b29.onrender.com/health
-4. For accounts on the deployed site, add the web URL to Supabase Auth (`site_url` + redirect allowlist in
-   `supabase/config.toml`, then `npx supabase config push`).
+4. Supabase Auth's `site_url` and redirect allowlist point at the deployed web app (`supabase/config.toml`;
+   change them there and `npx supabase config push` if your URL differs).
 
 Production mode (`APP_ENV=production`) turns off `/docs` and the development-only AI audit endpoint, and
 uvicorn runs with `--proxy-headers` so the AI rate limit sees each visitor's real IP.
