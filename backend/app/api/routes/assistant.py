@@ -16,6 +16,7 @@ from app.agents.assistant import ScoreboardGame
 from app.agents.service import AIError, AssistResult
 from app.api.routes.replay import AIDep, CatalogDep, _ai_http_error
 from app.api.routes.week import SlatesDep, WeekManagerDep, week_snapshot
+from app.history_stats.data import get_history_stats
 from app.pregame.season import season_for
 from app.replay.week import WeekSessionNotFound
 
@@ -86,6 +87,7 @@ async def ask_assistant(
             question=body.question,
             previous_questions=body.previous_questions,
             season=season,
+            history=get_history_stats(),
             scoreboard=scoreboard,
             scoreboard_as_of=as_of,
             unrevealed_finals=[(h, a) for h, a in unrevealed if h is not None and a is not None],

@@ -268,8 +268,9 @@ win."). It disappears at kickoff.
 The lime **Ask** button on every tab opens a chat for questions outside a single game: rules and penalties
 ("What's a two-point conversion?"), players ("Is Josh Allen good this year?"), teams ("How are the Bills
 doing?"), league leaders, and "What are the scores right now?" (your week clock's scoreboard). A third agent
-answers only from Sideline's curated rule guide and the real season data (Weeks 1-4, plus this week as far as
-your clock has gone), shows its sources, and refuses to state results your clock hasn't reached. About
+answers only from Sideline's curated rule guide, the real season data (Weeks 1-4, plus this week as far as
+your clock has gone) and **NFL history 1999-2024** (careers season by season, past leaders, team records, Super
+Bowl champions; nflverse, stored in Supabase `history.*` with the committed `backend/data/history/` as fallback), shows its sources, and refuses to state results your clock hasn't reached. About
 $0.0003 per question; repeated questions are cached.
 
 ## Accounts (optional)

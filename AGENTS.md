@@ -426,6 +426,16 @@ from the floating **Ask** button on every tab (`components/assistant/AskFab.tsx`
   earlier **questions only** (≤3; the client never sends answers). Audit `kind="assistant"`.
 - **API:** `POST /api/v1/assistant/ask {question ≤500, previous_questions, week_session_id?}` → `AssistResult`
   (`answer {answer, evidence, confidence, answerable, follow_ups}`, `usage`, `as_of`).
+- **History tools (1999-2024):** `get_player_career`, `get_season_leaders`, `get_team_history`, `get_season_summary`
+  over `app/history_stats/data.py::HistoryStats` (rows are NamedTuples: 42k player seasons ≈ +20 MB RAM; pydantic
+  models were +170 MB). Data: `scripts/build_history_stats.py` → `data/history/` (nflverse `stats_player_reg_<year>`
+  + `schedules/games.csv`; refuses seasons > 2024) → Supabase migration `20261023000000_historical_season_stats.sql`
+  (`history.player_seasons` / `team_seasons` / `stats_builds`; same read model; DB check season ≤ 2024) via
+  `import_history_to_supabase.py --stats [--verify]` (build row written last). `load_history` reads Supabase when
+  `REPLAY_DATA_SOURCE=supabase` (order-independent `content_sha256` re-checked), else / on failure the local files.
+  `incomplete_career_warning` when a player's first season is 1999 (careers before are partial; the answer must say
+  so). Totals are play-by-play sums (e.g. Brady 89,216 yds vs official 89,214). `ASSISTANT_PROMPT_VERSION` as.3.
+  `/api/v1/status` reports `data_sources` (`games`, `history`: supabase/local) once loaded.
 - **Mobile:** `services/askSideline.ts`, `lib/askSideline.ts` (starters, `previousQuestions`, `canAsk`;
   unit-tested); `WeekContext.weekAuth` exposes the in-memory week session (never persisted).
 

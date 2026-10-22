@@ -34,6 +34,7 @@ def warm_up() -> None:
     made that request outlast the app's timeout after every restart or free-tier wake-up. Failures are
     logged and left to the normal lazy loading (and its local-file fallback)."""
     from app.api.routes.week import get_slates
+    from app.history_stats.data import get_history_stats
     from app.pregame.season import season_for
     from app.replay.catalog import get_catalog
 
@@ -43,6 +44,7 @@ def warm_up() -> None:
         slates = get_slates()
         for season, week in slates:
             season_for(season, week)
+        get_history_stats()
         log.info("Warm-up: %d games, %d slates in %.1fs", len(games), len(slates), time.perf_counter() - started)
     except Exception as exc:  # never block startup; never log details (could include connection info)
         log.warning("Warm-up failed (%s); data will load on first use", type(exc).__name__)

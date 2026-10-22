@@ -1,0 +1,830 @@
+season,team,wins,losses,ties,points_for,points_against,playoff_result
+1999,ARI,6,10,0,245,382,Missed playoffs
+1999,ATL,5,11,0,285,380,Missed playoffs
+1999,BAL,8,8,0,324,277,Missed playoffs
+1999,BUF,11,5,0,320,229,Lost Wild Card Round
+1999,CAR,8,8,0,421,381,Missed playoffs
+1999,CHI,6,10,0,272,341,Missed playoffs
+1999,CIN,4,12,0,283,460,Missed playoffs
+1999,CLE,2,14,0,217,437,Missed playoffs
+1999,DAL,8,8,0,352,276,Lost Wild Card Round
+1999,DEN,6,10,0,314,318,Missed playoffs
+1999,DET,8,8,0,322,323,Lost Wild Card Round
+1999,GB,8,8,0,357,341,Missed playoffs
+1999,IND,13,3,0,423,333,Lost Divisional Round
+1999,JAX,14,2,0,396,217,Lost Conference Championship
+1999,KC,9,7,0,390,322,Missed playoffs
+1999,MIA,9,7,0,326,336,Lost Divisional Round
+1999,MIN,10,6,0,399,335,Lost Divisional Round
+1999,NE,8,8,0,299,284,Missed playoffs
+1999,NO,3,13,0,260,434,Missed playoffs
+1999,NYG,7,9,0,299,358,Missed playoffs
+1999,NYJ,8,8,0,308,309,Missed playoffs
+1999,OAK,8,8,0,390,329,Missed playoffs
+1999,PHI,5,11,0,272,357,Missed playoffs
+1999,PIT,6,10,0,317,320,Missed playoffs
+1999,SD,8,8,0,269,316,Missed playoffs
+1999,SEA,9,7,0,338,298,Lost Wild Card Round
+1999,SF,4,12,0,295,453,Missed playoffs
+1999,STL,13,3,0,526,242,Won Super Bowl
+1999,TB,11,5,0,270,235,Lost Conference Championship
+1999,TEN,13,3,0,392,324,Lost Super Bowl
+1999,WAS,10,6,0,443,377,Lost Divisional Round
+2000,ARI,3,13,0,210,443,Missed playoffs
+2000,ATL,4,12,0,252,413,Missed playoffs
+2000,BAL,12,4,0,333,165,Won Super Bowl
+2000,BUF,8,8,0,315,350,Missed playoffs
+2000,CAR,7,9,0,310,310,Missed playoffs
+2000,CHI,5,11,0,216,355,Missed playoffs
+2000,CIN,4,12,0,185,359,Missed playoffs
+2000,CLE,3,13,0,161,419,Missed playoffs
+2000,DAL,5,11,0,294,361,Missed playoffs
+2000,DEN,11,5,0,485,369,Lost Wild Card Round
+2000,DET,9,7,0,307,307,Missed playoffs
+2000,GB,9,7,0,353,323,Missed playoffs
+2000,IND,10,6,0,429,326,Lost Wild Card Round
+2000,JAX,7,9,0,367,327,Missed playoffs
+2000,KC,7,9,0,355,354,Missed playoffs
+2000,MIA,11,5,0,323,226,Lost Divisional Round
+2000,MIN,11,5,0,397,371,Lost Conference Championship
+2000,NE,5,11,0,276,338,Missed playoffs
+2000,NO,10,6,0,354,305,Lost Divisional Round
+2000,NYG,12,4,0,328,246,Lost Super Bowl
+2000,NYJ,9,7,0,321,321,Missed playoffs
+2000,OAK,12,4,0,479,299,Lost Conference Championship
+2000,PHI,11,5,0,351,245,Lost Divisional Round
+2000,PIT,9,7,0,321,255,Missed playoffs
+2000,SD,1,15,0,269,440,Missed playoffs
+2000,SEA,6,10,0,320,405,Missed playoffs
+2000,SF,6,10,0,388,422,Missed playoffs
+2000,STL,10,6,0,540,471,Lost Wild Card Round
+2000,TB,10,6,0,388,269,Lost Wild Card Round
+2000,TEN,13,3,0,346,191,Lost Divisional Round
+2000,WAS,8,8,0,281,269,Missed playoffs
+2001,ARI,7,9,0,295,343,Missed playoffs
+2001,ATL,7,9,0,291,377,Missed playoffs
+2001,BAL,10,6,0,303,265,Lost Divisional Round
+2001,BUF,3,13,0,265,420,Missed playoffs
+2001,CAR,1,15,0,253,410,Missed playoffs
+2001,CHI,13,3,0,338,203,Lost Divisional Round
+2001,CIN,6,10,0,226,309,Missed playoffs
+2001,CLE,7,9,0,285,319,Missed playoffs
+2001,DAL,5,11,0,246,338,Missed playoffs
+2001,DEN,8,8,0,340,339,Missed playoffs
+2001,DET,2,14,0,270,424,Missed playoffs
+2001,GB,12,4,0,390,266,Lost Divisional Round
+2001,IND,6,10,0,413,486,Missed playoffs
+2001,JAX,6,10,0,294,286,Missed playoffs
+2001,KC,6,10,0,320,344,Missed playoffs
+2001,MIA,11,5,0,344,290,Lost Wild Card Round
+2001,MIN,5,11,0,290,390,Missed playoffs
+2001,NE,11,5,0,371,272,Won Super Bowl
+2001,NO,7,9,0,333,409,Missed playoffs
+2001,NYG,7,9,0,294,321,Missed playoffs
+2001,NYJ,10,6,0,308,295,Lost Wild Card Round
+2001,OAK,10,6,0,399,327,Lost Divisional Round
+2001,PHI,11,5,0,343,208,Lost Conference Championship
+2001,PIT,13,3,0,352,212,Lost Conference Championship
+2001,SD,5,11,0,332,321,Missed playoffs
+2001,SEA,9,7,0,301,324,Missed playoffs
+2001,SF,12,4,0,409,282,Lost Wild Card Round
+2001,STL,14,2,0,503,273,Lost Super Bowl
+2001,TB,9,7,0,324,280,Lost Wild Card Round
+2001,TEN,7,9,0,336,388,Missed playoffs
+2001,WAS,8,8,0,256,303,Missed playoffs
+2002,ARI,5,11,0,262,417,Missed playoffs
+2002,ATL,9,6,1,402,314,Lost Divisional Round
+2002,BAL,7,9,0,316,354,Missed playoffs
+2002,BUF,8,8,0,379,397,Missed playoffs
+2002,CAR,7,9,0,258,302,Missed playoffs
+2002,CHI,4,12,0,281,379,Missed playoffs
+2002,CIN,2,14,0,279,456,Missed playoffs
+2002,CLE,9,7,0,344,320,Lost Wild Card Round
+2002,DAL,5,11,0,217,329,Missed playoffs
+2002,DEN,9,7,0,392,344,Missed playoffs
+2002,DET,3,13,0,306,451,Missed playoffs
+2002,GB,12,4,0,398,328,Lost Wild Card Round
+2002,HOU,4,12,0,213,356,Missed playoffs
+2002,IND,10,6,0,349,313,Lost Wild Card Round
+2002,JAX,6,10,0,328,315,Missed playoffs
+2002,KC,8,8,0,467,399,Missed playoffs
+2002,MIA,9,7,0,378,301,Missed playoffs
+2002,MIN,6,10,0,390,442,Missed playoffs
+2002,NE,9,7,0,381,346,Missed playoffs
+2002,NO,9,7,0,432,388,Missed playoffs
+2002,NYG,10,6,0,320,279,Lost Wild Card Round
+2002,NYJ,9,7,0,359,336,Lost Divisional Round
+2002,OAK,11,5,0,450,304,Lost Super Bowl
+2002,PHI,12,4,0,415,241,Lost Conference Championship
+2002,PIT,10,5,1,390,345,Lost Divisional Round
+2002,SD,8,8,0,333,367,Missed playoffs
+2002,SEA,7,9,0,355,369,Missed playoffs
+2002,SF,10,6,0,367,351,Lost Divisional Round
+2002,STL,7,9,0,316,369,Missed playoffs
+2002,TB,12,4,0,346,196,Won Super Bowl
+2002,TEN,11,5,0,367,324,Lost Conference Championship
+2002,WAS,7,9,0,307,365,Missed playoffs
+2003,ARI,4,12,0,225,452,Missed playoffs
+2003,ATL,5,11,0,299,422,Missed playoffs
+2003,BAL,10,6,0,391,281,Lost Wild Card Round
+2003,BUF,6,10,0,243,279,Missed playoffs
+2003,CAR,11,5,0,325,304,Lost Super Bowl
+2003,CHI,7,9,0,283,346,Missed playoffs
+2003,CIN,8,8,0,346,384,Missed playoffs
+2003,CLE,5,11,0,254,322,Missed playoffs
+2003,DAL,10,6,0,289,260,Lost Wild Card Round
+2003,DEN,10,6,0,381,301,Lost Wild Card Round
+2003,DET,5,11,0,270,379,Missed playoffs
+2003,GB,10,6,0,442,307,Lost Divisional Round
+2003,HOU,5,11,0,255,380,Missed playoffs
+2003,IND,12,4,0,447,336,Lost Conference Championship
+2003,JAX,5,11,0,276,331,Missed playoffs
+2003,KC,13,3,0,484,332,Lost Divisional Round
+2003,MIA,10,6,0,311,261,Missed playoffs
+2003,MIN,9,7,0,416,353,Missed playoffs
+2003,NE,14,2,0,348,238,Won Super Bowl
+2003,NO,8,8,0,340,326,Missed playoffs
+2003,NYG,4,12,0,243,387,Missed playoffs
+2003,NYJ,6,10,0,283,299,Missed playoffs
+2003,OAK,4,12,0,270,379,Missed playoffs
+2003,PHI,12,4,0,374,287,Lost Conference Championship
+2003,PIT,6,10,0,300,327,Missed playoffs
+2003,SD,4,12,0,313,441,Missed playoffs
+2003,SEA,10,6,0,404,327,Lost Wild Card Round
+2003,SF,7,9,0,384,337,Missed playoffs
+2003,STL,12,4,0,447,328,Lost Divisional Round
+2003,TB,7,9,0,301,264,Missed playoffs
+2003,TEN,12,4,0,435,324,Lost Divisional Round
+2003,WAS,5,11,0,287,372,Missed playoffs
+2004,ARI,6,10,0,284,322,Missed playoffs
+2004,ATL,11,5,0,340,337,Lost Conference Championship
+2004,BAL,9,7,0,317,268,Missed playoffs
+2004,BUF,9,7,0,395,284,Missed playoffs
+2004,CAR,7,9,0,355,339,Missed playoffs
+2004,CHI,5,11,0,231,331,Missed playoffs
+2004,CIN,8,8,0,374,372,Missed playoffs
+2004,CLE,4,12,0,276,390,Missed playoffs
+2004,DAL,6,10,0,293,405,Missed playoffs
+2004,DEN,10,6,0,381,304,Lost Wild Card Round
+2004,DET,6,10,0,296,350,Missed playoffs
+2004,GB,10,6,0,424,380,Lost Wild Card Round
+2004,HOU,7,9,0,309,339,Missed playoffs
+2004,IND,12,4,0,522,351,Lost Divisional Round
+2004,JAX,9,7,0,261,280,Missed playoffs
+2004,KC,7,9,0,483,435,Missed playoffs
+2004,MIA,4,12,0,275,354,Missed playoffs
+2004,MIN,8,8,0,405,395,Lost Divisional Round
+2004,NE,14,2,0,437,260,Won Super Bowl
+2004,NO,8,8,0,348,405,Missed playoffs
+2004,NYG,6,10,0,303,347,Missed playoffs
+2004,NYJ,10,6,0,333,261,Lost Divisional Round
+2004,OAK,5,11,0,320,442,Missed playoffs
+2004,PHI,13,3,0,386,260,Lost Super Bowl
+2004,PIT,15,1,0,372,251,Lost Conference Championship
+2004,SD,12,4,0,446,313,Lost Wild Card Round
+2004,SEA,9,7,0,371,373,Lost Wild Card Round
+2004,SF,2,14,0,259,452,Missed playoffs
+2004,STL,8,8,0,319,392,Lost Divisional Round
+2004,TB,5,11,0,301,304,Missed playoffs
+2004,TEN,5,11,0,344,439,Missed playoffs
+2004,WAS,6,10,0,240,265,Missed playoffs
+2005,ARI,5,11,0,311,387,Missed playoffs
+2005,ATL,8,8,0,351,341,Missed playoffs
+2005,BAL,6,10,0,265,299,Missed playoffs
+2005,BUF,5,11,0,271,367,Missed playoffs
+2005,CAR,11,5,0,391,259,Lost Conference Championship
+2005,CHI,11,5,0,260,202,Lost Divisional Round
+2005,CIN,11,5,0,421,350,Lost Wild Card Round
+2005,CLE,6,10,0,232,301,Missed playoffs
+2005,DAL,9,7,0,325,308,Missed playoffs
+2005,DEN,13,3,0,395,258,Lost Conference Championship
+2005,DET,5,11,0,254,345,Missed playoffs
+2005,GB,4,12,0,298,344,Missed playoffs
+2005,HOU,2,14,0,260,431,Missed playoffs
+2005,IND,14,2,0,439,247,Lost Divisional Round
+2005,JAX,12,4,0,361,269,Lost Wild Card Round
+2005,KC,10,6,0,403,325,Missed playoffs
+2005,MIA,9,7,0,318,317,Missed playoffs
+2005,MIN,9,7,0,306,344,Missed playoffs
+2005,NE,10,6,0,379,338,Lost Divisional Round
+2005,NO,3,13,0,235,398,Missed playoffs
+2005,NYG,11,5,0,422,314,Lost Wild Card Round
+2005,NYJ,4,12,0,240,355,Missed playoffs
+2005,OAK,4,12,0,290,383,Missed playoffs
+2005,PHI,6,10,0,310,388,Missed playoffs
+2005,PIT,11,5,0,389,258,Won Super Bowl
+2005,SD,9,7,0,418,312,Missed playoffs
+2005,SEA,13,3,0,452,271,Lost Super Bowl
+2005,SF,4,12,0,239,428,Missed playoffs
+2005,STL,6,10,0,363,429,Missed playoffs
+2005,TB,11,5,0,300,274,Lost Wild Card Round
+2005,TEN,4,12,0,299,421,Missed playoffs
+2005,WAS,10,6,0,359,293,Lost Divisional Round
+2006,ARI,5,11,0,314,389,Missed playoffs
+2006,ATL,7,9,0,292,328,Missed playoffs
+2006,BAL,13,3,0,353,201,Lost Divisional Round
+2006,BUF,7,9,0,300,311,Missed playoffs
+2006,CAR,8,8,0,270,305,Missed playoffs
+2006,CHI,13,3,0,427,255,Lost Super Bowl
+2006,CIN,8,8,0,373,331,Missed playoffs
+2006,CLE,4,12,0,238,356,Missed playoffs
+2006,DAL,9,7,0,425,350,Lost Wild Card Round
+2006,DEN,9,7,0,319,305,Missed playoffs
+2006,DET,3,13,0,305,398,Missed playoffs
+2006,GB,8,8,0,301,366,Missed playoffs
+2006,HOU,6,10,0,267,366,Missed playoffs
+2006,IND,12,4,0,427,360,Won Super Bowl
+2006,JAX,8,8,0,371,274,Missed playoffs
+2006,KC,9,7,0,331,315,Lost Wild Card Round
+2006,MIA,6,10,0,260,283,Missed playoffs
+2006,MIN,6,10,0,282,327,Missed playoffs
+2006,NE,12,4,0,385,237,Lost Conference Championship
+2006,NO,10,6,0,413,322,Lost Conference Championship
+2006,NYG,8,8,0,355,362,Lost Wild Card Round
+2006,NYJ,10,6,0,316,295,Lost Wild Card Round
+2006,OAK,2,14,0,168,332,Missed playoffs
+2006,PHI,10,6,0,398,328,Lost Divisional Round
+2006,PIT,8,8,0,353,315,Missed playoffs
+2006,SD,14,2,0,492,303,Lost Divisional Round
+2006,SEA,9,7,0,335,341,Lost Divisional Round
+2006,SF,7,9,0,298,412,Missed playoffs
+2006,STL,8,8,0,367,381,Missed playoffs
+2006,TB,4,12,0,211,353,Missed playoffs
+2006,TEN,8,8,0,324,400,Missed playoffs
+2006,WAS,5,11,0,307,376,Missed playoffs
+2007,ARI,8,8,0,404,399,Missed playoffs
+2007,ATL,4,12,0,259,414,Missed playoffs
+2007,BAL,5,11,0,275,384,Missed playoffs
+2007,BUF,7,9,0,252,354,Missed playoffs
+2007,CAR,7,9,0,267,347,Missed playoffs
+2007,CHI,7,9,0,334,348,Missed playoffs
+2007,CIN,7,9,0,380,385,Missed playoffs
+2007,CLE,10,6,0,402,382,Missed playoffs
+2007,DAL,13,3,0,455,325,Lost Divisional Round
+2007,DEN,7,9,0,320,409,Missed playoffs
+2007,DET,7,9,0,346,444,Missed playoffs
+2007,GB,13,3,0,435,291,Lost Conference Championship
+2007,HOU,8,8,0,379,384,Missed playoffs
+2007,IND,13,3,0,450,262,Lost Divisional Round
+2007,JAX,11,5,0,411,304,Lost Divisional Round
+2007,KC,4,12,0,226,335,Missed playoffs
+2007,MIA,1,15,0,267,437,Missed playoffs
+2007,MIN,8,8,0,365,311,Missed playoffs
+2007,NE,16,0,0,589,274,Lost Super Bowl
+2007,NO,7,9,0,379,388,Missed playoffs
+2007,NYG,10,6,0,373,351,Won Super Bowl
+2007,NYJ,4,12,0,268,355,Missed playoffs
+2007,OAK,4,12,0,283,398,Missed playoffs
+2007,PHI,8,8,0,336,300,Missed playoffs
+2007,PIT,10,6,0,393,269,Lost Wild Card Round
+2007,SD,11,5,0,412,284,Lost Conference Championship
+2007,SEA,10,6,0,393,291,Lost Divisional Round
+2007,SF,5,11,0,219,364,Missed playoffs
+2007,STL,3,13,0,263,438,Missed playoffs
+2007,TB,9,7,0,334,270,Lost Wild Card Round
+2007,TEN,10,6,0,301,297,Lost Wild Card Round
+2007,WAS,9,7,0,334,310,Lost Wild Card Round
+2008,ARI,9,7,0,427,426,Lost Super Bowl
+2008,ATL,11,5,0,391,325,Lost Wild Card Round
+2008,BAL,11,5,0,385,244,Lost Conference Championship
+2008,BUF,7,9,0,336,342,Missed playoffs
+2008,CAR,12,4,0,414,329,Lost Divisional Round
+2008,CHI,9,7,0,375,350,Missed playoffs
+2008,CIN,4,11,1,204,364,Missed playoffs
+2008,CLE,4,12,0,232,350,Missed playoffs
+2008,DAL,9,7,0,362,365,Missed playoffs
+2008,DEN,8,8,0,370,448,Missed playoffs
+2008,DET,0,16,0,268,517,Missed playoffs
+2008,GB,6,10,0,419,380,Missed playoffs
+2008,HOU,8,8,0,366,394,Missed playoffs
+2008,IND,12,4,0,377,298,Lost Wild Card Round
+2008,JAX,5,11,0,302,367,Missed playoffs
+2008,KC,2,14,0,291,440,Missed playoffs
+2008,MIA,11,5,0,345,317,Lost Wild Card Round
+2008,MIN,10,6,0,379,333,Lost Wild Card Round
+2008,NE,11,5,0,410,309,Missed playoffs
+2008,NO,8,8,0,463,393,Missed playoffs
+2008,NYG,12,4,0,427,294,Lost Divisional Round
+2008,NYJ,9,7,0,405,356,Missed playoffs
+2008,OAK,5,11,0,263,388,Missed playoffs
+2008,PHI,9,6,1,416,289,Lost Conference Championship
+2008,PIT,12,4,0,347,223,Won Super Bowl
+2008,SD,8,8,0,439,347,Lost Divisional Round
+2008,SEA,4,12,0,294,392,Missed playoffs
+2008,SF,7,9,0,339,381,Missed playoffs
+2008,STL,2,14,0,232,465,Missed playoffs
+2008,TB,9,7,0,361,323,Missed playoffs
+2008,TEN,13,3,0,375,234,Lost Divisional Round
+2008,WAS,8,8,0,265,296,Missed playoffs
+2009,ARI,10,6,0,375,325,Lost Divisional Round
+2009,ATL,9,7,0,363,325,Missed playoffs
+2009,BAL,9,7,0,391,261,Lost Divisional Round
+2009,BUF,6,10,0,258,326,Missed playoffs
+2009,CAR,8,8,0,315,308,Missed playoffs
+2009,CHI,7,9,0,327,375,Missed playoffs
+2009,CIN,10,6,0,305,291,Lost Wild Card Round
+2009,CLE,5,11,0,245,375,Missed playoffs
+2009,DAL,11,5,0,361,250,Lost Divisional Round
+2009,DEN,8,8,0,326,324,Missed playoffs
+2009,DET,2,14,0,262,494,Missed playoffs
+2009,GB,11,5,0,461,297,Lost Wild Card Round
+2009,HOU,9,7,0,388,333,Missed playoffs
+2009,IND,14,2,0,416,307,Lost Super Bowl
+2009,JAX,7,9,0,290,380,Missed playoffs
+2009,KC,4,12,0,294,424,Missed playoffs
+2009,MIA,7,9,0,360,390,Missed playoffs
+2009,MIN,12,4,0,470,312,Lost Conference Championship
+2009,NE,10,6,0,427,285,Lost Wild Card Round
+2009,NO,13,3,0,510,341,Won Super Bowl
+2009,NYG,8,8,0,402,427,Missed playoffs
+2009,NYJ,9,7,0,348,236,Lost Conference Championship
+2009,OAK,5,11,0,197,379,Missed playoffs
+2009,PHI,11,5,0,429,337,Lost Wild Card Round
+2009,PIT,9,7,0,368,324,Missed playoffs
+2009,SD,13,3,0,454,320,Lost Divisional Round
+2009,SEA,5,11,0,280,390,Missed playoffs
+2009,SF,8,8,0,330,281,Missed playoffs
+2009,STL,1,15,0,175,436,Missed playoffs
+2009,TB,3,13,0,244,400,Missed playoffs
+2009,TEN,8,8,0,354,402,Missed playoffs
+2009,WAS,4,12,0,266,336,Missed playoffs
+2010,ARI,5,11,0,289,434,Missed playoffs
+2010,ATL,13,3,0,414,288,Lost Divisional Round
+2010,BAL,12,4,0,357,270,Lost Divisional Round
+2010,BUF,4,12,0,283,425,Missed playoffs
+2010,CAR,2,14,0,196,408,Missed playoffs
+2010,CHI,11,5,0,334,286,Lost Conference Championship
+2010,CIN,4,12,0,322,395,Missed playoffs
+2010,CLE,5,11,0,271,332,Missed playoffs
+2010,DAL,6,10,0,394,436,Missed playoffs
+2010,DEN,4,12,0,344,471,Missed playoffs
+2010,DET,6,10,0,362,369,Missed playoffs
+2010,GB,10,6,0,388,240,Won Super Bowl
+2010,HOU,6,10,0,390,427,Missed playoffs
+2010,IND,10,6,0,435,388,Lost Wild Card Round
+2010,JAX,8,8,0,353,419,Missed playoffs
+2010,KC,10,6,0,366,326,Lost Wild Card Round
+2010,MIA,7,9,0,273,333,Missed playoffs
+2010,MIN,6,10,0,281,348,Missed playoffs
+2010,NE,14,2,0,518,313,Lost Divisional Round
+2010,NO,11,5,0,384,307,Lost Wild Card Round
+2010,NYG,10,6,0,394,347,Missed playoffs
+2010,NYJ,11,5,0,367,304,Lost Conference Championship
+2010,OAK,8,8,0,410,371,Missed playoffs
+2010,PHI,10,6,0,439,377,Lost Wild Card Round
+2010,PIT,12,4,0,375,232,Lost Super Bowl
+2010,SD,9,7,0,441,322,Missed playoffs
+2010,SEA,7,9,0,310,407,Lost Divisional Round
+2010,SF,6,10,0,305,346,Missed playoffs
+2010,STL,7,9,0,289,328,Missed playoffs
+2010,TB,10,6,0,341,318,Missed playoffs
+2010,TEN,6,10,0,356,339,Missed playoffs
+2010,WAS,6,10,0,302,377,Missed playoffs
+2011,ARI,8,8,0,312,348,Missed playoffs
+2011,ATL,10,6,0,402,350,Lost Wild Card Round
+2011,BAL,12,4,0,378,266,Lost Conference Championship
+2011,BUF,6,10,0,372,434,Missed playoffs
+2011,CAR,6,10,0,406,429,Missed playoffs
+2011,CHI,8,8,0,353,341,Missed playoffs
+2011,CIN,9,7,0,344,323,Lost Wild Card Round
+2011,CLE,4,12,0,218,307,Missed playoffs
+2011,DAL,8,8,0,369,347,Missed playoffs
+2011,DEN,8,8,0,309,390,Lost Divisional Round
+2011,DET,10,6,0,474,387,Lost Wild Card Round
+2011,GB,15,1,0,560,359,Lost Divisional Round
+2011,HOU,10,6,0,381,278,Lost Divisional Round
+2011,IND,2,14,0,243,430,Missed playoffs
+2011,JAX,5,11,0,243,329,Missed playoffs
+2011,KC,7,9,0,212,338,Missed playoffs
+2011,MIA,6,10,0,329,313,Missed playoffs
+2011,MIN,3,13,0,340,449,Missed playoffs
+2011,NE,13,3,0,513,342,Lost Super Bowl
+2011,NO,13,3,0,547,339,Lost Divisional Round
+2011,NYG,9,7,0,394,400,Won Super Bowl
+2011,NYJ,8,8,0,377,363,Missed playoffs
+2011,OAK,8,8,0,359,433,Missed playoffs
+2011,PHI,8,8,0,396,328,Missed playoffs
+2011,PIT,12,4,0,325,227,Lost Wild Card Round
+2011,SD,8,8,0,406,377,Missed playoffs
+2011,SEA,7,9,0,321,315,Missed playoffs
+2011,SF,13,3,0,380,229,Lost Conference Championship
+2011,STL,2,14,0,193,407,Missed playoffs
+2011,TB,4,12,0,287,494,Missed playoffs
+2011,TEN,9,7,0,325,317,Missed playoffs
+2011,WAS,5,11,0,288,367,Missed playoffs
+2012,ARI,5,11,0,250,357,Missed playoffs
+2012,ATL,13,3,0,419,299,Lost Conference Championship
+2012,BAL,10,6,0,398,344,Won Super Bowl
+2012,BUF,6,10,0,344,435,Missed playoffs
+2012,CAR,7,9,0,357,363,Missed playoffs
+2012,CHI,10,6,0,375,277,Missed playoffs
+2012,CIN,10,6,0,391,320,Lost Wild Card Round
+2012,CLE,5,11,0,302,368,Missed playoffs
+2012,DAL,8,8,0,376,400,Missed playoffs
+2012,DEN,13,3,0,481,289,Lost Divisional Round
+2012,DET,4,12,0,372,437,Missed playoffs
+2012,GB,11,5,0,433,336,Lost Divisional Round
+2012,HOU,12,4,0,416,331,Lost Divisional Round
+2012,IND,11,5,0,357,387,Lost Wild Card Round
+2012,JAX,2,14,0,255,444,Missed playoffs
+2012,KC,2,14,0,211,425,Missed playoffs
+2012,MIA,7,9,0,288,317,Missed playoffs
+2012,MIN,10,6,0,379,348,Lost Wild Card Round
+2012,NE,12,4,0,557,331,Lost Conference Championship
+2012,NO,7,9,0,461,454,Missed playoffs
+2012,NYG,9,7,0,429,344,Missed playoffs
+2012,NYJ,6,10,0,281,375,Missed playoffs
+2012,OAK,4,12,0,290,443,Missed playoffs
+2012,PHI,4,12,0,280,444,Missed playoffs
+2012,PIT,8,8,0,336,314,Missed playoffs
+2012,SD,7,9,0,350,350,Missed playoffs
+2012,SEA,11,5,0,412,245,Lost Divisional Round
+2012,SF,11,4,1,397,273,Lost Super Bowl
+2012,STL,7,8,1,299,348,Missed playoffs
+2012,TB,7,9,0,389,394,Missed playoffs
+2012,TEN,6,10,0,330,471,Missed playoffs
+2012,WAS,10,6,0,436,388,Lost Wild Card Round
+2013,ARI,10,6,0,379,324,Missed playoffs
+2013,ATL,4,12,0,353,443,Missed playoffs
+2013,BAL,8,8,0,320,352,Missed playoffs
+2013,BUF,6,10,0,339,388,Missed playoffs
+2013,CAR,12,4,0,366,241,Lost Divisional Round
+2013,CHI,8,8,0,445,478,Missed playoffs
+2013,CIN,11,5,0,430,305,Lost Wild Card Round
+2013,CLE,4,12,0,308,406,Missed playoffs
+2013,DAL,8,8,0,439,432,Missed playoffs
+2013,DEN,13,3,0,606,399,Lost Super Bowl
+2013,DET,7,9,0,395,376,Missed playoffs
+2013,GB,8,7,1,417,428,Lost Wild Card Round
+2013,HOU,2,14,0,276,428,Missed playoffs
+2013,IND,11,5,0,391,336,Lost Divisional Round
+2013,JAX,4,12,0,247,449,Missed playoffs
+2013,KC,11,5,0,430,305,Lost Wild Card Round
+2013,MIA,8,8,0,317,335,Missed playoffs
+2013,MIN,5,10,1,391,480,Missed playoffs
+2013,NE,12,4,0,444,338,Lost Conference Championship
+2013,NO,11,5,0,414,304,Lost Divisional Round
+2013,NYG,7,9,0,294,383,Missed playoffs
+2013,NYJ,8,8,0,290,387,Missed playoffs
+2013,OAK,4,12,0,322,453,Missed playoffs
+2013,PHI,10,6,0,442,382,Lost Wild Card Round
+2013,PIT,8,8,0,379,370,Missed playoffs
+2013,SD,9,7,0,396,348,Lost Divisional Round
+2013,SEA,13,3,0,417,231,Won Super Bowl
+2013,SF,12,4,0,406,272,Lost Conference Championship
+2013,STL,7,9,0,348,364,Missed playoffs
+2013,TB,4,12,0,288,389,Missed playoffs
+2013,TEN,7,9,0,362,381,Missed playoffs
+2013,WAS,3,13,0,334,478,Missed playoffs
+2014,ARI,11,5,0,310,299,Lost Wild Card Round
+2014,ATL,6,10,0,381,417,Missed playoffs
+2014,BAL,10,6,0,409,302,Lost Divisional Round
+2014,BUF,9,7,0,343,289,Missed playoffs
+2014,CAR,7,8,1,339,374,Lost Divisional Round
+2014,CHI,5,11,0,319,442,Missed playoffs
+2014,CIN,10,5,1,365,344,Lost Wild Card Round
+2014,CLE,7,9,0,299,337,Missed playoffs
+2014,DAL,12,4,0,467,352,Lost Divisional Round
+2014,DEN,12,4,0,482,354,Lost Divisional Round
+2014,DET,11,5,0,321,282,Lost Wild Card Round
+2014,GB,12,4,0,486,348,Lost Conference Championship
+2014,HOU,9,7,0,372,307,Missed playoffs
+2014,IND,11,5,0,458,369,Lost Conference Championship
+2014,JAX,3,13,0,249,412,Missed playoffs
+2014,KC,9,7,0,353,281,Missed playoffs
+2014,MIA,8,8,0,388,373,Missed playoffs
+2014,MIN,7,9,0,325,343,Missed playoffs
+2014,NE,12,4,0,468,313,Won Super Bowl
+2014,NO,7,9,0,401,424,Missed playoffs
+2014,NYG,6,10,0,380,400,Missed playoffs
+2014,NYJ,4,12,0,283,401,Missed playoffs
+2014,OAK,3,13,0,253,452,Missed playoffs
+2014,PHI,10,6,0,474,400,Missed playoffs
+2014,PIT,11,5,0,436,368,Lost Wild Card Round
+2014,SD,9,7,0,348,348,Missed playoffs
+2014,SEA,12,4,0,394,254,Lost Super Bowl
+2014,SF,8,8,0,306,340,Missed playoffs
+2014,STL,6,10,0,324,354,Missed playoffs
+2014,TB,2,14,0,277,410,Missed playoffs
+2014,TEN,2,14,0,254,438,Missed playoffs
+2014,WAS,4,12,0,301,438,Missed playoffs
+2015,ARI,13,3,0,489,313,Lost Conference Championship
+2015,ATL,8,8,0,339,345,Missed playoffs
+2015,BAL,5,11,0,328,401,Missed playoffs
+2015,BUF,8,8,0,379,359,Missed playoffs
+2015,CAR,15,1,0,500,308,Lost Super Bowl
+2015,CHI,6,10,0,335,397,Missed playoffs
+2015,CIN,12,4,0,419,279,Lost Wild Card Round
+2015,CLE,3,13,0,278,432,Missed playoffs
+2015,DAL,4,12,0,275,374,Missed playoffs
+2015,DEN,12,4,0,355,296,Won Super Bowl
+2015,DET,7,9,0,358,400,Missed playoffs
+2015,GB,10,6,0,368,323,Lost Divisional Round
+2015,HOU,9,7,0,339,313,Lost Wild Card Round
+2015,IND,8,8,0,333,408,Missed playoffs
+2015,JAX,5,11,0,376,448,Missed playoffs
+2015,KC,11,5,0,405,287,Lost Divisional Round
+2015,MIA,6,10,0,310,389,Missed playoffs
+2015,MIN,11,5,0,365,302,Lost Wild Card Round
+2015,NE,12,4,0,465,315,Lost Conference Championship
+2015,NO,7,9,0,408,476,Missed playoffs
+2015,NYG,6,10,0,420,442,Missed playoffs
+2015,NYJ,10,6,0,387,314,Missed playoffs
+2015,OAK,7,9,0,359,399,Missed playoffs
+2015,PHI,7,9,0,377,430,Missed playoffs
+2015,PIT,10,6,0,423,319,Lost Divisional Round
+2015,SD,4,12,0,320,398,Missed playoffs
+2015,SEA,10,6,0,423,277,Lost Divisional Round
+2015,SF,5,11,0,238,387,Missed playoffs
+2015,STL,7,9,0,280,330,Missed playoffs
+2015,TB,6,10,0,342,417,Missed playoffs
+2015,TEN,3,13,0,299,423,Missed playoffs
+2015,WAS,9,7,0,388,379,Lost Wild Card Round
+2016,ARI,7,8,1,418,362,Missed playoffs
+2016,ATL,11,5,0,540,406,Lost Super Bowl
+2016,BAL,8,8,0,343,321,Missed playoffs
+2016,BUF,7,9,0,399,378,Missed playoffs
+2016,CAR,6,10,0,369,402,Missed playoffs
+2016,CHI,3,13,0,279,399,Missed playoffs
+2016,CIN,6,9,1,325,315,Missed playoffs
+2016,CLE,1,15,0,264,452,Missed playoffs
+2016,DAL,13,3,0,421,306,Lost Divisional Round
+2016,DEN,9,7,0,333,297,Missed playoffs
+2016,DET,9,7,0,346,358,Lost Wild Card Round
+2016,GB,10,6,0,432,388,Lost Conference Championship
+2016,HOU,9,7,0,279,328,Lost Divisional Round
+2016,IND,8,8,0,411,392,Missed playoffs
+2016,JAX,3,13,0,318,400,Missed playoffs
+2016,KC,12,4,0,389,311,Lost Divisional Round
+2016,LA,4,12,0,224,394,Missed playoffs
+2016,MIA,10,6,0,363,380,Lost Wild Card Round
+2016,MIN,8,8,0,327,307,Missed playoffs
+2016,NE,14,2,0,441,250,Won Super Bowl
+2016,NO,7,9,0,469,454,Missed playoffs
+2016,NYG,11,5,0,310,284,Lost Wild Card Round
+2016,NYJ,5,11,0,275,409,Missed playoffs
+2016,OAK,12,4,0,416,385,Lost Wild Card Round
+2016,PHI,7,9,0,367,331,Missed playoffs
+2016,PIT,11,5,0,399,327,Lost Conference Championship
+2016,SD,5,11,0,410,423,Missed playoffs
+2016,SEA,10,5,1,354,292,Lost Divisional Round
+2016,SF,2,14,0,309,480,Missed playoffs
+2016,TB,9,7,0,354,369,Missed playoffs
+2016,TEN,9,7,0,381,378,Missed playoffs
+2016,WAS,8,7,1,396,383,Missed playoffs
+2017,ARI,8,8,0,295,361,Missed playoffs
+2017,ATL,10,6,0,353,315,Lost Divisional Round
+2017,BAL,9,7,0,395,303,Missed playoffs
+2017,BUF,9,7,0,302,359,Lost Wild Card Round
+2017,CAR,11,5,0,363,327,Lost Wild Card Round
+2017,CHI,5,11,0,264,320,Missed playoffs
+2017,CIN,7,9,0,290,349,Missed playoffs
+2017,CLE,0,16,0,234,410,Missed playoffs
+2017,DAL,9,7,0,354,332,Missed playoffs
+2017,DEN,5,11,0,289,382,Missed playoffs
+2017,DET,9,7,0,410,376,Missed playoffs
+2017,GB,7,9,0,320,384,Missed playoffs
+2017,HOU,4,12,0,338,436,Missed playoffs
+2017,IND,4,12,0,263,404,Missed playoffs
+2017,JAX,10,6,0,417,268,Lost Conference Championship
+2017,KC,10,6,0,415,339,Lost Wild Card Round
+2017,LA,11,5,0,478,329,Lost Wild Card Round
+2017,LAC,9,7,0,355,272,Missed playoffs
+2017,MIA,6,10,0,281,393,Missed playoffs
+2017,MIN,13,3,0,382,252,Lost Conference Championship
+2017,NE,13,3,0,458,296,Lost Super Bowl
+2017,NO,11,5,0,448,326,Lost Divisional Round
+2017,NYG,3,13,0,246,388,Missed playoffs
+2017,NYJ,5,11,0,298,382,Missed playoffs
+2017,OAK,6,10,0,301,373,Missed playoffs
+2017,PHI,13,3,0,457,295,Won Super Bowl
+2017,PIT,13,3,0,406,308,Lost Divisional Round
+2017,SEA,9,7,0,366,332,Missed playoffs
+2017,SF,6,10,0,331,383,Missed playoffs
+2017,TB,5,11,0,335,382,Missed playoffs
+2017,TEN,9,7,0,334,356,Lost Divisional Round
+2017,WAS,7,9,0,342,388,Missed playoffs
+2018,ARI,3,13,0,225,425,Missed playoffs
+2018,ATL,7,9,0,414,423,Missed playoffs
+2018,BAL,10,6,0,389,287,Lost Wild Card Round
+2018,BUF,6,10,0,269,374,Missed playoffs
+2018,CAR,7,9,0,376,382,Missed playoffs
+2018,CHI,12,4,0,421,283,Lost Wild Card Round
+2018,CIN,6,10,0,368,455,Missed playoffs
+2018,CLE,7,8,1,359,392,Missed playoffs
+2018,DAL,10,6,0,339,324,Lost Divisional Round
+2018,DEN,6,10,0,329,349,Missed playoffs
+2018,DET,6,10,0,324,360,Missed playoffs
+2018,GB,6,9,1,376,400,Missed playoffs
+2018,HOU,11,5,0,402,316,Lost Wild Card Round
+2018,IND,10,6,0,433,344,Lost Divisional Round
+2018,JAX,5,11,0,245,316,Missed playoffs
+2018,KC,12,4,0,565,421,Lost Conference Championship
+2018,LA,13,3,0,527,384,Lost Super Bowl
+2018,LAC,12,4,0,428,329,Lost Divisional Round
+2018,MIA,7,9,0,319,433,Missed playoffs
+2018,MIN,8,7,1,360,341,Missed playoffs
+2018,NE,11,5,0,436,325,Won Super Bowl
+2018,NO,13,3,0,504,353,Lost Conference Championship
+2018,NYG,5,11,0,369,412,Missed playoffs
+2018,NYJ,4,12,0,333,441,Missed playoffs
+2018,OAK,4,12,0,290,467,Missed playoffs
+2018,PHI,9,7,0,367,348,Lost Divisional Round
+2018,PIT,9,6,1,428,360,Missed playoffs
+2018,SEA,10,6,0,428,347,Lost Wild Card Round
+2018,SF,4,12,0,342,435,Missed playoffs
+2018,TB,5,11,0,396,464,Missed playoffs
+2018,TEN,9,7,0,310,303,Missed playoffs
+2018,WAS,7,9,0,281,359,Missed playoffs
+2019,ARI,5,10,1,361,442,Missed playoffs
+2019,ATL,7,9,0,381,399,Missed playoffs
+2019,BAL,14,2,0,531,282,Lost Divisional Round
+2019,BUF,10,6,0,314,259,Lost Wild Card Round
+2019,CAR,5,11,0,340,470,Missed playoffs
+2019,CHI,8,8,0,280,298,Missed playoffs
+2019,CIN,2,14,0,279,420,Missed playoffs
+2019,CLE,6,10,0,335,393,Missed playoffs
+2019,DAL,8,8,0,434,321,Missed playoffs
+2019,DEN,7,9,0,282,316,Missed playoffs
+2019,DET,3,12,1,341,423,Missed playoffs
+2019,GB,13,3,0,376,313,Lost Conference Championship
+2019,HOU,10,6,0,378,385,Lost Divisional Round
+2019,IND,7,9,0,361,373,Missed playoffs
+2019,JAX,6,10,0,300,397,Missed playoffs
+2019,KC,12,4,0,451,308,Won Super Bowl
+2019,LA,9,7,0,394,364,Missed playoffs
+2019,LAC,5,11,0,337,345,Missed playoffs
+2019,MIA,5,11,0,306,494,Missed playoffs
+2019,MIN,10,6,0,407,303,Lost Divisional Round
+2019,NE,12,4,0,420,225,Lost Wild Card Round
+2019,NO,13,3,0,458,341,Lost Wild Card Round
+2019,NYG,4,12,0,341,451,Missed playoffs
+2019,NYJ,7,9,0,276,359,Missed playoffs
+2019,OAK,7,9,0,313,419,Missed playoffs
+2019,PHI,9,7,0,385,354,Lost Wild Card Round
+2019,PIT,8,8,0,289,303,Missed playoffs
+2019,SEA,11,5,0,405,398,Lost Divisional Round
+2019,SF,13,3,0,479,310,Lost Super Bowl
+2019,TB,7,9,0,458,449,Missed playoffs
+2019,TEN,9,7,0,402,331,Lost Conference Championship
+2019,WAS,3,13,0,266,435,Missed playoffs
+2020,ARI,8,8,0,410,367,Missed playoffs
+2020,ATL,4,12,0,396,414,Missed playoffs
+2020,BAL,11,5,0,468,303,Lost Divisional Round
+2020,BUF,13,3,0,501,375,Lost Conference Championship
+2020,CAR,5,11,0,350,402,Missed playoffs
+2020,CHI,8,8,0,372,370,Lost Wild Card Round
+2020,CIN,4,11,1,311,424,Missed playoffs
+2020,CLE,11,5,0,408,419,Lost Divisional Round
+2020,DAL,6,10,0,395,473,Missed playoffs
+2020,DEN,5,11,0,323,446,Missed playoffs
+2020,DET,5,11,0,377,519,Missed playoffs
+2020,GB,13,3,0,509,369,Lost Conference Championship
+2020,HOU,4,12,0,384,464,Missed playoffs
+2020,IND,11,5,0,451,362,Lost Wild Card Round
+2020,JAX,1,15,0,306,492,Missed playoffs
+2020,KC,14,2,0,473,362,Lost Super Bowl
+2020,LA,10,6,0,372,296,Lost Divisional Round
+2020,LAC,7,9,0,384,426,Missed playoffs
+2020,LV,8,8,0,434,478,Missed playoffs
+2020,MIA,10,6,0,404,338,Missed playoffs
+2020,MIN,7,9,0,430,475,Missed playoffs
+2020,NE,7,9,0,326,353,Missed playoffs
+2020,NO,12,4,0,482,337,Lost Divisional Round
+2020,NYG,6,10,0,280,357,Missed playoffs
+2020,NYJ,2,14,0,243,457,Missed playoffs
+2020,PHI,4,11,1,334,418,Missed playoffs
+2020,PIT,12,4,0,416,312,Lost Wild Card Round
+2020,SEA,12,4,0,459,371,Lost Wild Card Round
+2020,SF,6,10,0,376,390,Missed playoffs
+2020,TB,11,5,0,492,355,Won Super Bowl
+2020,TEN,11,5,0,491,439,Lost Wild Card Round
+2020,WAS,7,9,0,335,329,Lost Wild Card Round
+2021,ARI,11,6,0,449,366,Lost Wild Card Round
+2021,ATL,7,10,0,313,459,Missed playoffs
+2021,BAL,8,9,0,387,392,Missed playoffs
+2021,BUF,11,6,0,483,289,Lost Divisional Round
+2021,CAR,5,12,0,304,404,Missed playoffs
+2021,CHI,6,11,0,311,407,Missed playoffs
+2021,CIN,10,7,0,460,376,Lost Super Bowl
+2021,CLE,8,9,0,349,371,Missed playoffs
+2021,DAL,12,5,0,530,358,Lost Wild Card Round
+2021,DEN,7,10,0,335,322,Missed playoffs
+2021,DET,3,13,1,325,467,Missed playoffs
+2021,GB,13,4,0,450,371,Lost Divisional Round
+2021,HOU,4,13,0,280,452,Missed playoffs
+2021,IND,9,8,0,451,365,Missed playoffs
+2021,JAX,3,14,0,253,457,Missed playoffs
+2021,KC,12,5,0,480,364,Lost Conference Championship
+2021,LA,12,5,0,460,372,Won Super Bowl
+2021,LAC,9,8,0,474,459,Missed playoffs
+2021,LV,10,7,0,374,439,Lost Wild Card Round
+2021,MIA,9,8,0,341,373,Missed playoffs
+2021,MIN,8,9,0,425,426,Missed playoffs
+2021,NE,10,7,0,462,303,Lost Wild Card Round
+2021,NO,9,8,0,364,335,Missed playoffs
+2021,NYG,4,13,0,258,416,Missed playoffs
+2021,NYJ,4,13,0,310,504,Missed playoffs
+2021,PHI,9,8,0,444,385,Lost Wild Card Round
+2021,PIT,9,7,1,343,398,Lost Wild Card Round
+2021,SEA,7,10,0,395,366,Missed playoffs
+2021,SF,10,7,0,427,365,Lost Conference Championship
+2021,TB,13,4,0,511,353,Lost Divisional Round
+2021,TEN,12,5,0,419,354,Lost Divisional Round
+2021,WAS,7,10,0,335,434,Missed playoffs
+2022,ARI,4,13,0,340,449,Missed playoffs
+2022,ATL,7,10,0,365,386,Missed playoffs
+2022,BAL,10,7,0,350,315,Lost Wild Card Round
+2022,BUF,13,3,0,455,286,Lost Divisional Round
+2022,CAR,7,10,0,347,374,Missed playoffs
+2022,CHI,3,14,0,326,463,Missed playoffs
+2022,CIN,12,4,0,418,322,Lost Conference Championship
+2022,CLE,7,10,0,361,381,Missed playoffs
+2022,DAL,12,5,0,467,342,Lost Divisional Round
+2022,DEN,5,12,0,287,359,Missed playoffs
+2022,DET,9,8,0,453,427,Missed playoffs
+2022,GB,8,9,0,370,371,Missed playoffs
+2022,HOU,3,13,1,289,420,Missed playoffs
+2022,IND,4,12,1,289,427,Missed playoffs
+2022,JAX,9,8,0,404,350,Lost Divisional Round
+2022,KC,14,3,0,496,369,Won Super Bowl
+2022,LA,5,12,0,307,384,Missed playoffs
+2022,LAC,10,7,0,391,384,Lost Wild Card Round
+2022,LV,6,11,0,395,418,Missed playoffs
+2022,MIA,9,8,0,397,399,Lost Wild Card Round
+2022,MIN,13,4,0,424,427,Lost Wild Card Round
+2022,NE,8,9,0,364,347,Missed playoffs
+2022,NO,7,10,0,330,345,Missed playoffs
+2022,NYG,9,7,1,365,371,Lost Divisional Round
+2022,NYJ,7,10,0,296,316,Missed playoffs
+2022,PHI,14,3,0,477,344,Lost Super Bowl
+2022,PIT,9,8,0,308,346,Missed playoffs
+2022,SEA,9,8,0,407,401,Lost Wild Card Round
+2022,SF,13,4,0,450,277,Lost Conference Championship
+2022,TB,8,9,0,313,358,Lost Wild Card Round
+2022,TEN,7,10,0,298,359,Missed playoffs
+2022,WAS,8,8,1,321,343,Missed playoffs
+2023,ARI,4,13,0,330,455,Missed playoffs
+2023,ATL,7,10,0,321,373,Missed playoffs
+2023,BAL,13,4,0,483,280,Lost Conference Championship
+2023,BUF,11,6,0,451,311,Lost Divisional Round
+2023,CAR,2,15,0,236,416,Missed playoffs
+2023,CHI,7,10,0,360,379,Missed playoffs
+2023,CIN,9,8,0,366,384,Missed playoffs
+2023,CLE,11,6,0,396,362,Lost Wild Card Round
+2023,DAL,12,5,0,509,315,Lost Wild Card Round
+2023,DEN,8,9,0,357,413,Missed playoffs
+2023,DET,12,5,0,461,395,Lost Conference Championship
+2023,GB,9,8,0,383,350,Lost Divisional Round
+2023,HOU,10,7,0,377,353,Lost Divisional Round
+2023,IND,9,8,0,396,415,Missed playoffs
+2023,JAX,9,8,0,377,371,Missed playoffs
+2023,KC,11,6,0,371,294,Won Super Bowl
+2023,LA,10,7,0,404,377,Lost Wild Card Round
+2023,LAC,5,12,0,346,398,Missed playoffs
+2023,LV,8,9,0,332,331,Missed playoffs
+2023,MIA,11,6,0,496,391,Lost Wild Card Round
+2023,MIN,7,10,0,344,362,Missed playoffs
+2023,NE,4,13,0,236,366,Missed playoffs
+2023,NO,9,8,0,402,327,Missed playoffs
+2023,NYG,6,11,0,266,407,Missed playoffs
+2023,NYJ,7,10,0,268,355,Missed playoffs
+2023,PHI,11,6,0,433,428,Lost Wild Card Round
+2023,PIT,10,7,0,304,324,Lost Wild Card Round
+2023,SEA,9,8,0,364,402,Missed playoffs
+2023,SF,12,5,0,491,298,Lost Super Bowl
+2023,TB,9,8,0,348,325,Lost Divisional Round
+2023,TEN,6,11,0,305,367,Missed playoffs
+2023,WAS,4,13,0,329,518,Missed playoffs
+2024,ARI,8,9,0,400,379,Missed playoffs
+2024,ATL,8,9,0,389,423,Missed playoffs
+2024,BAL,12,5,0,518,361,Lost Divisional Round
+2024,BUF,13,4,0,525,368,Lost Conference Championship
+2024,CAR,5,12,0,341,534,Missed playoffs
+2024,CHI,5,12,0,310,370,Missed playoffs
+2024,CIN,9,8,0,472,434,Missed playoffs
+2024,CLE,3,14,0,258,435,Missed playoffs
+2024,DAL,7,10,0,350,468,Missed playoffs
+2024,DEN,10,7,0,425,311,Lost Wild Card Round
+2024,DET,15,2,0,564,342,Lost Divisional Round
+2024,GB,11,6,0,460,338,Lost Wild Card Round
+2024,HOU,10,7,0,372,372,Lost Divisional Round
+2024,IND,8,9,0,377,427,Missed playoffs
+2024,JAX,4,13,0,320,435,Missed playoffs
+2024,KC,15,2,0,385,326,Lost Super Bowl
+2024,LA,10,7,0,367,386,Lost Divisional Round
+2024,LAC,11,6,0,402,301,Lost Wild Card Round
+2024,LV,4,13,0,309,434,Missed playoffs
+2024,MIA,8,9,0,345,364,Missed playoffs
+2024,MIN,14,3,0,432,332,Lost Wild Card Round
+2024,NE,4,13,0,289,417,Missed playoffs
+2024,NO,5,12,0,338,398,Missed playoffs
+2024,NYG,3,14,0,273,415,Missed playoffs
+2024,NYJ,5,12,0,338,404,Missed playoffs
+2024,PHI,14,3,0,463,303,Won Super Bowl
+2024,PIT,10,7,0,380,347,Lost Wild Card Round
+2024,SEA,10,7,0,375,368,Missed playoffs
+2024,SF,6,11,0,389,436,Missed playoffs
+2024,TB,10,7,0,502,385,Lost Wild Card Round
+2024,TEN,3,14,0,311,460,Missed playoffs
+2024,WAS,12,5,0,485,391,Lost Conference Championship

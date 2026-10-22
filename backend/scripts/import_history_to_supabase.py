@@ -11,6 +11,13 @@ Usage (from backend/, after ``npx supabase login`` and ``npx supabase link``):
     .venv/bin/python scripts/import_history_to_supabase.py --all --sql-only out.sql         # just write SQL
     .venv/bin/python scripts/import_history_to_supabase.py --pregame                        # pregame builds
     .venv/bin/python scripts/import_history_to_supabase.py --pregame --verify
+    .venv/bin/python scripts/import_history_to_supabase.py --stats                          # 1999-2024 stats
+    .venv/bin/python scripts/import_history_to_supabase.py --stats --verify
+
+``--stats`` imports ``data/history/`` (scripts/build_history_stats.py) into ``history.player_seasons`` /
+``team_seasons`` / ``stats_builds``: old rows removed, rows inserted in batches, and the build row written
+last, so the backend only ever sees a complete import (it re-checks the content hash on load). Verify reads
+everything back through the backend loader as ``sideline_reader`` (``SUPABASE_DB_URL``).
 
 ``--pregame`` imports ``data/pregame/*.json`` (scripts/build_pregame.py) into ``history.pregame_builds`` /
 ``pregame_games`` / ``pregame_players``: each build replaced in one transaction, then read back and
@@ -314,9 +321,12 @@ def main() -> int:
     ap.add_argument("--verify", action="store_true", help="only verify what's in Supabase")
     ap.add_argument("--sql-only", type=Path, help="write the import SQL to this file instead of running it")
     ap.add_argument("--pregame", action="store_true", help="pregame builds (data/pregame/*.json) instead of games")
+    ap.add_argument("--stats", action="store_true", help="historical season stats (data/history/) instead of games")
     args = ap.parse_args()
     if args.pregame:
         return pregame_main(args)
+    if args.stats:
+        return stats_main(args)
     if not args.all and args.season is None:
         ap.error("pass --season (and optionally --week) or --all")
     files = select_files(args.season, args.week, args.all)
@@ -364,6 +374,99 @@ def pregame_main(args: argparse.Namespace) -> int:
         print(f"imported {f.name}")
     print("verifying…")
     return 0 if verify_pregame(files) else 1
+
+
+# ---------------------------------------------------------------- historical season stats
+
+STATS_BUILD_ID = "nflverse-season-stats"
+STATS_BATCH = 3000
+
+
+def stats_sql() -> tuple[list[str], dict[str, object]]:
+    from app.history_stats.data import PLAYER_COLUMNS, TEAM_COLUMNS, load_local
+
+    data = load_local()  # verifies source.json's content hash
+    meta = data.meta
+    if meta["last_season"] > 2024:
+        raise SystemExit("Refusing to import seasons after 2024")
+    scripts = [
+        "begin;\n"
+        f"delete from history.stats_builds where build_id = {_quote(STATS_BUILD_ID)};\n"
+        "delete from history.player_seasons;\ndelete from history.team_seasons;\n"
+        f"insert into history.team_seasons ({', '.join(TEAM_COLUMNS)}) values\n"
+        + ",\n".join("  (" + ", ".join(_quote(getattr(t, c)) for c in TEAM_COLUMNS) + ")" for t in data.teams)
+        + ";\ncommit;\n"
+    ]
+    rows = data.players
+    for i in range(0, len(rows), STATS_BATCH):
+        chunk = rows[i : i + STATS_BATCH]
+        scripts.append(
+            f"insert into history.player_seasons ({', '.join(PLAYER_COLUMNS)}) values\n"
+            + ",\n".join("  (" + ", ".join(_quote(getattr(r, c)) for c in PLAYER_COLUMNS) + ")" for r in chunk)
+            + ";\n"
+        )
+    scripts.append(
+        "insert into history.stats_builds (build_id, first_season, last_season, sources, license, attribution, "
+        "generated_at, content_sha256, player_rows, team_rows) values ("
+        + ", ".join(
+            [
+                _quote(STATS_BUILD_ID),
+                _quote(meta["first_season"]),
+                _quote(meta["last_season"]),
+                _dollar(json.dumps(meta["sources"])) + "::jsonb",
+                _quote(meta["license"]),
+                _quote(meta["attribution"]),
+                _quote(meta["generated_at"]),
+                _quote(meta["content_sha256"]),
+                _quote(len(data.players)),
+                _quote(len(data.teams)),
+            ]
+        )
+        + ");\n"
+    )
+    return scripts, meta
+
+
+def verify_stats() -> bool:
+    from app.core.config import get_settings
+    from app.history_stats.data import load_history, load_local, postgres_history_fetch
+
+    settings = get_settings()
+    if settings.supabase_db_url is None:
+        print("BAD SUPABASE_DB_URL is not set (needed to read back as sideline_reader)")
+        return False
+    local = load_local()
+    try:
+        remote = load_history(postgres_history_fetch(settings.supabase_db_url.get_secret_value()))
+    except Exception as exc:
+        print(f"BAD {type(exc).__name__}")
+        return False
+    ok = remote.source == "supabase" and remote.meta["content_sha256"] == local.meta["content_sha256"]
+    print(
+        f"{'OK ' if ok else 'BAD'} stats: {len(remote.players)} player seasons, {len(remote.teams)} team seasons "
+        f"(source={remote.source}, checksum {'matches' if ok else 'differs'})"
+    )
+    return ok
+
+
+def stats_main(args: argparse.Namespace) -> int:
+    if args.verify:
+        return 0 if verify_stats() else 1
+    scripts, meta = stats_sql()
+    size = sum(len(x) for x in scripts) / 1024
+    print(
+        f"{meta['player_rows']} player seasons + {meta['team_rows']} team seasons, "
+        f"{size:.0f} KB in {len(scripts)} steps"
+    )
+    if args.sql_only:
+        args.sql_only.write_text("\n".join(scripts), encoding="utf-8")
+        print(f"wrote {args.sql_only}")
+        return 0
+    for i, script in enumerate(scripts, 1):
+        run_cli_sql(script)
+        print(f"step {i}/{len(scripts)} done")
+    print("verifying…")
+    return 0 if verify_stats() else 1
 
 
 if __name__ == "__main__":
