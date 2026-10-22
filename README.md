@@ -6,6 +6,7 @@ from real data, and the big moments turned into picks. All without making anythi
 > **Try it now: https://sideline-web.onrender.com** (phone or laptop; tap **Try Demo**, no account needed).
 > MGT 409 (AI Foundations for Managers, Fall 2026) final project by Rahul Regula.
 > Report: [`report.html`](report.html) · Slides: [`slides.html`](slides.html) (open in a browser; **F** = full screen).
+> © 2026 Rahul Regula. All rights reserved; shared for course evaluation only (see [LICENSE](LICENSE)).
 
 | | |
 |---|---|

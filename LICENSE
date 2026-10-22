@@ -1,0 +1,11 @@
+Copyright (c) 2026 Rahul Regula. All rights reserved.
+
+This repository (the Sideline source code, documentation, designs, report and slides) is shared solely so that
+the instructors and teaching staff of MGT 409 (AI Foundations for Managers, Yale School of Management, Fall 2026)
+can evaluate it as coursework.
+
+No license is granted to copy, modify, distribute, sublicense, sell, deploy, or create derivative works of any
+part of it, for any purpose, without the prior written permission of the copyright holder.
+
+Third-party components keep their own licenses: open-source dependencies under their respective licenses, and
+NFL play-by-play and statistics from nflverse (nflfastR / nflverse-data) under CC BY 4.0, used with attribution.
