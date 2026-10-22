@@ -31,3 +31,13 @@ def test_cors_allows_expo_web_origin(client):
 
 def test_unknown_route_404(client):
     assert client.get("/api/v1/does-not-exist").status_code == 404
+
+
+def test_status_alias_for_browsers():
+    """The app checks /api/v1/status (some blockers refuse paths named /health)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    client = TestClient(create_app())
+    assert client.get("/api/v1/status").json() == client.get("/health").json()

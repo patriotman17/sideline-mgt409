@@ -55,6 +55,7 @@ async function run() {
   await probe('fetch /health (same site)', '/health');
   await probe('fetch /health no-store', '/health', { cache: 'no-store' });
   await xhr('XMLHttpRequest /health', '/health');
+  await probe('fetch /api/v1/status (what the app uses)', '/api/v1/status');
   await probe('fetch /api/v1/week/slates', '/api/v1/week/slates');
   await probe('POST /api/v1/week/sessions', '/api/v1/week/sessions', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

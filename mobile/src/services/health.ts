@@ -8,7 +8,10 @@ export interface HealthResponse {
   environment: string;
 }
 
-export const getBackendHealth = () => apiGet<HealthResponse>('/health', 2500);
+// Not `/health`: some privacy/tracker blockers refuse browser requests to that path (same check, other name).
+const STATUS_PATH = '/api/v1/status';
+
+export const getBackendHealth = () => apiGet<HealthResponse>(STATUS_PATH, 8000);
 
 /**
  * Wait for the backend to answer, for up to `maxMs`. Free hosting (Render) puts an idle server to
@@ -17,7 +20,7 @@ export const getBackendHealth = () => apiGet<HealthResponse>('/health', 2500);
  * Only hosted (https) backends sleep; a local one that isn't running fails after a few seconds.
  */
 export async function waitForBackend(
-  maxMs = API_BASE_URL.startsWith('https://') ? 90000 : 4000,
+  maxMs = API_BASE_URL.startsWith('https://') ? 120000 : 4000,
   onSlow?: () => void,
 ): Promise<void> {
   const started = Date.now();
@@ -25,7 +28,7 @@ export async function waitForBackend(
   try {
     for (;;) {
       try {
-        await apiGet<HealthResponse>('/health', 20000);
+        await apiGet<HealthResponse>(STATUS_PATH, 20000);
         return;
       } catch (err) {
         if (Date.now() - started > maxMs) throw err;
