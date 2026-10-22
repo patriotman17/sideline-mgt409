@@ -104,7 +104,7 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
 
 ## Deployment (Render)
 
-`render.yaml` (Blueprint): `sideline-api` (python, `rootDir: backend`, uvicorn `--proxy-headers
+`render.yaml` (Blueprint): `sideline-api` (python, **Starter** plan so it never sleeps, `rootDir: backend`, uvicorn `--proxy-headers
 --forwarded-allow-ips='*'`, `/health`) and `sideline-web` (static Expo web export, SPA rewrite to `index.html`,
 `EXPO_PUBLIC_API_URL` at build). The public URLs are literal values in `render.yaml` (`fromService` `host` is
 Render's private network name, unusable from browsers); `_origins` in `core/config.py` still accepts bare hosts.

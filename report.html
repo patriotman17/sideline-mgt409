@@ -429,8 +429,9 @@ spoiler-free makes it safe to put next to a live broadcast.</p>
   <li><b>Social features are a preview.</b> Watch parties, season-long picks and the news feed are designed and clearly
     labeled "Preview · coming next" with sample data.</li>
   <li><b>Accounts without email.</b> Email confirmation and password reset need a sending domain; for the course they're off.</li>
-  <li><b>Free hosting sleeps.</b> On Render's free plan the first visit after 15 idle minutes waits up to a minute (the app
-    says "Waking up…"); a $7 Starter instance fixes it.</li>
+  <li><b>Hosting is small.</b> The backend runs on one Render Starter instance ($7/month, always on); a real launch
+    would add more instances and a paid database plan (section 5). The app still handles a sleeping or restarting
+    server gracefully ("Waking up the Sideline server…").</li>
 </ul>
 
 <h3>Next month</h3>

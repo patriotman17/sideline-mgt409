@@ -6,7 +6,8 @@ services:
   - type: web
     name: sideline-api
     runtime: python
-    plan: free
+    # Starter ($7/month): never sleeps, so a grader's first visit is instant (free instances sleep after 15 idle min).
+    plan: starter
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     # --proxy-headers: trust Render's proxy for the real client IP (the AI rate limit is per client).

@@ -390,7 +390,7 @@ app only receives what the replay has revealed.
 
 | Service | What | Free-tier notes |
 |---|---|---|
-| `sideline-api` | FastAPI backend (`backend/`), Python 3.12, pinned `requirements.txt`, health check `/health` | Sleeps after ~15 min idle; the first request wakes it (30-60 s). The app shows "Waking up the Sideline server…" and waits instead of failing. In-memory sessions reset on wake; the app starts fresh ones by itself. |
+| `sideline-api` | FastAPI backend (`backend/`), Python 3.12, pinned `requirements.txt`, health check `/health` | **Starter** plan ($7/month): always on. On the free plan it would sleep after ~15 idle minutes; the app handles that anyway ("Waking up the Sideline server…", fresh sessions after a restart). |
 | `sideline-web` | The Expo **web** build of the app (`mobile/`, `expo export --platform web`), static, every path rewritten to `index.html` | Wide screens show the app as a centered phone-width column; phone browsers get the full-screen layout. |
 
 1. Render → **New → Blueprint** → pick this repo. Render reads `render.yaml`.
