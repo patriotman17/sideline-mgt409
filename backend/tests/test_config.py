@@ -60,3 +60,14 @@ def test_process_environment_wins_over_env_files(tmp_path, monkeypatch):
     load_env_files((backend, repo, parent))
     s = Settings.from_env()
     assert s.portkey_api_key is not None and s.portkey_api_key.get_secret_value() == "pk-from-process"
+
+
+def test_cors_origins_accept_bare_hosts(monkeypatch):
+    from app.core.config import Settings
+
+    monkeypatch.setenv("CORS_ORIGINS", "sideline-web.onrender.com, http://localhost:8081/ ,https://x.example")
+    assert Settings.from_env().cors_origins == [
+        "https://sideline-web.onrender.com",
+        "http://localhost:8081",
+        "https://x.example",
+    ]

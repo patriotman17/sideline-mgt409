@@ -1,0 +1,91 @@
+# Render Blueprint for Sideline (MGT 409): the FastAPI backend + the Expo web build of the app.
+# Render dashboard → New → Blueprint → this repo. Secrets marked `sync: false` are typed into the
+# dashboard when the Blueprint is created; they are never stored in git.
+services:
+  # ---------------------------------------------------------------- backend (FastAPI)
+  - type: web
+    name: sideline-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # --proxy-headers: trust Render's proxy for the real client IP (the AI rate limit is per client).
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.2
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # The web app's host (bare hosts mean https://).
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: sideline-web
+          property: host
+      - key: PORTKEY_API_KEY # course key, gpt-6-luna only
+        sync: false
+      - key: AI_MODEL
+        value: gpt-6-luna
+      - key: AI_REASONING_EFFORT
+        value: none
+      - key: AI_DAILY_BUDGET_USD
+        value: "2.0"
+      - key: AI_MAX_OUTPUT_TOKENS
+        value: "700"
+      - key: AI_REQUEST_LIMIT
+        value: "5"
+      - key: AI_TOOL_CALLS_LIMIT
+        value: "8"
+      - key: AI_RATE_LIMIT_PER_MINUTE
+        value: "8"
+      - key: AI_AUDIT_LOG_PATH
+        value: logs/ai_audit.jsonl
+      # Optional: accounts (public JWT keys are fetched from this URL; no Supabase secret needed).
+      - key: SUPABASE_URL
+        sync: false
+      # Optional: read NFL data from Supabase as the read-only sideline_reader role. Falls back to the
+      # committed files if unset or unreachable.
+      - key: REPLAY_DATA_SOURCE
+        value: supabase
+      - key: SUPABASE_DB_URL
+        sync: false
+
+  # ---------------------------------------------------------------- app (Expo web build, static)
+  - type: web
+    name: sideline-web
+    runtime: static
+    rootDir: mobile
+    buildCommand: npm ci && EXPO_PUBLIC_API_URL="https://$API_HOST" npx expo export --platform web --output-dir dist
+    staticPublishPath: dist
+    routes:
+      # Single-page app: every path (e.g. /replay/...) is served by index.html; Expo Router takes over.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: API_HOST
+        fromService:
+          type: web
+          name: sideline-api
+          property: host
+      # Public values (the publishable key is meant to ship in apps; RLS protects the data).
+      # Leave blank for guest-only mode.
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false

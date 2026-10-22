@@ -91,6 +91,20 @@ export default function ScoresScreen() {
         </EmptyState>
       ) : !snap ? (
         <View className="mt-4 gap-2 px-3">
+          {week.waking ? (
+            <View
+              className="mb-2 rounded-2xl bg-white/10 px-4 py-3"
+              accessibilityLiveRegion="polite"
+            >
+              <Text className="text-[14px] font-semibold text-ink">
+                Waking up the Sideline server…
+              </Text>
+              <Text className="mt-1 text-[12px] leading-4 text-sub">
+                The free host sleeps when nobody is using it. The first load can take up to a
+                minute.
+              </Text>
+            </View>
+          ) : null}
           <Skeleton className="h-52 rounded-2xl" />
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[78px]" />

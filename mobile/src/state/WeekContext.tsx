@@ -19,6 +19,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { watchList } from '@/lib/moments';
+import { waitForBackend } from '@/services/health';
 import { ApiError } from '@/services/http';
 import type { MomentHolds } from '@/services/replay';
 import {
@@ -42,6 +43,8 @@ const HOLDS_KEY = 'sideline.moment_holds';
 interface WeekValue {
   snapshot: WeekSnapshot | undefined;
   error: string | undefined;
+  /** The backend is slow to answer the first request (a free host waking up from sleep). */
+  waking: boolean;
   busy: boolean;
   /** Create the week session if there isn't one yet (safe to call repeatedly). */
   ensure: () => void;
@@ -68,6 +71,7 @@ export function WeekProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<WeekSnapshot>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [waking, setWaking] = useState(false);
   const [wanted, setWanted] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [auth, setAuth] = useState<WeekAuth | null>(null);
@@ -95,19 +99,23 @@ export function WeekProvider({ children }: { children: ReactNode }) {
     if (!wanted || auth || creating.current) return;
     creating.current = true;
     let alive = true;
-    startWeek().then(
-      ({ session_token, ...snap }) => {
-        creating.current = false;
-        if (!alive) return;
-        setAuth({ sessionId: snap.session_id, token: session_token });
-        setSnapshot(snap);
-        setError(undefined);
-      },
-      (err: unknown) => {
-        creating.current = false;
-        if (alive) setError(err instanceof Error ? err.message : 'Could not load the week');
-      },
-    );
+    waitForBackend(undefined, () => alive && setWaking(true))
+      .then(() => startWeek())
+      .then(
+        ({ session_token, ...snap }) => {
+          creating.current = false;
+          setWaking(false);
+          if (!alive) return;
+          setAuth({ sessionId: snap.session_id, token: session_token });
+          setSnapshot(snap);
+          setError(undefined);
+        },
+        (err: unknown) => {
+          creating.current = false;
+          setWaking(false);
+          if (alive) setError(err instanceof Error ? err.message : 'Could not load the week');
+        },
+      );
     return () => {
       alive = false;
     };
@@ -173,6 +181,7 @@ export function WeekProvider({ children }: { children: ReactNode }) {
     () => ({
       snapshot,
       error,
+      waking,
       busy,
       ensure: () => setWanted(true),
       retry: () => {
@@ -191,7 +200,7 @@ export function WeekProvider({ children }: { children: ReactNode }) {
       setPrimaryTeam,
       viewingGameId,
     }),
-    [snapshot, error, busy, run, momentHolds, setMomentHolds, viewingGameId],
+    [snapshot, error, waking, busy, run, momentHolds, setMomentHolds, viewingGameId],
   );
 
   return <WeekContext.Provider value={value}>{children}</WeekContext.Provider>;

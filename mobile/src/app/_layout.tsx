@@ -15,6 +15,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LaunchScreen } from '@/components/auth';
 import { Button } from '@/components/ui';
+import { PhoneFrame } from '@/components/web/PhoneFrame';
 import { AppStoreProvider } from '@/state/AppStore';
 import { AuthProvider, useAuth } from '@/state/AuthContext';
 import { usePersonalization } from '@/state/usePersonalization';
@@ -48,17 +49,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={navTheme}>
-        <AuthProvider>
-          <WeekProvider>
-            <PerUserAppStore>
-              <StatusBar style="light" />
-              <WeekPrimaryTeam />
-              <RootNavigator />
-            </PerUserAppStore>
-          </WeekProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <PhoneFrame>
+        <ThemeProvider value={navTheme}>
+          <AuthProvider>
+            <WeekProvider>
+              <PerUserAppStore>
+                <StatusBar style="light" />
+                <WeekPrimaryTeam />
+                <RootNavigator />
+              </PerUserAppStore>
+            </WeekProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </PhoneFrame>
     </SafeAreaProvider>
   );
 }

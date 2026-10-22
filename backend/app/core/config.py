@@ -62,6 +62,12 @@ def _csv(name: str, default: str) -> list[str]:
     return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
 
 
+def _origins(name: str, default: str) -> list[str]:
+    """CORS origins; a bare host (as Render's ``fromService`` provides, e.g. ``sideline-web.onrender.com``)
+    means ``https://<host>``. Trailing slashes are dropped (browsers send origins without them)."""
+    return [o.rstrip("/") if "://" in o else f"https://{o.rstrip('/')}" for o in _csv(name, default)]
+
+
 class Settings(BaseModel):
     app_name: str = "Sideline API"
     version: str = __version__
@@ -124,7 +130,7 @@ class Settings(BaseModel):
         return cls(
             environment=os.getenv("APP_ENV", "development"),
             log_level=os.getenv("LOG_LEVEL", "info"),
-            cors_origins=_csv(
+            cors_origins=_origins(
                 "CORS_ORIGINS",
                 "http://localhost:8081,http://127.0.0.1:8081,http://localhost:19006",
             ),

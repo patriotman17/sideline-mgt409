@@ -1,4 +1,5 @@
-# Development tools (linting, formatting, type checking). Runtime deps live in requirements.txt.
+# Development tools (tests, linting, formatting, type checking). Runtime deps live in requirements.txt.
 -r requirements.txt
-ruff
-mypy
+pytest==9.1.1
+ruff==0.17.0
+mypy==2.4.0

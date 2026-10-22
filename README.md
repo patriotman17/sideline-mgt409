@@ -373,6 +373,28 @@ imported yet) still appear, and if Supabase can't be read the backend falls back
 automatically. Either way, game facts are computed by the same replay engine, and the
 app only receives what the replay has revealed.
 
+## Deploy (Render)
+
+`render.yaml` is a Render **Blueprint** for two services from this repo:
+
+| Service | What | Free-tier notes |
+|---|---|---|
+| `sideline-api` | FastAPI backend (`backend/`), Python 3.12, pinned `requirements.txt`, health check `/health` | Sleeps after ~15 min idle; the first request wakes it (30-60 s). The app shows "Waking up the Sideline server…" and waits instead of failing. In-memory sessions reset on wake; the app starts fresh ones by itself. |
+| `sideline-web` | The Expo **web** build of the app (`mobile/`, `expo export --platform web`), static, every path rewritten to `index.html` | Wide screens show the app as a centered phone-width column; phone browsers get the full-screen layout. |
+
+1. Render → **New → Blueprint** → pick this repo. Render reads `render.yaml`.
+2. When asked, enter the secrets (never in git): `PORTKEY_API_KEY`; optionally `SUPABASE_URL` and
+   `SUPABASE_DB_URL` (read-only `sideline_reader` connection string) for accounts and the Supabase data
+   source, and the public `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the web app.
+   With only `PORTKEY_API_KEY` the app runs in guest mode on the committed data files.
+3. Each service gets the other's address automatically (`fromService`): the web build calls
+   `https://<sideline-api host>`, and the backend's CORS allows only the web app's host.
+4. For accounts on the deployed site, add the web URL to Supabase Auth (`site_url` + redirect allowlist in
+   `supabase/config.toml`, then `npx supabase config push`).
+
+Production mode (`APP_ENV=production`) turns off `/docs` and the development-only AI audit endpoint, and
+uvicorn runs with `--proxy-headers` so the AI rate limit sees each visitor's real IP.
+
 ## Data disclaimer
 
 Everything under `mobile/src/data/mock/` is fabricated for development: scores, stats, odds,

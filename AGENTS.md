@@ -102,6 +102,17 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
 `SUPABASE_URL` (backend, optional) is the only Supabase value the backend needs: it fetches the project's
 **public** JWT signing keys from it. No Supabase secret / service-role key is used anywhere.
 
+## Deployment (Render)
+
+`render.yaml` (Blueprint): `sideline-api` (python, `rootDir: backend`, uvicorn `--proxy-headers
+--forwarded-allow-ips='*'`, `/health`) and `sideline-web` (static Expo web export, SPA rewrite to `index.html`,
+`EXPO_PUBLIC_API_URL=https://$API_HOST` at build). Hosts cross-wire via `fromService` (bare hosts; `_origins` in
+`core/config.py` turns them into `https://` origins). Secrets are `sync: false` (dashboard only). Backend deps are
+pinned in `requirements.txt` (runtime) / `requirements-dev.txt` (pytest, ruff, mypy); Python 3.12
+(`.python-version`, `PYTHON_VERSION`). Web-only `components/web/PhoneFrame.web.tsx` centers the app at ≤ 440 px
+on wide screens. `services/health.waitForBackend` waits up to 90 s for an https backend (free host waking up;
+`WeekContext.waking` → Scores shows "Waking up…"), 4 s for a local one.
+
 ## Mobile conventions
 
 - Expo SDK 57. Read `mobile/AGENTS.md` and fetch versioned docs before touching Expo APIs.
@@ -145,8 +156,8 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
   `api_router` (`/api/v1/...`). `/health` stays unversioned at the root.
 - Settings via `Depends(get_settings)`; override with `app.dependency_overrides` in tests.
 - Response models are Pydantic `BaseModel`s; agents use typed deps and structured `output_type`.
-- Dependencies are pinned only by name in `requirements.txt` for now — pin versions before
-  deploying. Dev tools (ruff, mypy) live in `requirements-dev.txt`.
+- Dependencies are pinned to tested versions in `requirements.txt`; dev tools (pytest, ruff, mypy) live in
+  `requirements-dev.txt`.
 - `app/` and `scripts/` are mypy `--strict`; tests are type-checked with relaxed untyped-def rules.
 
 ## Replay engine (Phase 2A/2B)
