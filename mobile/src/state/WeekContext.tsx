@@ -19,6 +19,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { watchList } from '@/lib/moments';
+import { ApiError } from '@/services/http';
 import type { MomentHolds } from '@/services/replay';
 import {
   controlWeek,
@@ -33,6 +34,9 @@ import {
 } from '@/services/week';
 
 const POLL_MS = 1000;
+
+/** The backend forgot this session (restart, idle expiry, a sleeping host waking up): start a new one. */
+const sessionGone = (err: unknown) => err instanceof ApiError && err.status === 404;
 const HOLDS_KEY = 'sideline.moment_holds';
 
 interface WeekValue {
@@ -116,13 +120,16 @@ export function WeekProvider({ children }: { children: ReactNode }) {
     : '';
   const sentWatch = useRef('');
   useEffect(() => {
-    if (!auth || !watchKey || sentWatch.current === watchKey) return;
-    sentWatch.current = watchKey;
+    // Keyed by session too, so a new session (after the old one expired) gets the watch list again.
+    const sent = auth ? `${auth.sessionId}#${watchKey}` : '';
+    if (!auth || !watchKey || sentWatch.current === sent) return;
+    sentWatch.current = sent;
     const [ids, level] = watchKey.split('|');
     watchWeek(auth, ids ? ids.split(',') : [], level === 'all' ? 'all' : 'big').then(
       setSnapshot,
-      () => {
-        sentWatch.current = ''; // retry on the next change
+      (err: unknown) => {
+        sentWatch.current = ''; // retry on the next change (or with the new session)
+        if (sessionGone(err)) setAuth(null);
       },
     );
   }, [auth, watchKey]);
@@ -149,7 +156,12 @@ export function WeekProvider({ children }: { children: ReactNode }) {
         setSnapshot(await fn(auth));
         setError(undefined);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
+        if (sessionGone(err)) {
+          setAuth(null); // a fresh week session is created automatically; try the action again
+          setError('The week clock restarted. Try that again.');
+        } else {
+          setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
       } finally {
         setBusy(false);
       }

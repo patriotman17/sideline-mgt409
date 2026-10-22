@@ -237,6 +237,31 @@ spend is capped per day. Every AI call is logged to `backend/logs/ai_audit.jsonl
 factual accuracy, tool selection, evidence grounding, future-data leakage, and cost/latency on known
 situations from both replay games.
 
+## Pregame (season so far + AI preview)
+
+Open any Week 5 game before kickoff and a **Pregame** card shows both teams' season so far: record,
+streak, last two results, points scored / allowed and yards per game, turnover margin, season leaders
+(with league rank) and up to five rule-based storylines ("NYJ is 0-4 and still looking for its first
+win."). It disappears at kickoff.
+
+- **Data:** `backend/data/pregame/2025_w05.json` (64 games from Weeks 1-4 + 400 players' totals, 140 KB),
+  built from the cached nflverse season file by
+  `cd backend && .venv/bin/python scripts/build_pregame.py --season 2025 --week 5`. It contains only
+  games *before* the previewed week (the script refuses anything else, and the backend filters again).
+- **Also in Supabase** (optional, like the play-by-play): `history.pregame_*` tables, imported with
+  `scripts/import_history_to_supabase.py --pregame`; the database itself refuses a game from the previewed
+  week or later. The local file stays the default and the fallback.
+- **API:** `GET /api/v1/pregame/{game_id}` (no session needed: earlier weeks can't spoil the game) and
+  `POST /api/v1/pregame/{game_id}/preview`.
+- **Sideline AI preview** ("Preview this game"): a second, smaller agent (**Sideline Preview**,
+  `app/agents/pregame.py`) with two read-only tools, `get_matchup_overview` and `get_team_leaders`.
+  The prompt is written by the server only (no user text), so there's nothing to inject. One preview is
+  written per game and **shared by every user** (cached 7 days; simultaneous requests wait for one model
+  call), so the whole week costs about 14 calls (≈ $0.0003-0.0004 each). Safeguards: the same budget,
+  usage limits, timeout and audit log as Ask Sideline; numbers that no tool returned are flagged and drop
+  confidence to low; a preview that states the game's **real final score** is withheld (`withheld`, never
+  cached), since the model may remember how these 2025 games ended.
+
 ## Accounts (optional)
 
 Sideline works fully **without accounts**: tap **Try Demo** for real replays, Ask Sideline, insights and

@@ -30,6 +30,7 @@ AuditStatus = Literal[
     "limit_exceeded",
     "blocked",
     "clarification",
+    "withheld",
     "model_error",
     "timeout",
     "error",
@@ -53,7 +54,7 @@ class ToolCallRecord(BaseModel):
 class AuditRecord(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="milliseconds"))
     request_id: str
-    kind: Literal["ask", "insight"]
+    kind: Literal["ask", "insight", "preview"]
     status: AuditStatus
     game_id: str
     cursor: int
@@ -64,6 +65,8 @@ class AuditRecord(BaseModel):
     latency_ms: float = 0.0
     requests: int = 0
     input_tokens: int = 0
+    #: Part of input_tokens served from the provider's prompt cache (billed at a discount).
+    cached_input_tokens: int = 0
     output_tokens: int = 0
     estimated_cost_usd: float | None = None
     tool_calls: list[ToolCallRecord] = Field(default_factory=list)

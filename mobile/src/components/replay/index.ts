@@ -4,3 +4,4 @@ export * from './ReplayPicksPanel';
 export * from './ReplayPredictionCard';
 export * from './MomentCard';
 export * from './RevealToast';
+export * from './PregameCard';

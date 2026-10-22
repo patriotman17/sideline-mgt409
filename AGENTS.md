@@ -57,8 +57,10 @@ Sideline/
     │   │   ├── insights.py   #   deterministic noteworthy-moment rules
     │   │   ├── conversation.py #  per-session chat memory (cursor-aware window, fingerprint)
     │   │   ├── llm.py        #   Portkey model factory + setup message
-    │   │   └── audit.py · budget.py · cache.py · pricing.py · sanitize.py
-    │   ├── predictions/      # Phase 2D: deterministic replay predictions
+    │   │   ├── pregame.py    #   Sideline Preview agent (pregame preview from earlier weeks only)
+│   │   └── audit.py · budget.py · cache.py · pricing.py · sanitize.py
+    │   ├── pregame/season.py # Season-to-date context for a matchup (earlier weeks only, rules)
+│   ├── predictions/      # Phase 2D: deterministic replay predictions
     │   │   ├── models.py     #   Prediction, Answer, PredictionStats, POINTS table
     │   │   ├── rules.py      #   detectors (revealed snapshot only) + resolvers (one event at a time)
     │   │   ├── config.py     #   PredictionConfig: ranking thresholds, cooldowns, pick window
@@ -190,7 +192,8 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
   `PredictionLedger.visible_from` hides questions from before the join. Only weeks whose games all have
   per-play times appear (`slates_from`; today: 2025 Week 5).
 - **Mobile Scores = the real week:** `state/WeekContext` (one in-memory week session, polled 1 s while
-  playing) → `(tabs)/index.tsx` with `WeekClock` (simulated ET time, play/pause, speeds, jump-to),
+  playing; a 404 from any week call (backend restarted, host woke from sleep, session expired) drops the session
+  and creates a fresh one, re-sending the watch list) → `(tabs)/index.tsx` with `WeekClock` (simulated ET time, play/pause, speeds, jump-to),
   Thursday/Sunday/Monday tabs (follow the clock until tapped), your teams pinned (#1 first), TV-window
   sections via `lib/week.ts` (`toScoreGame`, `weekSections`; unit-tested), and the tab badge = live games.
   The fabricated mock games no longer appear on Scores (other tabs still use labeled sample data), and
@@ -210,7 +213,7 @@ folded over `events[:cursor]` → `ReplaySession` (cursor derived from an inject
   rebuilds the engine events). Backend: `REPLAY_DATA_SOURCE=supabase` + `SUPABASE_DB_URL` (reader
   connection string) → `catalog.build_catalog` loads games via `history_db` (parameterized psycopg,
   read-only transaction, checksum re-check) and runs the **same** `build_game`; games that exist only
-  locally (e.g. the 2023 classics, not imported) are kept (`source="supabase+local"`); any failure logs
+  locally (none today: the 2023 classics are imported too) are kept (`source="supabase+local"`); any failure logs
   only the exception type and **falls back to local CSVs** (default), so guests and graders need nothing
   extra. Tests always force `REPLAY_DATA_SOURCE=local` (`tests/conftest.py`), so they never touch a
   database.
@@ -351,6 +354,41 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   **inline under the playback controls** (compact card with tags + "Next snap in Ns") and in the
   replay screen's **Picks** tab. Mock predictions in the game
   sheet / Picks tab stay separate and labeled "Sample data".
+
+## Pregame (season context + Sideline Preview)
+
+- **Data:** `scripts/build_pregame.py --season S --week W` reads the cached nflverse season file and writes
+  `data/pregame/S_wWW.json`: every REG game with `week < W` (final score, net offensive yards on pass/run
+  plays excluding two-point tries, giveaways = INTs thrown + fumbles lost by the fumbling team) and each
+  player's season totals. It refuses to write a game from week ≥ W. Provenance (URL, sha256, license) in
+  `source`.
+- **Rules:** `app/pregame/season.py::SeasonData` (loaded once per file; `data_version` = file hash) derives
+  records, streaks, last two results, per-game averages, league ranks (competition ranking; allowed: fewer =
+  better), team leaders and `storylines` (unbeaten / winless / 3+ streak, top-3 offense or defense, bottom-3
+  defense, turnover margin ≥ ±4, NFL #1 in a yards category, 20+ point result last week, both won/lost,
+  rematch; ≤ 5, alternating teams). It filters `week < W` again (tested with an injected Week 5 game).
+- **Supabase copy:** migration `20261022000000_pregame_season_context.sql` → `history.pregame_builds` /
+  `pregame_games` / `pregame_players` (same read model as `history.games`: private schema, RLS, SELECT only
+  for `sideline_reader`, nothing for anon/authenticated) with a database check `game_week < week` (a later
+  game can't be stored). Import: `scripts/import_history_to_supabase.py --pregame [--verify]` (one transaction
+  per build, read back and compared). With `REPLAY_DATA_SOURCE=supabase` `season_for` loads from there and
+  re-checks `content_sha256` (canonical, row-order independent, excludes `generated_at`, so the local file and
+  the copy share one `data_version`); any failure falls back to the local file.
+- **API:** `api/routes/pregame.py` → `GET /api/v1/pregame/{game_id}` (public; includes `ai_preview` only if
+  already cached, never triggers a model call) and `POST .../preview`.
+- **Sideline Preview agent** (`app/agents/pregame.py`): `preview_agent` with `get_matchup_overview` /
+  `get_team_leaders(team)` (only the two teams in the matchup) → `PregamePreview {headline ≤80, preview ≤600,
+  evidence ≤4, confidence}`. Server-written prompt only. `AIService.preview`: shared cache key (game,
+  `data_version`, `PREVIEW_PROMPT_VERSION` = pg.1, model), per-key `asyncio.Lock` (one call for concurrent
+  requests), rate limit per client IP only on a miss, then the shared `_execute` runner (configured →
+  budget → usage limits + max_tokens + timeout → spend; also used by Ask Sideline). `check_preview` drops
+  evidence from uncalled tools and flags numbers absent from tool outputs (confidence → low);
+  `mentions_result` withholds text containing the game's real final score unless that pair also appears in
+  the tool outputs (status `withheld`, 502, never cached). Audit `kind="preview"`.
+- **Tokens:** audit records and `usage` now include `cached_input_tokens` (provider prompt cache) for every
+  AI call.
+- **Mobile:** `services/pregame.ts` → `components/replay/PregameCard.tsx` (shown in the replay screen while
+  the game is `scheduled`) with pure helpers in `lib/pregame.ts` (unit-tested).
 
 ## Accounts (Supabase)
 

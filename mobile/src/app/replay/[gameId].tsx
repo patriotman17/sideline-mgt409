@@ -15,6 +15,7 @@ import {
 } from '@/components/game';
 import {
   MomentCard,
+  PregameCard,
   ReplayAskPanel,
   ReplayInsightCard,
   ReplayPicksPanel,
@@ -279,6 +280,9 @@ export default function ReplayScreen() {
                 </View>
               ) : null}
             </View>
+
+            {/* Before kickoff: both teams' season so far. Disappears once the game starts. */}
+            {game?.status === 'scheduled' && gameId ? <PregameCard gameId={gameId} /> : null}
 
             {momentCard ? (
               <MomentCard

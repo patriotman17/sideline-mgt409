@@ -132,13 +132,10 @@ def style_instructions(style: AnswerStyle) -> str:
     )
 
 
-@dataclass
-class AgentDeps:
-    view: ReplayView
-    style: AnswerStyle = field(default_factory=AnswerStyle)
-    tool_calls: list[ToolCallRecord] = field(default_factory=list)
-    #: Players sharing rank 1 in any leaderboard returned this run (used to detect ambiguous pronouns later).
-    tied_leaders: list[str] = field(default_factory=list)
+class ToolTracking:
+    """Mixin for agent deps: records every tool call (name, args, duration, ok/error) for the audit log."""
+
+    tool_calls: list[ToolCallRecord]
 
     @contextmanager
     def track(self, name: str, args: dict[str, object]) -> Iterator[None]:
@@ -155,12 +152,21 @@ class AgentDeps:
             self.tool_calls.append(record)
 
 
+@dataclass
+class AgentDeps(ToolTracking):
+    view: ReplayView
+    style: AnswerStyle = field(default_factory=AnswerStyle)
+    tool_calls: list[ToolCallRecord] = field(default_factory=list)
+    #: Players sharing rank 1 in any leaderboard returned this run (used to detect ambiguous pronouns later).
+    tied_leaders: list[str] = field(default_factory=list)
+
+
 class ToolUnavailable(BaseModel):
     available: Literal[False] = False
     error: str = "This data is temporarily unavailable. Tell the user you couldn't retrieve it."
 
 
-def _run_tool[R](deps: AgentDeps, name: str, args: dict[str, object], fn: Callable[[], R]) -> R | ToolUnavailable:
+def _run_tool[R](deps: ToolTracking, name: str, args: dict[str, object], fn: Callable[[], R]) -> R | ToolUnavailable:
     """Execute a tool, recording it; failures become a structured 'unavailable' result."""
     try:
         with deps.track(name, args):

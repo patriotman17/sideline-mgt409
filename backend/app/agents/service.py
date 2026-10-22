@@ -19,6 +19,7 @@ from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel
+from pydantic_ai import Agent
 from pydantic_ai.exceptions import (
     ContentFilterError,
     ModelAPIError,
@@ -38,6 +39,7 @@ from app.agents.agent import (
     AnswerStyle,
     Clarification,
     SidelineAnswer,
+    ToolTracking,
     sideline_agent,
 )
 from app.agents.audit import AuditLog, AuditRecord, AuditStatus
@@ -51,11 +53,20 @@ from app.agents.conversation import (
     resolve_pronoun,
 )
 from app.agents.llm import SETUP_MESSAGE, build_model
+from app.agents.pregame import (
+    PREVIEW_PROMPT_VERSION,
+    PregamePreview,
+    PreviewDeps,
+    check_preview,
+    mentions_result,
+    preview_agent,
+)
 from app.agents.pricing import estimate_cost
 from app.agents.sanitize import clean_text, normalize_question
 from app.agents.stats import player_stats
 from app.agents.view import ReplayView
 from app.core.config import Settings
+from app.pregame.season import Matchup
 from app.replay.models import Game
 
 BLOCKED_MESSAGE = "That question was blocked by the AI provider's safety filter. Try rephrasing it."
@@ -94,8 +105,20 @@ class AsOf(BaseModel):
 class Usage(BaseModel):
     requests: int = 0
     input_tokens: int = 0
+    #: Part of input_tokens served from the provider's prompt cache.
+    cached_input_tokens: int = 0
     output_tokens: int = 0
     estimated_cost_usd: float | None = None
+
+    @classmethod
+    def of(cls, record: AuditRecord) -> Usage:
+        return cls(
+            requests=record.requests,
+            input_tokens=record.input_tokens,
+            cached_input_tokens=record.cached_input_tokens,
+            output_tokens=record.output_tokens,
+            estimated_cost_usd=record.estimated_cost_usd,
+        )
 
 
 class AskResult(BaseModel):
@@ -111,6 +134,28 @@ class AskResult(BaseModel):
     context_turns: int = 0
     #: Tied players this answer names; a following "he/his" will be clarified rather than guessed.
     ambiguous_players: list[str] = []
+
+
+PREVIEW_WITHHELD_MESSAGE = "The preview was withheld because it mentioned how this game ended. Try again."
+
+
+class PreviewResult(BaseModel):
+    request_id: str
+    status: Literal["ok", "cached"]
+    preview: PregamePreview
+    model: str
+    usage: Usage
+    latency_ms: float
+    grounding_issues: list[str] = []
+    #: Version of the season data the preview was written from, and the weeks it covers.
+    data_version: str
+    weeks_included: list[int]
+
+
+@dataclass
+class _Done[O]:
+    output: O
+    record: AuditRecord
 
 
 @dataclass
@@ -184,6 +229,8 @@ class AIService:
         self.limiter = limiter or RateLimiter(settings.ai_rate_limit_per_minute)
         self.answer_cache: TTLCache[AskResult] = answer_cache or TTLCache(maxsize=2000)
         self.insight_cache: TTLCache[str] = insight_cache or TTLCache(maxsize=5000, ttl_seconds=24 * 3600)
+        self.preview_cache: TTLCache[PreviewResult] = TTLCache(maxsize=500, ttl_seconds=7 * 24 * 3600)
+        self._preview_locks: dict[tuple[object, ...], asyncio.Lock] = {}
 
     # ------------------------------------------------------------ public
 
@@ -274,12 +321,7 @@ class AIService:
             answer=run.answer,
             as_of=as_of(view),
             model=self.settings.ai_model,
-            usage=Usage(
-                requests=run.record.requests,
-                input_tokens=run.record.input_tokens,
-                output_tokens=run.record.output_tokens,
-                estimated_cost_usd=run.record.estimated_cost_usd,
-            ),
+            usage=Usage.of(run.record),
             latency_ms=run.record.latency_ms,
             grounding_issues=run.record.grounding_issues,
             context_turns=len(context.turns),
@@ -381,6 +423,74 @@ class AIService:
         view_version = ReplayView.at(game, sequence + 1).state_version
         return self.insight_cache.get(("insight", view_version, sequence, kind, PROMPT_VERSION, self.settings.ai_model))
 
+    async def preview(self, *, game: Game, matchup: Matchup, client: str) -> PreviewResult:
+        """Pregame preview of ``game`` from the season context only (weeks before it). One shared, cached
+        result per game + data version; concurrent requests for the same game wait for one model call.
+        ``client`` (e.g. the caller's IP) is rate-limited only when a model call is needed."""
+        key = ("preview", game.info.game_id, matchup.data_version, PREVIEW_PROMPT_VERSION, self.settings.ai_model)
+        base = AuditRecord(
+            request_id=uuid.uuid4().hex[:12],
+            kind="preview",
+            status="ok",
+            game_id=game.info.game_id,
+            cursor=0,
+            model=self.settings.ai_model,
+            prompt_version=PREVIEW_PROMPT_VERSION,
+            question=f"preview:{matchup.away.team}@{matchup.home.team}",
+        )
+        lock = self._preview_locks.setdefault(key, asyncio.Lock())
+        async with lock:
+            cached = self.preview_cache.get(key)
+            if cached is not None:
+                self.audit.write(base.model_copy(update={"status": "cached"}))
+                return cached.model_copy(
+                    update={"request_id": base.request_id, "status": "cached", "usage": Usage(), "latency_ms": 0.0}
+                )
+            started = time.perf_counter()
+            try:
+                self.limiter.hit(f"preview:{client}")
+            except RateLimited as exc:
+                raise self._fail(base, "rate_limited", str(exc), 429, started) from None
+            deps = PreviewDeps(matchup=matchup)
+            prompt = (
+                f"Write the pregame preview for {matchup.away.team} @ {matchup.home.team}, "
+                f"{matchup.season} Week {matchup.week}."
+            )
+            done = await self._execute(preview_agent, prompt, deps=deps, base=base)
+            preview, issues = check_preview(done.output, deps)
+            home, away = game.final_home_score, game.final_away_score
+            text = f"{preview.headline} {preview.preview}"
+            if (
+                home is not None
+                and away is not None
+                and mentions_result(text, home, away)
+                and not any(mentions_result(blob, home, away) for blob in deps.seen)
+            ):
+                self.audit.write(
+                    done.record.model_copy(
+                        update={"status": "withheld", "grounding_issues": [*issues, "stated this game's final score"]}
+                    )
+                )
+                raise AIError("withheld", PREVIEW_WITHHELD_MESSAGE, 502)
+            record = self.audit.write(done.record.model_copy(update={"grounding_issues": issues}))
+            result = PreviewResult(
+                request_id=base.request_id,
+                status="ok",
+                preview=preview,
+                model=self.settings.ai_model,
+                usage=Usage.of(record),
+                latency_ms=record.latency_ms,
+                grounding_issues=issues,
+                data_version=matchup.data_version,
+                weeks_included=matchup.weeks_included,
+            )
+            self.preview_cache.set(key, result)
+            return result
+
+    def cached_preview(self, *, game: Game, matchup: Matchup) -> PreviewResult | None:
+        key = ("preview", game.info.game_id, matchup.data_version, PREVIEW_PROMPT_VERSION, self.settings.ai_model)
+        return self.preview_cache.get(key)
+
     # ------------------------------------------------------------ internals
 
     def _fail(
@@ -402,6 +512,25 @@ class AIService:
         history: list[ModelMessage] | None = None,
         style: AnswerStyle = DEFAULT_STYLE,
     ) -> _Run:
+        deps = AgentDeps(view=view, style=style)
+        done = await self._execute(sideline_agent, prompt, deps=deps, base=base, history=history)
+        answer, issues = check_grounding(done.output, view, {c.name for c in deps.tool_calls if c.ok})
+        record = self.audit.write(done.record.model_copy(update={"grounding_issues": issues}))
+        return _Run(answer=answer, record=record, tied_leaders=deps.tied_leaders)
+
+    async def _execute[D: ToolTracking, O](
+        self,
+        agent: Agent[D, O],
+        prompt: str,
+        *,
+        deps: D,
+        base: AuditRecord,
+        history: list[ModelMessage] | None = None,
+    ) -> _Done[O]:
+        """Run one agent with every safeguard: configured? → daily budget → usage limits (requests, tool
+        calls, output tokens) + max_tokens + timeout → spend. Every failure is audited and becomes an
+        ``AIError`` with a user-safe message. On success returns the output and an *unwritten* audit record
+        (the caller adds its checks, then writes it)."""
         started = time.perf_counter()
         if not self.settings.ai_configured:
             raise self._fail(base, "not_configured", SETUP_MESSAGE, 503, started)
@@ -410,7 +539,6 @@ class AIService:
         except BudgetExceeded as exc:
             raise self._fail(base, "budget_exceeded", str(exc), 429, started) from None
 
-        deps = AgentDeps(view=view, style=style)
         s = self.settings
         limits = UsageLimits(
             request_limit=s.ai_request_limit,
@@ -423,7 +551,7 @@ class AIService:
         try:
             model = self._model_factory(s)
             result = await asyncio.wait_for(
-                sideline_agent.run(
+                agent.run(
                     prompt,
                     message_history=history or None,
                     deps=deps,
@@ -491,19 +619,16 @@ class AIService:
             cache_read_tokens=usage.cache_read_tokens,
         )
         self.spend.record(cost, fallback=UNKNOWN_COST_FALLBACK)
-        answer, issues = check_grounding(result.output, view, {c.name for c in deps.tool_calls if c.ok})
-        record = self.audit.write(
-            base.model_copy(
-                update={
-                    "status": "ok",
-                    "latency_ms": round((time.perf_counter() - started) * 1000, 1),
-                    "requests": usage.requests,
-                    "input_tokens": usage.input_tokens,
-                    "output_tokens": usage.output_tokens,
-                    "estimated_cost_usd": float(cost) if cost is not None else None,
-                    "tool_calls": deps.tool_calls,
-                    "grounding_issues": issues,
-                }
-            )
+        record = base.model_copy(
+            update={
+                "status": "ok",
+                "latency_ms": round((time.perf_counter() - started) * 1000, 1),
+                "requests": usage.requests,
+                "input_tokens": usage.input_tokens,
+                "cached_input_tokens": usage.cache_read_tokens,
+                "output_tokens": usage.output_tokens,
+                "estimated_cost_usd": float(cost) if cost is not None else None,
+                "tool_calls": deps.tool_calls,
+            }
         )
-        return _Run(answer=answer, record=record, tied_leaders=deps.tied_leaders)
+        return _Done(output=result.output, record=record)

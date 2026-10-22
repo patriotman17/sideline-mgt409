@@ -9,6 +9,12 @@ Usage (from backend/, after ``npx supabase login`` and ``npx supabase link``):
     .venv/bin/python scripts/import_history_to_supabase.py --season 2025 --week 5           # import
     .venv/bin/python scripts/import_history_to_supabase.py --season 2025 --week 5 --verify  # check only
     .venv/bin/python scripts/import_history_to_supabase.py --all --sql-only out.sql         # just write SQL
+    .venv/bin/python scripts/import_history_to_supabase.py --pregame                        # pregame builds
+    .venv/bin/python scripts/import_history_to_supabase.py --pregame --verify
+
+``--pregame`` imports ``data/pregame/*.json`` (scripts/build_pregame.py) into ``history.pregame_builds`` /
+``pregame_games`` / ``pregame_players``: each build replaced in one transaction, then read back and
+checked against its ``content_sha256`` and the local file.
 """
 
 from __future__ import annotations
@@ -27,6 +33,12 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = BACKEND_DIR.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
+from app.pregame.season import (  # noqa: E402
+    PREGAME_DIR,
+    PregameFile,
+    content_sha256,
+    data_from_rows,
+)
 from app.replay.ingest import build_game, load_game_file  # noqa: E402
 from app.replay.models import Game, Provenance  # noqa: E402
 
@@ -183,6 +195,117 @@ def verify(files: list[Path]) -> bool:
     return ok
 
 
+# ---------------------------------------------------------------- pregame builds
+
+PREGAME_GAME_COLS = [
+    "game_id", "game_week", "game_date", "home_team", "away_team", "home_score", "away_score",
+    "home_yards", "away_yards", "home_giveaways", "away_giveaways",
+]  # fmt: skip
+PREGAME_PLAYER_COLS = [
+    "player_id", "team", "name", "games", "pass_yards", "pass_td", "interceptions", "completions", "attempts",
+    "rush_yards", "rush_td", "carries", "rec_yards", "rec_td", "receptions",
+]  # fmt: skip
+
+
+def pregame_files(season: int | None, week: int | None) -> list[Path]:
+    files = sorted(PREGAME_DIR.glob("*.json"))
+    if season is not None:
+        files = [f for f in files if f.name.startswith(f"{season}_")]
+    if week is not None:
+        files = [f for f in files if f.stem.endswith(f"_w{week:02d}")]
+    return files
+
+
+def pregame_sql(path: Path) -> tuple[str, PregameFile]:
+    data = PregameFile.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    if any(g.week >= data.week for g in data.games):
+        raise SystemExit(f"{path.name}: refusing to import a game from week {data.week} or later")
+    s, w, src = data.season, data.week, data.source
+    build = {
+        "season": s,
+        "week": w,
+        "source_url": src.url,
+        "source_sha256": src.sha256,
+        "license": src.license,
+        "attribution": src.attribution,
+        "notes": src.notes,
+        "generated_at": src.generated_at,
+        "content_sha256": content_sha256(data),
+    }
+    weeks = "array[" + ", ".join(map(str, data.weeks_included)) + "]::integer[]"
+    game_rows = ",\n".join(
+        f"  ({s}, {w}, "
+        + ", ".join(
+            _quote(v)
+            for v in (
+                g.game_id,
+                g.week,
+                g.date,
+                g.home,
+                g.away,
+                g.home_score,
+                g.away_score,
+                g.home_yards,
+                g.away_yards,
+                g.home_giveaways,
+                g.away_giveaways,
+            )
+        )
+        + ")"
+        for g in data.games
+    )
+    player_rows = ",\n".join(
+        f"  ({s}, {w}, " + ", ".join(_quote(getattr(p, c)) for c in PREGAME_PLAYER_COLS) + ")" for p in data.players
+    )
+    sql = (
+        f"-- pregame {s} week {w}: {len(data.games)} games, {len(data.players)} players\n"
+        f"delete from history.pregame_builds where season = {s} and week = {w};\n"
+        f"insert into history.pregame_builds ({', '.join(build)}, weeks_included) values "
+        f"({', '.join(_quote(v) for v in build.values())}, {weeks});\n"
+        f"insert into history.pregame_games (season, week, {', '.join(PREGAME_GAME_COLS)}) values\n{game_rows};\n"
+        f"insert into history.pregame_players (season, week, {', '.join(PREGAME_PLAYER_COLS)}) values\n"
+        f"{player_rows};\n"
+    )
+    return sql, data
+
+
+def verify_pregame(files: list[Path]) -> bool:
+    ok = True
+    for f in files:
+        local = PregameFile.model_validate(json.loads(f.read_text(encoding="utf-8")))
+        s, w = local.season, local.week
+        build = query_rows(
+            "select season, week, weeks_included, source_url, source_sha256, license, attribution, notes, "
+            f"generated_at::text as generated_at, content_sha256 from history.pregame_builds "
+            f"where season = {s} and week = {w}"
+        )
+        games = query_rows(
+            "select game_id, game_week as week, game_date::text as date, home_team as home, away_team as away, "
+            "home_score, away_score, home_yards, away_yards, home_giveaways, away_giveaways "
+            f"from history.pregame_games where season = {s} and week = {w} order by game_week, game_id"
+        )
+        players = query_rows(
+            f"select {', '.join(PREGAME_PLAYER_COLS)} from history.pregame_players "
+            f"where season = {s} and week = {w} order by team, name, player_id"
+        )
+        problems = []
+        if not build:
+            problems.append("missing from history.pregame_builds")
+        else:
+            try:
+                remote = data_from_rows(build[0], games, players)  # re-checks content_sha256
+                if content_sha256(remote) != content_sha256(local):
+                    problems.append("content differs from the local file")
+            except Exception as exc:
+                problems.append(f"{type(exc).__name__}: {exc}")
+        print(
+            f"{'OK ' if not problems else 'BAD'} pregame {s} week {w}: {len(games)} games, {len(players)} players"
+            + (f"  {problems}" if problems else "")
+        )
+        ok = ok and not problems
+    return ok
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--season", type=int)
@@ -190,7 +313,10 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="every local extract")
     ap.add_argument("--verify", action="store_true", help="only verify what's in Supabase")
     ap.add_argument("--sql-only", type=Path, help="write the import SQL to this file instead of running it")
+    ap.add_argument("--pregame", action="store_true", help="pregame builds (data/pregame/*.json) instead of games")
     args = ap.parse_args()
+    if args.pregame:
+        return pregame_main(args)
     if not args.all and args.season is None:
         ap.error("pass --season (and optionally --week) or --all")
     files = select_files(args.season, args.week, args.all)
@@ -216,6 +342,28 @@ def main() -> int:
         print(f"imported {f.stem}")
     print("verifying…")
     return 0 if verify(files) else 1
+
+
+def pregame_main(args: argparse.Namespace) -> int:
+    files = pregame_files(args.season, args.week)
+    if not files:
+        raise SystemExit("No matching pregame builds in data/pregame/")
+    if args.verify:
+        return 0 if verify_pregame(files) else 1
+    scripts = []
+    for f in files:
+        sql, data = pregame_sql(f)
+        scripts.append("begin;\n" + sql + "commit;\n")
+        print(f"{f.name}: {len(data.games)} games, {len(data.players)} players, {len(sql) / 1024:.0f} KB of SQL")
+    if args.sql_only:
+        args.sql_only.write_text("\n".join(scripts), encoding="utf-8")
+        print(f"wrote {args.sql_only}")
+        return 0
+    for f, script in zip(files, scripts, strict=True):
+        run_cli_sql(script)
+        print(f"imported {f.name}")
+    print("verifying…")
+    return 0 if verify_pregame(files) else 1
 
 
 if __name__ == "__main__":
