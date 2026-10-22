@@ -87,6 +87,8 @@ class Settings(BaseModel):
     ai_request_limit: int = 5
     ai_tool_calls_limit: int = 8
     ai_daily_budget_usd: float = 2.0
+    #: Write every pregame preview in the background at startup (production; tests never call a model).
+    ai_pregenerate_previews: bool = False
     ai_rate_limit_per_minute: int = 8
     #: Optional price overrides (USD per 1M tokens) when the bundled price data is wrong/missing.
     ai_input_price_per_mtok: float | None = None
@@ -143,6 +145,7 @@ class Settings(BaseModel):
             ai_request_limit=_int("AI_REQUEST_LIMIT", 5),
             ai_tool_calls_limit=_int("AI_TOOL_CALLS_LIMIT", 8),
             ai_daily_budget_usd=_float("AI_DAILY_BUDGET_USD", 2.0) or 0.0,
+            ai_pregenerate_previews=os.getenv("AI_PREGENERATE_PREVIEWS", "").strip().lower() in ("1", "true", "yes"),
             ai_rate_limit_per_minute=_int("AI_RATE_LIMIT_PER_MINUTE", 8),
             ai_input_price_per_mtok=_float("AI_INPUT_PRICE_PER_MTOK", None),
             ai_output_price_per_mtok=_float("AI_OUTPUT_PRICE_PER_MTOK", None),

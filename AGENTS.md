@@ -397,6 +397,10 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   evidence from uncalled tools and flags numbers absent from tool outputs (confidence → low);
   `mentions_result` withholds text containing the game's real final score unless that pair also appears in
   the tool outputs (status `withheld`, 502, never cached). Audit `kind="preview"`.
+- **Pre-generated:** with `AI_PREGENERATE_PREVIEWS=true` (Render) the lifespan starts `main.pregenerate_previews`
+  in the background after warm-up: every slate game's preview, one at a time, `rate_limited=False` (budget and usage
+  limits still apply). The app never shows a button: `PregameCard` shows the cached `ai_preview` from GET, or
+  requests it automatically (skeleton "Sideline AI is writing a preview…", retry on error). Off by default (tests).
 - **Tokens:** audit records and `usage` now include `cached_input_tokens` (provider prompt cache) for every
   AI call.
 - **Mobile:** `services/pregame.ts` → `components/replay/PregameCard.tsx` (shown in the replay screen while

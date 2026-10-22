@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -47,10 +48,43 @@ def warm_up() -> None:
         log.warning("Warm-up failed (%s); data will load on first use", type(exc).__name__)
 
 
+async def pregenerate_previews() -> None:
+    """Write the AI pregame preview of every game in each week slate, one at a time, so users see it
+    as soon as they open a game (shared cache; about one cheap call per game). Runs in the background
+    after startup; failures are logged by type and the app requests a preview on demand instead."""
+    from app.api.routes.replay import get_ai_service
+    from app.api.routes.week import get_slates
+    from app.pregame.season import season_for
+
+    ai = get_ai_service()
+    written = 0
+    for (season, week), slate in get_slates().items():
+        data = season_for(season, week)
+        if data is None:
+            continue
+        for item in slate.games:
+            game = item.game
+            try:
+                matchup = data.matchup(game.info.home.abbr, game.info.away.abbr)
+                await ai.preview(game=game, matchup=matchup, client="startup", rate_limited=False)
+                written += 1
+            except Exception as exc:
+                log.warning("Preview for %s not pre-generated (%s)", game.info.game_id, type(exc).__name__)
+    log.info("Pre-generated %d pregame previews", written)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     warm_up()
+    settings = get_settings()
+    task = (
+        asyncio.create_task(pregenerate_previews())
+        if settings.ai_pregenerate_previews and settings.ai_configured
+        else None
+    )
     yield
+    if task is not None and not task.done():
+        task.cancel()
 
 
 def create_app() -> FastAPI:

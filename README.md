@@ -253,7 +253,8 @@ win."). It disappears at kickoff.
   week or later. The local file stays the default and the fallback.
 - **API:** `GET /api/v1/pregame/{game_id}` (no session needed: earlier weeks can't spoil the game) and
   `POST /api/v1/pregame/{game_id}/preview`.
-- **Sideline AI preview** ("Preview this game"): a second, smaller agent (**Sideline Preview**,
+- **Sideline AI preview** (shown automatically; on Render all 14 are written at startup with
+  `AI_PREGENERATE_PREVIEWS=true`): a second, smaller agent (**Sideline Preview**,
   `app/agents/pregame.py`) with two read-only tools, `get_matchup_overview` and `get_team_leaders`.
   The prompt is written by the server only (no user text), so there's nothing to inject. One preview is
   written per game and **shared by every user** (cached 7 days; simultaneous requests wait for one model

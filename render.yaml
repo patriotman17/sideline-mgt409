@@ -41,6 +41,9 @@ services:
         value: "8"
       - key: AI_AUDIT_LOG_PATH
         value: logs/ai_audit.jsonl
+      # Write every pregame preview in the background at startup (~14 cheap calls), so they're ready.
+      - key: AI_PREGENERATE_PREVIEWS
+        value: "true"
       # Optional: accounts (public JWT keys are fetched from this URL; no Supabase secret needed).
       - key: SUPABASE_URL
         sync: false

@@ -423,10 +423,11 @@ class AIService:
         view_version = ReplayView.at(game, sequence + 1).state_version
         return self.insight_cache.get(("insight", view_version, sequence, kind, PROMPT_VERSION, self.settings.ai_model))
 
-    async def preview(self, *, game: Game, matchup: Matchup, client: str) -> PreviewResult:
+    async def preview(self, *, game: Game, matchup: Matchup, client: str, rate_limited: bool = True) -> PreviewResult:
         """Pregame preview of ``game`` from the season context only (weeks before it). One shared, cached
         result per game + data version; concurrent requests for the same game wait for one model call.
-        ``client`` (e.g. the caller's IP) is rate-limited only when a model call is needed."""
+        ``client`` (e.g. the caller's IP) is rate-limited only when a model call is needed; the server's
+        own startup pre-generation passes ``rate_limited=False`` (budget and usage limits still apply)."""
         key = ("preview", game.info.game_id, matchup.data_version, PREVIEW_PROMPT_VERSION, self.settings.ai_model)
         base = AuditRecord(
             request_id=uuid.uuid4().hex[:12],
@@ -448,7 +449,8 @@ class AIService:
                 )
             started = time.perf_counter()
             try:
-                self.limiter.hit(f"preview:{client}")
+                if rate_limited:
+                    self.limiter.hit(f"preview:{client}")
             except RateLimited as exc:
                 raise self._fail(base, "rate_limited", str(exc), 429, started) from None
             deps = PreviewDeps(matchup=matchup)

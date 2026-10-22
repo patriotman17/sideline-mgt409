@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Skeleton } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
-import { useHaptics } from '@/lib/haptics';
 import { compareRows, ordinal, resultLabel, streakLabel, weeksLabel } from '@/lib/pregame';
 import { getTeam } from '@/services';
 import { getPregame, requestPreview, type PregamePreview, type TeamForm } from '@/services/pregame';
@@ -59,24 +58,14 @@ function Leaders({ form }: { form: TeamForm }) {
 }
 
 function AiPreview({ gameId, initial }: { gameId: string; initial: PregamePreview | null }) {
-  const { tap } = useHaptics();
-  const [preview, setPreview] = useState<PregamePreview | null>(initial);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Previews are written ahead of time on the server; if this one isn't ready yet (e.g. the server just
+  // woke up), fetch it automatically. No button: one shared, cached preview per game.
+  const fetched = useAsync(
+    () => (initial ? Promise.resolve(initial) : requestPreview(gameId)),
+    [gameId, !!initial],
+  );
+  const preview = initial ?? fetched.data ?? null;
   const [showEvidence, setShowEvidence] = useState(false);
-
-  const write = async () => {
-    tap();
-    setBusy(true);
-    setError(null);
-    try {
-      setPreview(await requestPreview(gameId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not write a preview');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <View className="mt-4 rounded-2xl bg-white/5 p-4">
@@ -121,25 +110,27 @@ function AiPreview({ gameId, initial }: { gameId: string; initial: PregamePrevie
             {preview.grounding_issues.length ? ' · some details unverified' : ''}
           </Text>
         </>
-      ) : (
-        <>
-          <Text className="mt-1.5 text-[13px] leading-[18px] text-white/70">
-            A short, spoiler-free preview written from both teams’ season so far.
+      ) : fetched.error && !fetched.loading ? (
+        <View className="mt-2 flex-row items-center justify-between gap-3">
+          <Text className="flex-1 text-[13px] leading-[18px] text-white/70">
+            The preview isn’t available right now.
           </Text>
-          {error ? <Text className="mt-2 text-[13px] text-loss">{error}</Text> : null}
           <Pressable
-            onPress={write}
-            disabled={busy}
+            onPress={fetched.reload}
             accessibilityRole="button"
-            accessibilityLabel="Write an AI preview of this game"
-            className="mt-3 flex-row items-center gap-2 self-start rounded-full bg-volt px-4 py-2.5 active:opacity-80"
+            hitSlop={8}
+            className="active:opacity-70"
           >
-            {busy ? <ActivityIndicator size="small" color={colors.bg} /> : null}
-            <Text className="text-[14px] font-bold text-bg">
-              {busy ? 'Reading both teams’ season…' : error ? 'Try again' : 'Preview this game'}
-            </Text>
+            <Text className="text-[13px] font-semibold text-volt">Try again</Text>
           </Pressable>
-        </>
+        </View>
+      ) : (
+        <View className="mt-2.5 gap-2" accessibilityLabel="Sideline AI is writing a preview">
+          <Skeleton className="h-4 w-3/4 rounded-md bg-white/10" />
+          <Skeleton className="h-3 w-full rounded-md bg-white/10" />
+          <Skeleton className="h-3 w-5/6 rounded-md bg-white/10" />
+          <Text className="mt-1 text-[12px] text-mute">Sideline AI is writing a preview…</Text>
+        </View>
       )}
     </View>
   );

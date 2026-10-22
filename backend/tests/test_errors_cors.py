@@ -35,3 +35,19 @@ def test_startup_warms_up_data():
     with TestClient(create_app()) as client:  # runs the lifespan (warm-up)
         assert get_slates.cache_info().currsize == 1  # loaded before the first request
         assert client.get("/health").status_code == 200
+
+
+def test_previews_are_pregenerated_at_startup(monkeypatch, make_service):
+    """With AI_PREGENERATE_PREVIEWS on, startup writes every game's preview (scripted model, no cost)."""
+    import asyncio
+
+    import app.api.routes.replay as replay_routes
+    from app.main import pregenerate_previews
+    from tests.agents.conftest import scripted
+    from tests.agents.test_preview import good_preview
+
+    service = make_service(scripted([("get_matchup_overview", {})], good_preview), ai_rate_limit_per_minute=1)
+    monkeypatch.setattr(replay_routes, "get_ai_service", lambda: service)
+    asyncio.run(pregenerate_previews())
+    previews = [r for r in service.audit.recent(100) if r.kind == "preview" and r.status == "ok"]
+    assert len(previews) == 14  # every 2025 Week 5 game, despite a 1/min rate limit (startup is exempt)
