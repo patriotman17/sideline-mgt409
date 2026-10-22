@@ -4,7 +4,16 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { PredictionCard } from '@/components/game';
-import { Avatar, EmptyState, ListGroup, Screen, SectionHeader, Skeleton, TextTabs } from '@/components/ui';
+import {
+  Avatar,
+  EmptyState,
+  ListGroup,
+  PreviewBanner,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  TextTabs,
+} from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { formatNumber } from '@/lib/format';
 import { findGame, listAllPredictions } from '@/services';
@@ -45,13 +54,21 @@ function RecordCard() {
           <Text className="text-[12px] text-sub">Record</Text>
         </View>
         <View className="flex-1">
-          <Text className="font-score text-[30px] leading-[34px] text-volt">{formatNumber(points)}</Text>
+          <Text className="font-score text-[30px] leading-[34px] text-volt">
+            {formatNumber(points)}
+          </Text>
           <Text className="text-[12px] text-sub">Points</Text>
         </View>
       </View>
-      <View className="mt-4 flex-row items-end gap-1" accessibilityLabel={`Last ${recent.length} picks`}>
+      <View
+        className="mt-4 flex-row items-end gap-1"
+        accessibilityLabel={`Last ${recent.length} picks`}
+      >
         {recent.map((r, i) => (
-          <View key={i} className={`flex-1 rounded-sm ${r === 'W' ? 'h-5 bg-volt' : 'h-2 bg-white/20'}`} />
+          <View
+            key={i}
+            className={`flex-1 rounded-sm ${r === 'W' ? 'h-5 bg-volt' : 'h-2 bg-white/20'}`}
+          />
         ))}
       </View>
       <Text className="mt-1.5 text-[11px] text-mute">Last {recent.length} picks</Text>
@@ -80,9 +97,16 @@ export default function PicksScreen() {
             <View className="h-4 w-4 items-center justify-center rounded-full bg-volt">
               <Ionicons name="trophy" size={9} color={colors.bg} />
             </View>
-            <Text className="font-score-bold text-[16px] text-ink">{formatNumber(profile.stats.points)}</Text>
+            <Text className="font-score-bold text-[16px] text-ink">
+              {formatNumber(profile.stats.points)}
+            </Text>
           </View>
-          <Pressable onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel="Open your profile" hitSlop={8}>
+          <Pressable
+            onPress={() => router.push('/profile')}
+            accessibilityRole="button"
+            accessibilityLabel="Open your profile"
+            hitSlop={8}
+          >
             <Avatar initials={profile.initials} color={colors.volt} size={32} />
           </Pressable>
         </View>
@@ -98,7 +122,14 @@ export default function PicksScreen() {
           { value: 'results', label: 'Results' },
         ]}
       />
-      <Text className="mt-2 text-center text-[11px] text-mute">Free to play · Points only · Sample data</Text>
+      <PreviewBanner
+        title="Your season of picks"
+        body="This screen previews season-long picks and records with sample data. Real picks are live now inside every game: open one from Scores and call the big moments."
+        action={{ label: 'Make real picks', onPress: () => router.navigate('/') }}
+      />
+      <Text className="mt-1 text-center text-[11px] text-mute">
+        Free to play · Points only · Sample data
+      </Text>
 
       {!data ? (
         <View className="mt-4 gap-3 px-4">
@@ -135,7 +166,11 @@ export default function PicksScreen() {
             </ListGroup>
           </View>
         ) : (
-          <EmptyState icon="hand-left-outline" title="Make your first pick" body="Picks you make in live games show up here until they resolve." />
+          <EmptyState
+            icon="hand-left-outline"
+            title="Make your first pick"
+            body="Picks you make in live games show up here until they resolve."
+          />
         )
       ) : results.length ? (
         <View className="mt-4">
@@ -146,7 +181,11 @@ export default function PicksScreen() {
           </ListGroup>
         </View>
       ) : (
-        <EmptyState icon="trophy-outline" title="No results yet" body="Resolved picks land here with the points you earned." />
+        <EmptyState
+          icon="trophy-outline"
+          title="No results yet"
+          body="Resolved picks land here with the points you earned."
+        />
       )}
     </Screen>
   );

@@ -1,43 +1,56 @@
-import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, Text } from 'react-native';
 
-import { CreatePartySheet, PartyCard, PartyRoom } from '@/components/party';
-import { Button, EmptyState, IconButton, ListGroup, Screen, ScreenHeader, SectionHeader } from '@/components/ui';
-import { useHaptics } from '@/lib/haptics';
-import { listPartyEligibleGames } from '@/services';
+import { PartyCard, PartyRoom } from '@/components/party';
+import {
+  EmptyState,
+  ListGroup,
+  PreviewBanner,
+  Screen,
+  ScreenHeader,
+  SectionHeader,
+} from '@/components/ui';
 import { isPartyMember, useAppActions, useAppState } from '@/state/AppStore';
 
 export default function WatchPartyScreen() {
   const { parties, activePartyId } = useAppState();
   const actions = useAppActions();
-  const { success } = useHaptics();
-  const [creating, setCreating] = useState(false);
+  // Watch parties are a preview: actions that would need real friends and servers explain that instead of
+  // pretending to work.
+  const [notice, setNotice] = useState(false);
+  const comingSoon = () => setNotice(true);
 
   const active = parties.find((p) => p.id === activePartyId);
   const joined = parties.filter((p) => isPartyMember(p) && p.id !== activePartyId);
   const discover = parties.filter((p) => !isPartyMember(p));
-  const partyGames = useMemo(() => listPartyEligibleGames(), []);
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      className="flex-1 bg-bg"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <Screen>
-        <ScreenHeader
-          eyebrow="Watch together · Sample data"
-          title="Party"
-          right={<IconButton icon="add" accessibilityLabel="Create watch party" onPress={() => setCreating(true)} />}
-        />
+        <ScreenHeader eyebrow="Watch together · Sample data" title="Party" />
+        <PreviewBanner
+          title="Watch parties with friends"
+          body="Watch a game together: live chat, reactions, and a shared leaderboard for big-moment picks. This screen is a design preview with sample parties; real parties are next on the roadmap."
+        >
+          {notice ? (
+            <Text className="mt-2 text-[13px] font-semibold text-ink">
+              Creating and joining parties is coming soon. For now, open any game from Scores to
+              watch it live.
+            </Text>
+          ) : null}
+        </PreviewBanner>
 
         {active ? (
-          <PartyRoom
-            party={active}
-            onReact={(emoji) => actions.reactInParty(active.id, emoji)}
-            onSend={(text) => actions.sendPartyMessage(active.id, text)}
-            onLeave={() => actions.leaveParty(active.id)}
-          />
+          <PartyRoom party={active} onReact={comingSoon} onSend={comingSoon} onLeave={comingSoon} />
         ) : (
-          <EmptyState icon="people-outline" title="Start a watch party" body="React, chat, and make picks with friends during the game.">
-            <Button label="Start a party" icon="add" onPress={() => setCreating(true)} />
-          </EmptyState>
+          <EmptyState
+            icon="people-outline"
+            title="Watch parties are coming"
+            body="React, chat, and make picks with friends during the game."
+          />
         )}
 
         {joined.length ? (
@@ -45,7 +58,13 @@ export default function WatchPartyScreen() {
             <SectionHeader title="Your parties" />
             <ListGroup inset={80}>
               {joined.map((p) => (
-                <PartyCard key={p.id} party={p} joined onJoin={() => {}} onOpen={() => actions.setActiveParty(p.id)} />
+                <PartyCard
+                  key={p.id}
+                  party={p}
+                  joined
+                  onJoin={() => {}}
+                  onOpen={() => actions.setActiveParty(p.id)}
+                />
               ))}
             </ListGroup>
           </>
@@ -60,10 +79,7 @@ export default function WatchPartyScreen() {
                   key={p.id}
                   party={p}
                   joined={false}
-                  onJoin={() => {
-                    success();
-                    actions.joinParty(p.id);
-                  }}
+                  onJoin={comingSoon}
                   onOpen={() => {}}
                 />
               ))}
@@ -71,17 +87,6 @@ export default function WatchPartyScreen() {
           </>
         ) : null}
       </Screen>
-
-      <CreatePartySheet
-        visible={creating}
-        games={partyGames}
-        onClose={() => setCreating(false)}
-        onCreate={(name, gameId, isPrivate) => {
-          success();
-          actions.createParty(name, gameId, isPrivate);
-          setCreating(false);
-        }}
-      />
     </KeyboardAvoidingView>
   );
 }
