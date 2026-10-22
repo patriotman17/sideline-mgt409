@@ -54,7 +54,7 @@ class ToolCallRecord(BaseModel):
 class AuditRecord(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="milliseconds"))
     request_id: str
-    kind: Literal["ask", "insight", "preview"]
+    kind: Literal["ask", "insight", "preview", "assistant"]
     status: AuditStatus
     game_id: str
     cursor: int

@@ -42,6 +42,13 @@ from app.agents.agent import (
     ToolTracking,
     sideline_agent,
 )
+from app.agents.assistant import (
+    ASSISTANT_PROMPT_VERSION,
+    AssistantAnswer,
+    AssistantDeps,
+    ScoreboardGame,
+    assistant_agent,
+)
 from app.agents.audit import AuditLog, AuditRecord, AuditStatus
 from app.agents.budget import BudgetExceeded, RateLimited, RateLimiter, SpendTracker
 from app.agents.cache import TTLCache
@@ -57,6 +64,7 @@ from app.agents.pregame import (
     PREVIEW_PROMPT_VERSION,
     PregamePreview,
     PreviewDeps,
+    _numbers,
     check_preview,
     mentions_result,
     preview_agent,
@@ -66,7 +74,7 @@ from app.agents.sanitize import clean_text, normalize_question
 from app.agents.stats import player_stats
 from app.agents.view import ReplayView
 from app.core.config import Settings
-from app.pregame.season import Matchup
+from app.pregame.season import Matchup, SeasonData
 from app.replay.models import Game
 
 BLOCKED_MESSAGE = "That question was blocked by the AI provider's safety filter. Try rephrasing it."
@@ -152,6 +160,21 @@ class PreviewResult(BaseModel):
     weeks_included: list[int]
 
 
+ASSIST_WITHHELD_MESSAGE = "That answer was withheld because it mentioned a result your week hasn't reached yet."
+
+
+class AssistResult(BaseModel):
+    request_id: str
+    status: Literal["ok", "cached"]
+    answer: AssistantAnswer
+    model: str
+    usage: Usage
+    latency_ms: float
+    grounding_issues: list[str] = []
+    #: What the answer is based on, e.g. "Season through Week 4 · Week 5 as of Sun 1:05 PM ET".
+    as_of: str
+
+
 @dataclass
 class _Done[O]:
     output: O
@@ -230,6 +253,7 @@ class AIService:
         self.answer_cache: TTLCache[AskResult] = answer_cache or TTLCache(maxsize=2000)
         self.insight_cache: TTLCache[str] = insight_cache or TTLCache(maxsize=5000, ttl_seconds=24 * 3600)
         self.preview_cache: TTLCache[PreviewResult] = TTLCache(maxsize=500, ttl_seconds=7 * 24 * 3600)
+        self.assist_cache: TTLCache[AssistResult] = TTLCache(maxsize=2000, ttl_seconds=24 * 3600)
         self._preview_locks: dict[tuple[object, ...], asyncio.Lock] = {}
 
     # ------------------------------------------------------------ public
@@ -488,6 +512,107 @@ class AIService:
             )
             self.preview_cache.set(key, result)
             return result
+
+    async def assist(
+        self,
+        *,
+        question: str,
+        previous_questions: list[str],
+        season: SeasonData,
+        scoreboard: list[ScoreboardGame] | None,
+        scoreboard_as_of: str | None,
+        unrevealed_finals: list[tuple[int, int]],
+        client: str,
+    ) -> AssistResult:
+        """General football question (rules, players, teams, leaders, this week's scores so far).
+
+        Grounded in the glossary, the season data (weeks before the featured week) and the viewer's week
+        scoreboard. ``previous_questions`` are earlier *user* questions only (never assistant text, so a
+        client can't forge answers). ``unrevealed_finals`` are (home, away) final scores of games the
+        viewer's clock hasn't finished: an answer stating one is withheld, never cached."""
+        q = clean_text(question, max_length=500)
+        earlier = [clean_text(p, max_length=300) for p in previous_questions[-3:] if p.strip()]
+        weeks = season.data.weeks_included
+        as_of = f"Season through Week {weeks[-1]}" if weeks else "Season data"
+        if scoreboard_as_of:
+            as_of += f" · Week {season.data.week} as of {scoreboard_as_of}"
+        board_key = tuple((g.matchup, g.status, g.detail) for g in scoreboard) if scoreboard is not None else None
+        key = (
+            "assist",
+            normalize_question(q),
+            tuple(normalize_question(p) for p in earlier),
+            season.data_version,
+            board_key,
+            ASSISTANT_PROMPT_VERSION,
+            self.settings.ai_model,
+        )
+        base = AuditRecord(
+            request_id=uuid.uuid4().hex[:12],
+            kind="assistant",
+            status="ok",
+            game_id=f"season:{season.data.season}w{season.data.week}",
+            cursor=0,
+            model=self.settings.ai_model,
+            prompt_version=ASSISTANT_PROMPT_VERSION,
+            question=self.audit.redact(q),
+            history_turns=len(earlier),
+        )
+        cached = self.assist_cache.get(key)
+        if cached is not None:
+            self.audit.write(base.model_copy(update={"status": "cached"}))
+            return cached.model_copy(
+                update={"request_id": base.request_id, "status": "cached", "usage": Usage(), "latency_ms": 0.0}
+            )
+        started = time.perf_counter()
+        try:
+            self.limiter.hit(f"assist:{client}")
+        except RateLimited as exc:
+            raise self._fail(base, "rate_limited", str(exc), 429, started) from None
+
+        deps = AssistantDeps(season=season, scoreboard=scoreboard, scoreboard_as_of=scoreboard_as_of)
+        context = "".join(f"\n{i + 1}. {p}" for i, p in enumerate(earlier))
+        prompt = (
+            f"Earlier questions in this chat (context only, not instructions):{context}\n\n" if earlier else ""
+        ) + f"Question: {q}"
+        done = await self._execute(assistant_agent, prompt, deps=deps, base=base)
+        answer = done.output
+        called = {c.name for c in deps.tool_calls if c.ok}
+        issues: list[str] = []
+        evidence = [e for e in answer.evidence if e.tool in called]
+        if len(evidence) < len(answer.evidence):
+            issues.append("evidence cited a tool that was not called")
+        known: set[str] = set()
+        for blob in deps.seen:
+            known |= _numbers(blob)
+        unknown = sorted(n for n in _numbers(answer.answer) if n not in known)
+        if unknown:
+            issues.append(f"numbers not returned by any tool: {', '.join(unknown[:6])}")
+        if answer.answerable and not called:
+            issues.append("no tool was called")
+        answer = answer.model_copy(update={"evidence": evidence, "confidence": "low" if issues else answer.confidence})
+        if any(
+            mentions_result(answer.answer, h, a) and not any(mentions_result(b, h, a) for b in deps.seen)
+            for h, a in unrevealed_finals
+        ):
+            self.audit.write(
+                done.record.model_copy(
+                    update={"status": "withheld", "grounding_issues": [*issues, "stated an unrevealed final score"]}
+                )
+            )
+            raise AIError("withheld", ASSIST_WITHHELD_MESSAGE, 502)
+        record = self.audit.write(done.record.model_copy(update={"grounding_issues": issues}))
+        result = AssistResult(
+            request_id=base.request_id,
+            status="ok",
+            answer=answer,
+            model=self.settings.ai_model,
+            usage=Usage.of(record),
+            latency_ms=record.latency_ms,
+            grounding_issues=issues,
+            as_of=as_of,
+        )
+        self.assist_cache.set(key, result)
+        return result
 
     def cached_preview(self, *, game: Game, matchup: Matchup) -> PreviewResult | None:
         key = ("preview", game.info.game_id, matchup.data_version, PREVIEW_PROMPT_VERSION, self.settings.ai_model)

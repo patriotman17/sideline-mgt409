@@ -406,6 +406,29 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
 - **Mobile:** `services/pregame.ts` → `components/replay/PregameCard.tsx` (shown in the replay screen while
   the game is `scheduled`) with pure helpers in `lib/pregame.ts` (unit-tested).
 
+## Ask Sideline (general assistant)
+
+A third agent (`app/agents/assistant.py`, `assistant_agent`) for football questions outside one game, opened
+from the floating **Ask** button on every tab (`components/assistant/AskFab.tsx` → `app/assistant.tsx`, a modal).
+
+- **Tools (read-only):** `lookup_rule(topic)` → `app/agents/glossary.py` (56 curated plain-English NFL entries
+  with aliases; `search` = phrase match on term/aliases + word overlap minus filler words; recent rule changes are
+  described without exact numbers); `get_player(name)` (matches "Josh Allen" → nflverse "J.Allen"; totals +
+  league ranks); `get_league_leaders(stat, limit≤10)`; `get_team(abbr)` (= `SeasonData.form`); `get_scoreboard()`
+  (the viewer's week exactly as `week_snapshot` shows it, or `available: false`).
+- **Data/leaks:** season data = weeks before the featured week (`season_for`); scoreboard only if the app sends its
+  week session (`week_session_id` + `X-Session-Token`; a wrong token is silently ignored). `AIService.assist`
+  withholds (`withheld`, 502, never cached) answers stating a final score of a game the viewer's clock hasn't
+  finished, unless a tool returned that pair.
+- **Pipeline:** cache key (normalized question + earlier questions, `data_version`, scoreboard signature,
+  `ASSISTANT_PROMPT_VERSION` = as.1, model) → per-client rate limit on a miss → shared `_execute` → evidence from
+  uncalled tools dropped, numbers absent from tool outputs flagged (confidence → low). Context = the user's
+  earlier **questions only** (≤3; the client never sends answers). Audit `kind="assistant"`.
+- **API:** `POST /api/v1/assistant/ask {question ≤500, previous_questions, week_session_id?}` → `AssistResult`
+  (`answer {answer, evidence, confidence, answerable, follow_ups}`, `usage`, `as_of`).
+- **Mobile:** `services/askSideline.ts`, `lib/askSideline.ts` (starters, `previousQuestions`, `canAsk`;
+  unit-tested); `WeekContext.weekAuth` exposes the in-memory week session (never persisted).
+
 ## Accounts (Supabase)
 
 Optional email/password accounts. **Guest demo must always work with zero Supabase config**: with no

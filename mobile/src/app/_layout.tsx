@@ -120,6 +120,7 @@ function RootNavigator() {
         {/* Game screen slides up as a sheet over the tabs (swipe down to close on iOS). */}
         <Stack.Screen name="game/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="replay/[gameId]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="assistant" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signed_out'}>
         <Stack.Screen name="welcome" options={{ animation: 'fade' }} />

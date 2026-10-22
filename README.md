@@ -263,6 +263,15 @@ win."). It disappears at kickoff.
   confidence to low; a preview that states the game's **real final score** is withheld (`withheld`, never
   cached), since the model may remember how these 2025 games ended.
 
+## Ask Sideline (any football question)
+
+The lime **Ask** button on every tab opens a chat for questions outside a single game: rules and penalties
+("What's a two-point conversion?"), players ("Is Josh Allen good this year?"), teams ("How are the Bills
+doing?"), league leaders, and "What are the scores right now?" (your week clock's scoreboard). A third agent
+answers only from Sideline's curated rule guide and the real season data (Weeks 1-4, plus this week as far as
+your clock has gone), shows its sources, and refuses to state results your clock hasn't reached. About
+$0.0003 per question; repeated questions are cached.
+
 ## Accounts (optional)
 
 Sideline works fully **without accounts**: tap **Try Demo** for real replays, Ask Sideline, insights and

@@ -63,6 +63,8 @@ interface WeekValue {
   /** Your #1 team (its game's moments stop the clock too). */
   setPrimaryTeam: (teamId: string | null) => void;
   viewingGameId: string | null;
+  /** The in-memory week session (for Ask Sideline's "scores right now"). Never persisted. */
+  weekAuth: WeekAuth | null;
 }
 
 const WeekContext = createContext<WeekValue | null>(null);
@@ -199,8 +201,9 @@ export function WeekProvider({ children }: { children: ReactNode }) {
       setViewing,
       setPrimaryTeam,
       viewingGameId,
+      weekAuth: auth,
     }),
-    [snapshot, error, waking, busy, run, momentHolds, setMomentHolds, viewingGameId],
+    [snapshot, error, waking, busy, run, momentHolds, setMomentHolds, viewingGameId, auth],
   );
 
   return <WeekContext.Provider value={value}>{children}</WeekContext.Provider>;
