@@ -1,8 +1,8 @@
 """Curated NFL rules and terms in plain English (Sideline's own text, not an AI's memory).
 
 The assistant answers rules / "what does X mean" questions from these entries via `lookup_rule`.
-Kept short and conservative: where a rule changed recently or has many exceptions, the entry says so
-instead of guessing at details. Applies to the NFL (not college or high school).
+Recent rule changes (kickoff, onside kick, overtime) are written for the 2025 season, the season Sideline
+replays, from the NFL's own rule explainers (operations.nfl.com, nfl.com). Applies to the NFL only.
 """
 
 from __future__ import annotations
@@ -95,8 +95,8 @@ GLOSSARY: tuple[Entry, ...] = (
         "Touchback",
         "basics",
         "When a kick or turnover ends in the end zone and the ball is downed there. On punts and most "
-        "turnovers the offense starts at its 20; kickoff touchbacks follow the newer kickoff rules (see "
-        "Kickoff).",
+        "turnovers the offense starts at its own 20; a kickoff that reaches the end zone in the air and is "
+        "downed starts at the 35 (2025 rule).",
         ("touch back",),
     ),
     # ---------------------------------------------------------------- scoring
@@ -139,17 +139,22 @@ GLOSSARY: tuple[Entry, ...] = (
     Entry(
         "Kickoff",
         "kicking",
-        "Starts each half and follows every score. Since 2024 the NFL uses a 'dynamic kickoff' with most "
-        "players lined up close together to reduce high-speed collisions; where a touchback is placed has "
-        "changed under these rules, so check the current season's rule for the exact yard line.",
+        "Starts each half and follows every score. Under the NFL's dynamic kickoff (introduced in 2024, made "
+        "permanent for 2025): the kicker kicks from his own 35; his 10 teammates line up at the receiving "
+        "team's 40; the receiving team puts 9 blockers in a 'setup zone' between its own 35 and 30, and up to"
+        " 2 returners in the 'landing zone' (its goal line to its 20). Nobody except the kicker and returners"
+        " may move until the ball hits the ground or a player in the landing zone. A kick that lands in the "
+        "landing zone must be returned; a kick that lands short of it gives the receiving team the ball at "
+        "its own 40; a kick that reaches the end zone in the air can be returned or downed for a touchback at"
+        " the 35 (2025).",
         ("kick off", "dynamic kickoff", "kick return"),
     ),
     Entry(
         "Onside kick",
         "kicking",
-        "A short kickoff the kicking team tries to recover itself, usually when it's behind late. Under the "
-        "current kickoff rules a team must announce it in advance, and it's limited to a team that is "
-        "trailing.",
+        "A short kickoff the kicking team tries to recover itself. Teams must declare it in advance, and only"
+        " a team that is behind may try one; since 2025 that's allowed at any point in the game, not just the"
+        " 4th quarter. A declared onside kick uses a traditional lineup instead of the dynamic kickoff setup.",
         ("onside", "on-side kick"),
     ),
     Entry(
@@ -214,9 +219,10 @@ GLOSSARY: tuple[Entry, ...] = (
     Entry(
         "Overtime",
         "clock",
-        "If the game is tied after four quarters, there's an overtime period (10 minutes in the regular "
-        "season). Recent rule changes give both teams a chance to possess the ball; regular-season games "
-        "can still end in a tie, playoff games can't.",
+        "If a game is tied after four quarters, there's overtime: a 10-minute period in the regular season, "
+        "15-minute periods in the playoffs. Since 2025 the regular season works like the playoffs: both teams"
+        " get a possession even if the first team scores a touchdown. After that, the next score wins. "
+        "Regular-season games can still end in a tie; playoff games can't.",
         ("ot", "over time", "sudden death", "tie game"),
     ),
     # ---------------------------------------------------------------- penalties
