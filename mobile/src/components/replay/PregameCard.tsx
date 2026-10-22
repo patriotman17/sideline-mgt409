@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Skeleton } from '@/components/ui';
+import { AiUsage, Skeleton } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { compareRows, ordinal, resultLabel, streakLabel, weeksLabel } from '@/lib/pregame';
 import { getTeam } from '@/services';
@@ -109,6 +109,7 @@ function AiPreview({ gameId, initial }: { gameId: string; initial: PregamePrevie
             Written from {weeksLabel(preview.weeks_included)} only · no predictions
             {preview.grounding_issues.length ? ' · some details unverified' : ''}
           </Text>
+          <AiUsage usage={preview.usage} status={preview.status} />
         </>
       ) : fetched.error && !fetched.loading ? (
         <View className="mt-2 flex-row items-center justify-between gap-3">

@@ -90,14 +90,7 @@ export interface Game {
 }
 
 export type TimelineEventType =
-  | 'play'
-  | 'touchdown'
-  | 'field_goal'
-  | 'turnover'
-  | 'big_play'
-  | 'penalty'
-  | 'kickoff'
-  | 'period';
+  'play' | 'touchdown' | 'field_goal' | 'turnover' | 'big_play' | 'penalty' | 'kickoff' | 'period';
 
 export interface TimelineEvent {
   id: string;
@@ -259,7 +252,14 @@ export interface AccountProfile {
 export type AccountProfileUpdate = Partial<
   Pick<
     AccountProfile,
-    'username' | 'displayName' | 'knowledgeLevel' | 'explanationStyle' | 'spoilerShield' | 'notificationsEnabled' | 'onboardedAt' | 'primaryTeamId'
+    | 'username'
+    | 'displayName'
+    | 'knowledgeLevel'
+    | 'explanationStyle'
+    | 'spoilerShield'
+    | 'notificationsEnabled'
+    | 'onboardedAt'
+    | 'primaryTeamId'
   >
 >;
 
@@ -276,4 +276,6 @@ export interface UserSettings {
   spoilerShield: boolean;
   haptics: boolean;
   aiCommentary: boolean;
+  /** Developer: show tokens and cost under every AI answer (for testing and the tokenomics write-up). */
+  showAiUsage: boolean;
 }

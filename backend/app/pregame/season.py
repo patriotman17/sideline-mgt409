@@ -225,6 +225,46 @@ class SeasonData:
             table["turnovers"][team] = margin
         return table
 
+    def team_table(self) -> list[dict[str, float | int | str]]:
+        """Every team's season so far, for league-wide rankings: record, points and yards for/against per
+        game, takeaways, giveaways and turnover margin."""
+        rows: list[dict[str, float | int | str]] = []
+        for team in self.teams:
+            games = wins = losses = ties = pf = pa = yf = ya = take = give = 0
+            for g in self.games:
+                if team not in (g.home, g.away):
+                    continue
+                home = team == g.home
+                mine, theirs = (g.home_score, g.away_score) if home else (g.away_score, g.home_score)
+                games += 1
+                pf += mine
+                pa += theirs
+                yf += g.home_yards if home else g.away_yards
+                ya += g.away_yards if home else g.home_yards
+                give += g.home_giveaways if home else g.away_giveaways
+                take += g.away_giveaways if home else g.home_giveaways
+                wins += mine > theirs
+                losses += mine < theirs
+                ties += mine == theirs
+            n = max(games, 1)
+            rows.append(
+                {
+                    "team": team,
+                    "games": games,
+                    "record": f"{wins}-{losses}" + (f"-{ties}" if ties else ""),
+                    "win_pct": round((wins + ties / 2) / n, 3),
+                    "points_per_game": round(pf / n, 1),
+                    "points_allowed_per_game": round(pa / n, 1),
+                    "yards_per_game": round(yf / n, 1),
+                    "yards_allowed_per_game": round(ya / n, 1),
+                    "point_differential": pf - pa,
+                    "takeaways": take,
+                    "giveaways": give,
+                    "turnover_margin": take - give,
+                }
+            )
+        return rows
+
     def leaders(self, team: str) -> list[Leader]:
         out: list[Leader] = []
         specs: tuple[tuple[LeaderCategory, str], ...] = (

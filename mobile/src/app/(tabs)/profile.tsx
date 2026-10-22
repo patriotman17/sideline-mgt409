@@ -7,10 +7,30 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ChoiceList } from '@/components/auth';
 import { StoryCard } from '@/components/discover';
 import { TeamBadge } from '@/components/game';
-import { ActionRow, BackendStatus, ProfileEditor, ServerSessionRow, SettingRow } from '@/components/profile';
-import { Avatar, Button, Chip, ListGroup, Screen, ScreenHeader, SectionHeader } from '@/components/ui';
+import {
+  ActionRow,
+  BackendStatus,
+  ProfileEditor,
+  ServerSessionRow,
+  SettingRow,
+} from '@/components/profile';
+import {
+  Avatar,
+  Button,
+  Chip,
+  ListGroup,
+  Screen,
+  ScreenHeader,
+  SectionHeader,
+} from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
-import { EXPLANATION_STYLES, KNOWLEDGE_LEVELS, MAX_FAVORITE_TEAMS, friendlyAuthError, toggleFavorite } from '@/lib/account';
+import {
+  EXPLANATION_STYLES,
+  KNOWLEDGE_LEVELS,
+  MAX_FAVORITE_TEAMS,
+  friendlyAuthError,
+  toggleFavorite,
+} from '@/lib/account';
 import { formatNumber } from '@/lib/format';
 import { getDiscoverFeed, getTeam, listTeams } from '@/services';
 import { useAppActions, useAppState } from '@/state/AppStore';
@@ -27,7 +47,8 @@ const initialsOf = (name: string) =>
     .map((w) => w[0]!.toUpperCase())
     .join('') || '?';
 
-const memberSince = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+const memberSince = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -46,7 +67,9 @@ export default function ProfileScreen() {
   const account = auth.status === 'ready' ? auth.profile : null;
   const [editingTeams, setEditingTeams] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
-  const [accountMessage, setAccountMessage] = useState<{ error?: string; info?: string } | null>(null);
+  const [accountMessage, setAccountMessage] = useState<{ error?: string; info?: string } | null>(
+    null,
+  );
   const { data: feed } = useAsync(getDiscoverFeed);
   const { stats } = profile;
   const saved = feed?.stories.filter((s) => savedStoryIds.includes(s.id)) ?? [];
@@ -79,12 +102,19 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={account ? 'Your account · Stats are sample data' : 'Demo profile · Sample data'} title="You" />
+      <ScreenHeader
+        eyebrow={account ? 'Your account · Stats are sample data' : 'Demo profile · Sample data'}
+        title="You"
+      />
 
       {/* Identity */}
       <View className="mx-4 flex-row items-center rounded-2xl bg-surface p-4">
         <View>
-          <Avatar initials={account ? initialsOf(name) : profile.initials} color={colors.volt} size={68} />
+          <Avatar
+            initials={account ? initialsOf(name) : profile.initials}
+            color={colors.volt}
+            size={68}
+          />
           <View className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full border-[3px] border-surface bg-win" />
         </View>
         <View className="ml-4 flex-1">
@@ -102,7 +132,12 @@ export default function ProfileScreen() {
               : 'Accounts aren’t set up on this server, so everything here stays on this device.'}
           </Text>
           {auth.accountsEnabled ? (
-            <Button label="Log in or create account" size="sm" className="mt-3 self-start" onPress={auth.exitDemo} />
+            <Button
+              label="Log in or create account"
+              size="sm"
+              className="mt-3 self-start"
+              onPress={auth.exitDemo}
+            />
           ) : null}
         </View>
       ) : null}
@@ -115,12 +150,18 @@ export default function ProfileScreen() {
       </View>
 
       {/* Teams */}
-      <SectionHeader title="Your teams" actionLabel={editingTeams ? 'Done' : 'Edit'} onAction={() => setEditingTeams((e) => !e)} />
+      <SectionHeader
+        title="Your teams"
+        actionLabel={editingTeams ? 'Done' : 'Edit'}
+        onAction={() => setEditingTeams((e) => !e)}
+      />
       {editingTeams ? (
         <View className="mx-4 flex-row flex-wrap gap-2">
           {account && teamIds.length ? (
             <View className="mb-2 w-full gap-2 rounded-2xl bg-surface p-3">
-              <Text className="text-[12px] font-semibold text-sub">Your #1 team · shown first everywhere</Text>
+              <Text className="text-[12px] font-semibold text-sub">
+                Your #1 team · shown first everywhere
+              </Text>
               <View className="flex-row flex-wrap gap-2">
                 {teamIds.map((id) => (
                   <Chip
@@ -144,12 +185,18 @@ export default function ProfileScreen() {
               label={t.abbr}
               selected={teamIds.includes(t.id)}
               onPress={() => toggleTeam(t.id)}
-              leading={<View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.primary }} />}
+              leading={
+                <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.primary }} />
+              }
             />
           ))}
         </View>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-4 px-4">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-4 px-4"
+        >
           {teamIds.map((id) => (
             <View key={id} className="items-center">
               <TeamBadge teamId={id} size={56} />
@@ -159,7 +206,12 @@ export default function ProfileScreen() {
               </Text>
             </View>
           ))}
-          <Pressable onPress={() => setEditingTeams(true)} accessibilityRole="button" accessibilityLabel="Add a team" className="items-center">
+          <Pressable
+            onPress={() => setEditingTeams(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Add a team"
+            className="items-center"
+          >
             <View className="h-14 w-14 items-center justify-center rounded-full bg-white/10">
               <Ionicons name="add" size={24} color={colors.ink} />
             </View>
@@ -170,21 +222,34 @@ export default function ProfileScreen() {
 
       {/* Badges */}
       <SectionHeader title="Badges" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-4">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-2 px-4"
+      >
         {profile.badges.map((b) => (
-          <View key={b.id} className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 ${b.earned ? 'bg-white/10' : 'bg-white/5'}`}>
+          <View
+            key={b.id}
+            className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 ${b.earned ? 'bg-white/10' : 'bg-white/5'}`}
+          >
             <Ionicons
               name={(b.earned ? b.icon : 'lock-closed') as keyof typeof Ionicons.glyphMap}
               size={13}
               color={b.earned ? colors.volt : colors.mute}
             />
-            <Text className={`text-[13px] font-medium ${b.earned ? 'text-ink' : 'text-mute'}`}>{b.label}</Text>
+            <Text className={`text-[13px] font-medium ${b.earned ? 'text-ink' : 'text-mute'}`}>
+              {b.label}
+            </Text>
           </View>
         ))}
       </ScrollView>
 
       {/* Saved */}
-      <SectionHeader title="Saved" actionLabel="Discover" onAction={() => router.push('/discover')} />
+      <SectionHeader
+        title="Saved"
+        actionLabel="Discover"
+        onAction={() => router.push('/discover')}
+      />
       {saved.length ? (
         <ListGroup>
           {saved.map((s) => (
@@ -192,10 +257,14 @@ export default function ProfileScreen() {
           ))}
         </ListGroup>
       ) : (
-        <Text className="mx-5 text-[14px] text-mute">Bookmark stories in Discover to read them here.</Text>
+        <Text className="mx-5 text-[14px] text-mute">
+          Bookmark stories in Discover to read them here.
+        </Text>
       )}
 
-      {accountMessage?.error ? <Text className="mx-5 mt-3 text-[13px] text-loss">{accountMessage.error}</Text> : null}
+      {accountMessage?.error ? (
+        <Text className="mx-5 mt-3 text-[13px] text-loss">{accountMessage.error}</Text>
+      ) : null}
 
       {/* Sideline AI preferences (saved to the account) */}
       {account ? (
@@ -253,7 +322,13 @@ export default function ProfileScreen() {
           value={settings.aiCommentary}
           onChange={(v) => setSetting('aiCommentary', v)}
         />
-        <SettingRow divider={false} icon="phone-portrait" label="Haptics" value={settings.haptics} onChange={(v) => setSetting('haptics', v)} />
+        <SettingRow
+          divider={false}
+          icon="phone-portrait"
+          label="Haptics"
+          value={settings.haptics}
+          onChange={(v) => setSetting('haptics', v)}
+        />
       </ListGroup>
 
       {/* Account */}
@@ -262,11 +337,20 @@ export default function ProfileScreen() {
           <SectionHeader title="Account" />
           {editingProfile ? (
             <View className="mx-4 rounded-2xl bg-surface">
-              <ProfileEditor profile={account} onSave={auth.updateProfile} onDone={() => setEditingProfile(false)} />
+              <ProfileEditor
+                profile={account}
+                onSave={auth.updateProfile}
+                onDone={() => setEditingProfile(false)}
+              />
             </View>
           ) : (
             <ListGroup inset={60}>
-              <ActionRow icon="person" label="Edit profile" value={handle} onPress={() => setEditingProfile(true)} />
+              <ActionRow
+                icon="person"
+                label="Edit profile"
+                value={handle}
+                onPress={() => setEditingProfile(true)}
+              />
               <ActionRow icon="mail" label="Email" value={auth.email ?? ''} />
               <ActionRow
                 icon="key"
@@ -285,7 +369,9 @@ export default function ProfileScreen() {
               <ActionRow icon="log-out" label="Log out" destructive onPress={auth.signOut} />
             </ListGroup>
           )}
-          {accountMessage?.info ? <Text className="mx-5 mt-2 text-[13px] text-win">{accountMessage.info}</Text> : null}
+          {accountMessage?.info ? (
+            <Text className="mx-5 mt-2 text-[13px] text-win">{accountMessage.info}</Text>
+          ) : null}
         </>
       ) : auth.status === 'guest' ? (
         <>
@@ -303,8 +389,17 @@ export default function ProfileScreen() {
             <Ionicons name="information-circle" size={16} color={colors.ink} />
           </View>
           <Text className="flex-1 text-[15px] font-semibold text-ink">Version</Text>
-          <Text className="text-[13px] text-mute">{Constants.expoConfig?.version ?? '1.0.0'} · Phase 1</Text>
+          <Text className="text-[13px] text-mute">
+            {Constants.expoConfig?.version ?? '1.0.0'} · Phase 1
+          </Text>
         </View>
+        <SettingRow
+          icon="speedometer"
+          label="Show AI usage"
+          description="Tokens and cost under every AI answer"
+          value={settings.showAiUsage}
+          onChange={(v) => setSetting('showAiUsage', v)}
+        />
         <BackendStatus />
         {account ? <ServerSessionRow userId={account.id} /> : null}
       </ListGroup>

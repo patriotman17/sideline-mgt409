@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { IconButton } from '@/components/ui';
+import { AiUsage, IconButton } from '@/components/ui';
 import { SheetView } from '@/components/web/SheetView';
 import { useKeyboardOverlap } from '@/hooks/useKeyboardOverlap';
 import { canAsk, previousQuestions, STARTER_QUESTIONS, type AskItem } from '@/lib/askSideline';
@@ -66,6 +66,7 @@ function Answer({
         {result.as_of}
         {a.confidence === 'low' ? ' · some details unverified' : ''}
       </Text>
+      <AiUsage usage={result.usage} status={result.status} />
       {onFollowUp && a.follow_ups.length ? (
         <View className="mt-1 flex-row flex-wrap gap-2">
           {a.follow_ups.map((q) => (

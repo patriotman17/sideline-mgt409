@@ -402,7 +402,11 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   limits still apply). The app never shows a button: `PregameCard` shows the cached `ai_preview` from GET, or
   requests it automatically (skeleton "Sideline AI is writing a preview…", retry on error). Off by default (tests).
 - **Tokens:** audit records and `usage` now include `cached_input_tokens` (provider prompt cache) for every
-  AI call.
+  AI call. `python -m evals.tokenomics` (real calls, ~$0.015) simulates three fans across all four AI features
+  with one shared service, reports per-kind input / cached / output tokens and cost, cache hit counts, a
+  no-caching counterfactual, a history-window A/B, and a monthly projection → `docs/tokenomics.md`. Mobile:
+  You → Developer → **Show AI usage** (`settings.showAiUsage`, off by default) renders `components/ui/AiUsage`
+  (`lib/aiUsage.formatUsage`, unit-tested) under Ask AI, pregame preview and Ask Sideline answers.
 - **Mobile:** `services/pregame.ts` → `components/replay/PregameCard.tsx` (shown in the replay screen while
   the game is `scheduled`) with pure helpers in `lib/pregame.ts` (unit-tested).
 
@@ -436,6 +440,11 @@ from the floating **Ask** button on every tab (`components/assistant/AskFab.tsx`
   `incomplete_career_warning` when a player's first season is 1999 (careers before are partial; the answer must say
   so). Totals are play-by-play sums (e.g. Brady 89,216 yds vs official 89,214). `ASSISTANT_PROMPT_VERSION` as.3.
   `/api/v1/status` reports `data_sources` (`games`, `history`: supabase/local) once loaded.
+- **Team rankings:** `get_team_rankings(stat, season?)` over `SeasonData.team_table()` (all 32 teams: record,
+  points/yards for and against per game, takeaways, giveaways) or, for past seasons, `history.team_seasons`
+  (records and points only). `defense` / `offense` = average of league ranks (points + yards allowed + takeaways /
+  points + yards + few giveaways), labeled as Sideline's composite. Instruction 7: judgment questions combine
+  measures, say which, and name a runner-up when they disagree. `ASSISTANT_PROMPT_VERSION` as.4.
 - **Mobile:** `services/askSideline.ts`, `lib/askSideline.ts` (starters, `previousQuestions`, `canAsk`;
   unit-tested); `WeekContext.weekAuth` exposes the in-memory week session (never persisted).
 

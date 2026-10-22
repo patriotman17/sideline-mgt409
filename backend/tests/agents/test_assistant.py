@@ -239,3 +239,33 @@ def test_assistant_endpoint_with_and_without_a_week(make_service):
 
     assert client.post("/api/v1/assistant/ask", json={"question": ""}).status_code == 422
     assert client.post("/api/v1/assistant/ask", json={"question": "x" * 501}).status_code == 422
+
+
+# ---------------------------------------------------------------- team rankings
+
+
+def test_team_table_is_consistent(season):
+    table = season.team_table()
+    assert len(table) == 32
+    assert sum(int(r["takeaways"]) for r in table) == sum(int(r["giveaways"]) for r in table)
+    assert sum(int(r["point_differential"]) for r in table) == 0
+    buf = next(r for r in table if r["team"] == "BUF")
+    assert buf["record"] == "4-0" and buf["points_per_game"] == 33.2
+
+
+def test_rankings_current_and_past(season):
+    from app.agents.assistant import team_rankings_tool
+    from app.history_stats.data import get_history_stats
+
+    d = AssistantDeps(season=season, history=get_history_stats())
+    defense = team_rankings_tool(d, "defense", None, 5)
+    assert defense.rows[0].team == "SEA" and "Average of league ranks" in defense.method  # type: ignore[union-attr]
+    allowed = team_rankings_tool(d, "points_allowed", None, 32)
+    vals = [r.values["points_allowed_per_game"] for r in allowed.rows]  # type: ignore[union-attr]
+    assert vals == sorted(vals) and len(vals) == 32
+    record = team_rankings_tool(d, "record", None, 2)
+    assert {r.team for r in record.rows} == {"BUF", "PHI"}  # type: ignore[union-attr]  # both 4-0
+    past = team_rankings_tool(d, "defense", 2013, 1)
+    assert past.rows[0].team == "SEA" and "points only" in past.method  # type: ignore[union-attr]
+    assert team_rankings_tool(d, "yards_allowed", 2013, 3).available is False  # type: ignore[union-attr]
+    assert team_rankings_tool(d, "defense", 1990, 3).available is False  # type: ignore[union-attr]

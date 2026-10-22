@@ -2,11 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { AiUsage } from '@/components/ui';
 import type { ReplayChatItem } from '@/hooks/useReplayChat';
 import type { AskAnswer } from '@/services';
 import { colors } from '@/theme';
 
-const SUGGESTIONS = ['What’s the score?', 'Who leads in rushing?', 'Any turnovers so far?', 'What just happened?'];
+const SUGGESTIONS = [
+  'What’s the score?',
+  'Who leads in rushing?',
+  'Any turnovers so far?',
+  'What just happened?',
+];
 
 const TOOL_LABEL: Record<string, string> = {
   get_game_state: 'Game state',
@@ -54,19 +60,32 @@ function AnswerBubble({ result, onAsk }: { result: AskAnswer; onAsk: (question: 
         ) : null}
         <View className="ml-1 mt-1 flex-row flex-wrap items-center gap-x-2">
           <Text className="text-[11px] text-mute">
-            As of {as_of.period} {as_of.clock ?? ''} · {answer.confidence} confidence{result.status === 'cached' ? ' · cached' : ''}
+            As of {as_of.period} {as_of.clock ?? ''} · {answer.confidence} confidence
+            {result.status === 'cached' ? ' · cached' : ''}
           </Text>
           {answer.evidence.length ? (
-            <Pressable onPress={() => setOpen((o) => !o)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Show evidence">
-              <Text className="text-[11px] font-semibold text-volt">{open ? 'Hide' : 'Based on'} {answer.evidence.length} fact{answer.evidence.length > 1 ? 's' : ''}</Text>
+            <Pressable
+              onPress={() => setOpen((o) => !o)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Show evidence"
+            >
+              <Text className="text-[11px] font-semibold text-volt">
+                {open ? 'Hide' : 'Based on'} {answer.evidence.length} fact
+                {answer.evidence.length > 1 ? 's' : ''}
+              </Text>
             </Pressable>
           ) : null}
+        </View>
+        <View className="ml-1">
+          <AiUsage usage={result.usage} status={result.status} />
         </View>
         {open ? (
           <View className="ml-1 mt-1.5 gap-1">
             {answer.evidence.map((e, i) => (
               <Text key={i} className="text-[12px] leading-[17px] text-sub">
-                <Text className="font-semibold text-ink">{TOOL_LABEL[e.tool] ?? e.tool}:</Text> {e.fact}
+                <Text className="font-semibold text-ink">{TOOL_LABEL[e.tool] ?? e.tool}:</Text>{' '}
+                {e.fact}
               </Text>
             ))}
           </View>
@@ -76,16 +95,28 @@ function AnswerBubble({ result, onAsk }: { result: AskAnswer; onAsk: (question: 
   );
 }
 
-function ErrorBubble({ item, onRetry }: { item: Extract<ReplayChatItem, { role: 'error' }>; onRetry: () => void }) {
+function ErrorBubble({
+  item,
+  onRetry,
+}: {
+  item: Extract<ReplayChatItem, { role: 'error' }>;
+  onRetry: () => void;
+}) {
   const setup = item.code === 'not_configured';
   return (
     <View className="mb-3 flex-row">
       <Avatar />
       <View className="max-w-[85%] flex-1 rounded-2xl rounded-bl-md border border-loss/40 bg-loss/10 px-3.5 py-2.5">
-        <Text className="text-[14px] font-semibold text-ink">{setup ? 'Sideline AI isn’t set up' : 'Couldn’t answer that'}</Text>
+        <Text className="text-[14px] font-semibold text-ink">
+          {setup ? 'Sideline AI isn’t set up' : 'Couldn’t answer that'}
+        </Text>
         <Text className="mt-1 text-[13px] leading-[18px] text-sub">{item.message}</Text>
         {!setup && item.code !== 'blocked' ? (
-          <Pressable onPress={onRetry} accessibilityRole="button" className="mt-2 flex-row items-center gap-1 self-start rounded-full bg-white/10 px-3 py-1.5 active:opacity-70">
+          <Pressable
+            onPress={onRetry}
+            accessibilityRole="button"
+            className="mt-2 flex-row items-center gap-1 self-start rounded-full bg-white/10 px-3 py-1.5 active:opacity-70"
+          >
             <Ionicons name="refresh" size={13} color={colors.ink} />
             <Text className="text-[13px] font-medium text-ink">Retry</Text>
           </Pressable>
@@ -117,7 +148,14 @@ interface ReplayAskPanelProps {
 }
 
 /** Ask Sideline conversation: real backend answers grounded in the replay's revealed plays. */
-export function ReplayAskPanel({ items, pending, onAsk, onRetry, onReset, hiddenCount }: ReplayAskPanelProps) {
+export function ReplayAskPanel({
+  items,
+  pending,
+  onAsk,
+  onRetry,
+  onReset,
+  hiddenCount,
+}: ReplayAskPanelProps) {
   return (
     <View className="px-4">
       {items.length ? (
@@ -137,8 +175,8 @@ export function ReplayAskPanel({ items, pending, onAsk, onRetry, onReset, hidden
         <View className="mb-3 flex-row items-center gap-1.5 rounded-xl bg-white/5 px-3 py-2">
           <Ionicons name="eye-off-outline" size={13} color={colors.mute} />
           <Text className="flex-1 text-[12px] text-mute">
-            {hiddenCount} message{hiddenCount > 1 ? 's' : ''} from later in the game {hiddenCount > 1 ? 'are' : 'is'} hidden
-            until the replay gets there.
+            {hiddenCount} message{hiddenCount > 1 ? 's' : ''} from later in the game{' '}
+            {hiddenCount > 1 ? 'are' : 'is'} hidden until the replay gets there.
           </Text>
         </View>
       ) : null}
@@ -172,9 +210,19 @@ export function ReplayAskPanel({ items, pending, onAsk, onRetry, onReset, hidden
       {pending ? <Thinking /> : null}
 
       {!pending ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 pb-2" className="-mx-4 px-4">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-2 pb-2"
+          className="-mx-4 px-4"
+        >
           {SUGGESTIONS.map((s) => (
-            <Pressable key={s} onPress={() => onAsk(s)} accessibilityRole="button" className="rounded-full bg-white/10 px-3.5 py-2 active:opacity-70">
+            <Pressable
+              key={s}
+              onPress={() => onAsk(s)}
+              accessibilityRole="button"
+              className="rounded-full bg-white/10 px-3.5 py-2 active:opacity-70"
+            >
               <Text className="text-[13px] font-medium text-ink">{s}</Text>
             </Pressable>
           ))}

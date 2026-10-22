@@ -33,8 +33,21 @@ export interface ReplayGameSummary {
 }
 
 export type PlayKind =
-  | 'game_start' | 'kickoff' | 'pass' | 'run' | 'punt' | 'field_goal' | 'extra_point' | 'two_point'
-  | 'kneel' | 'spike' | 'penalty' | 'timeout' | 'end_quarter' | 'end_game' | 'other';
+  | 'game_start'
+  | 'kickoff'
+  | 'pass'
+  | 'run'
+  | 'punt'
+  | 'field_goal'
+  | 'extra_point'
+  | 'two_point'
+  | 'kneel'
+  | 'spike'
+  | 'penalty'
+  | 'timeout'
+  | 'end_quarter'
+  | 'end_game'
+  | 'other';
 
 export interface ReplayPlay {
   sequence: number;
@@ -46,14 +59,24 @@ export interface ReplayPlay {
   yards_gained: number | null;
   description: string;
   scoring: { type: string; team: string; points: number }[];
-  turnover: { type: 'interception' | 'fumble' | 'downs'; lost_by: string | null; gained_by: string | null } | null;
-  penalty: { team: string | null; type: string | null; yards: number | null; no_play: boolean } | null;
+  turnover: {
+    type: 'interception' | 'fumble' | 'downs';
+    lost_by: string | null;
+    gained_by: string | null;
+  } | null;
+  penalty: {
+    team: string | null;
+    type: string | null;
+    yards: number | null;
+    no_play: boolean;
+  } | null;
   timeout_team: string | null;
   source_home_score_after: number | null;
   source_away_score_after: number | null;
 }
 
-export type ReplayGameStatus = 'pregame' | 'in_progress' | 'end_of_quarter' | 'halftime' | 'end_of_regulation' | 'final';
+export type ReplayGameStatus =
+  'pregame' | 'in_progress' | 'end_of_quarter' | 'halftime' | 'end_of_regulation' | 'final';
 
 export interface ReplayState {
   game_id: string;
@@ -117,7 +140,12 @@ const auth = (a: ReplayAuth) => ({ 'X-Session-Token': a.token });
 
 export const listReplayGames = () => apiGet<ReplayGameSummary[]>(`${BASE}/games`);
 /** `startCursor` > 0 joins mid-game (from the synchronized week): earlier plays are revealed, paused. */
-export const startReplay = (gameId: string, speed = 1, startCursor = 0, momentHolds: MomentHolds = 'big') =>
+export const startReplay = (
+  gameId: string,
+  speed = 1,
+  startCursor = 0,
+  momentHolds: MomentHolds = 'big',
+) =>
   apiRequest<CreatedReplaySession>('POST', `${BASE}/sessions`, {
     game_id: gameId,
     speed,
@@ -125,9 +153,12 @@ export const startReplay = (gameId: string, speed = 1, startCursor = 0, momentHo
     moment_holds: momentHolds,
     ...(startCursor > 0 ? { start_cursor: startCursor } : {}),
   });
-export const getReplay = (a: ReplayAuth) => apiGet<ReplaySnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));
+export const getReplay = (a: ReplayAuth) =>
+  apiGet<ReplaySnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));
 export const controlReplay = (a: ReplayAuth, action: ReplayControl) =>
-  apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions/${a.sessionId}/${action}`, undefined, { headers: auth(a) });
+  apiRequest<ReplaySnapshot>('POST', `${BASE}/sessions/${a.sessionId}/${action}`, undefined, {
+    headers: auth(a),
+  });
 /** Reveal the next `plays` events (1-50) and pause. Used to follow the synchronized week. */
 export const stepReplay = (a: ReplayAuth, plays: number) =>
   apiRequest<ReplaySnapshot>(
@@ -137,7 +168,12 @@ export const stepReplay = (a: ReplayAuth, plays: number) =>
     { headers: auth(a) },
   );
 export const setReplaySpeed = (a: ReplayAuth, speed: number) =>
-  apiRequest<ReplaySnapshot>('PUT', `${BASE}/sessions/${a.sessionId}/speed`, { speed }, { headers: auth(a) });
+  apiRequest<ReplaySnapshot>(
+    'PUT',
+    `${BASE}/sessions/${a.sessionId}/speed`,
+    { speed },
+    { headers: auth(a) },
+  );
 export const endReplay = (a: ReplayAuth) =>
   apiRequest<void>('DELETE', `${BASE}/sessions/${a.sessionId}`, undefined, { headers: auth(a) });
 
@@ -164,7 +200,13 @@ export interface AskAnswer {
   };
   as_of: { cursor: number; period: string; clock: string | null; state_version: string };
   model: string;
-  usage: { requests: number; input_tokens: number; output_tokens: number; estimated_cost_usd: number | null };
+  usage: {
+    requests: number;
+    input_tokens: number;
+    cached_input_tokens?: number;
+    output_tokens: number;
+    estimated_cost_usd: number | null;
+  };
   latency_ms: number;
   /** Earlier turns of this session's chat the server used as context (0 = standalone). */
   context_turns: number;
@@ -173,12 +215,26 @@ export interface AskAnswer {
 
 export interface ReplayConversation {
   cursor: number;
-  turns: { request_id: string; question: string; answer: string; cursor: number; period: string; clock: string | null }[];
+  turns: {
+    request_id: string;
+    question: string;
+    answer: string;
+    cursor: number;
+    period: string;
+    clock: string | null;
+  }[];
   hidden_later: number;
 }
 
 export type InsightExplanationStatus =
-  | 'generated' | 'cached' | 'pending' | 'not_configured' | 'budget_exceeded' | 'rate_limited' | 'blocked' | 'error';
+  | 'generated'
+  | 'cached'
+  | 'pending'
+  | 'not_configured'
+  | 'budget_exceeded'
+  | 'rate_limited'
+  | 'blocked'
+  | 'error';
 
 export interface ReplayInsight {
   id: string;
@@ -221,10 +277,16 @@ export const getReplayConversation = (a: ReplayAuth) =>
 
 /** Start a new Ask Sideline chat: the server forgets this session's earlier turns. */
 export const resetReplayChat = (a: ReplayAuth) =>
-  apiRequest<void>('DELETE', `${BASE}/sessions/${a.sessionId}/conversation`, undefined, { headers: auth(a) });
+  apiRequest<void>('DELETE', `${BASE}/sessions/${a.sessionId}/conversation`, undefined, {
+    headers: auth(a),
+  });
 
 export const getReplayInsights = (a: ReplayAuth, explain = 2) =>
-  apiGet<ReplayInsights>(`${BASE}/sessions/${a.sessionId}/insights?limit=10&explain=${explain}`, 45000, auth(a));
+  apiGet<ReplayInsights>(
+    `${BASE}/sessions/${a.sessionId}/insights?limit=10&explain=${explain}`,
+    45000,
+    auth(a),
+  );
 
 // ---------------------------------------------------------------- adapters
 // Map replay state onto the app's Game/TimelineEvent types so existing
@@ -237,7 +299,11 @@ export const replayTeamId = (abbr: string) => abbr.toLowerCase();
 export function formatGameDate(iso: string | null): string {
   if (!iso) return '';
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 export function formatClock(seconds: number | null): string {
@@ -265,15 +331,24 @@ export function replayToGame(snap: ReplaySnapshot): Game {
   const status = s.status === 'pregame' ? 'scheduled' : s.status === 'final' ? 'final' : 'live';
   const awayId = replayTeamId(g.away.abbr);
   const homeId = replayTeamId(g.home.abbr);
-  const pad = (line: number[]) => [...line, ...Array<null>(Math.max(0, 4 - line.length)).fill(null)];
+  const pad = (line: number[]) => [
+    ...line,
+    ...Array<null>(Math.max(0, 4 - line.length)).fill(null),
+  ];
   const favorite = g.spread_line === null ? null : g.spread_line >= 0 ? g.home.abbr : g.away.abbr;
 
   let period = periodLabel(s.quarter);
   let clock = formatClock(s.clock_seconds);
   if (s.status === 'halftime') [period, clock] = ['Half', ''];
-  else if (s.status === 'end_of_quarter' || s.status === 'end_of_regulation') [period, clock] = [`End ${periodLabel(s.quarter)}`, ''];
+  else if (s.status === 'end_of_quarter' || s.status === 'end_of_regulation')
+    [period, clock] = [`End ${periodLabel(s.quarter)}`, ''];
 
-  const hasSituation = status === 'live' && s.possession && s.down !== null && s.distance !== null && s.yardline_100 !== null;
+  const hasSituation =
+    status === 'live' &&
+    s.possession &&
+    s.down !== null &&
+    s.distance !== null &&
+    s.yardline_100 !== null;
   return {
     id: g.game_id,
     week: g.week ?? 0,
@@ -300,7 +375,9 @@ export function replayToGame(snap: ReplaySnapshot): Game {
           redZone: s.yardline_100! <= 20,
         }
       : undefined,
-    linescore: s.home_linescore.length ? { away: pad(s.away_linescore), home: pad(s.home_linescore) } : undefined,
+    linescore: s.home_linescore.length
+      ? { away: pad(s.away_linescore), home: pad(s.home_linescore) }
+      : undefined,
   };
 }
 
@@ -308,12 +385,26 @@ function playTitle(p: ReplayPlay): { type: TimelineEventType; title: string } {
   const score = p.scoring[0];
   if (score?.type === 'touchdown') return { type: 'touchdown', title: 'Touchdown' };
   if (score?.type === 'field_goal') return { type: 'field_goal', title: 'Field goal' };
-  if (score) return { type: 'touchdown', title: score.type === 'extra_point' ? 'Extra point' : score.type === 'safety' ? 'Safety' : 'Two-point try' };
+  if (score)
+    return {
+      type: 'touchdown',
+      title:
+        score.type === 'extra_point'
+          ? 'Extra point'
+          : score.type === 'safety'
+            ? 'Safety'
+            : 'Two-point try',
+    };
   if (p.turnover) {
-    const label = { interception: 'Interception', fumble: 'Fumble lost', downs: 'Turnover on downs' }[p.turnover.type];
+    const label = {
+      interception: 'Interception',
+      fumble: 'Fumble lost',
+      downs: 'Turnover on downs',
+    }[p.turnover.type];
     return { type: 'turnover', title: label };
   }
-  if (p.penalty) return { type: 'penalty', title: p.penalty.type ? `Penalty · ${p.penalty.type}` : 'Penalty' };
+  if (p.penalty)
+    return { type: 'penalty', title: p.penalty.type ? `Penalty · ${p.penalty.type}` : 'Penalty' };
   const yards = p.yards_gained;
   const yardText = yards === null ? '' : ` · ${yards >= 0 ? '+' : ''}${yards}`;
   switch (p.kind) {
@@ -330,11 +421,17 @@ function playTitle(p: ReplayPlay): { type: TimelineEventType; title: string } {
     case 'field_goal':
       return { type: 'play', title: 'Field goal no good' };
     case 'pass':
-      return { type: yards !== null && yards >= 20 ? 'big_play' : 'play', title: `Pass${yardText}` };
+      return {
+        type: yards !== null && yards >= 20 ? 'big_play' : 'play',
+        title: `Pass${yardText}`,
+      };
     case 'run':
       return { type: yards !== null && yards >= 20 ? 'big_play' : 'play', title: `Run${yardText}` };
     default:
-      return { type: 'play', title: p.kind === 'kneel' ? 'Kneel' : p.kind === 'spike' ? 'Spike' : 'Play' };
+      return {
+        type: 'play',
+        title: p.kind === 'kneel' ? 'Kneel' : p.kind === 'spike' ? 'Spike' : 'Play',
+      };
   }
 }
 
@@ -357,12 +454,12 @@ export function replayTimeline(snap: ReplaySnapshot): TimelineEvent[] {
   });
 }
 
-
 // ---------------------------------------------------------------- replay predictions (Phase 2D)
 // Mirrors backend/app/predictions/models.py + api/routes/predictions.py. Outcomes, locks and points
 // are decided by the server's deterministic ledger; the app only sends a prediction id + option id.
 
-export type ReplayPredictionType = 'next_play_gain_5' | 'fourth_down_conversion' | 'drive_touchdown' | 'next_score';
+export type ReplayPredictionType =
+  'next_play_gain_5' | 'fourth_down_conversion' | 'drive_touchdown' | 'next_score';
 export type ReplayPredictionStatus = 'open' | 'locked' | 'resolved' | 'void';
 export type ReplayPredictionOutcome = 'correct' | 'incorrect' | 'void' | 'pending' | 'unanswered';
 
@@ -428,7 +525,12 @@ export interface ReplayPredictions {
 }
 
 export interface ReplayPredictionAnswer {
-  answer: { prediction_id: string; option_id: string; answered_cursor: number; answered_at: string };
+  answer: {
+    prediction_id: string;
+    option_id: string;
+    answered_cursor: number;
+    answered_at: string;
+  };
   created: boolean;
   resumed_playback: boolean;
   item: ReplayPredictionItem;
@@ -436,7 +538,8 @@ export interface ReplayPredictionAnswer {
 
 const PRED = (a: ReplayAuth) => `${BASE}/sessions/${a.sessionId}/predictions`;
 
-export const getReplayPredictions = (a: ReplayAuth) => apiGet<ReplayPredictions>(PRED(a), 6000, auth(a));
+export const getReplayPredictions = (a: ReplayAuth) =>
+  apiGet<ReplayPredictions>(PRED(a), 6000, auth(a));
 
 /** Lock in an answer. Final once recorded (the same answer again is an idempotent retry). */
 export const answerReplayPrediction = (a: ReplayAuth, predictionId: string, optionId: string) =>
@@ -451,10 +554,20 @@ export const answerReplayPrediction = (a: ReplayAuth, predictionId: string, opti
 export type MomentHolds = 'off' | 'big' | 'all';
 
 export const setMomentHolds = (a: ReplayAuth, level: MomentHolds) =>
-  apiRequest<ReplayPredictions>('PUT', `${PRED(a)}/settings`, { moment_holds: level }, { headers: auth(a) });
+  apiRequest<ReplayPredictions>(
+    'PUT',
+    `${PRED(a)}/settings`,
+    { moment_holds: level },
+    { headers: auth(a) },
+  );
 
 export const setPauseForPredictions = (a: ReplayAuth, enabled: boolean) =>
-  apiRequest<ReplayPredictions>('PUT', `${PRED(a)}/settings`, { pause_for_predictions: enabled }, { headers: auth(a) });
+  apiRequest<ReplayPredictions>(
+    'PUT',
+    `${PRED(a)}/settings`,
+    { pause_for_predictions: enabled },
+    { headers: auth(a) },
+  );
 
 /** Optional AI explanation of a resolved prediction (the outcome itself is deterministic). */
 export const explainReplayPrediction = (a: ReplayAuth, predictionId: string) =>
