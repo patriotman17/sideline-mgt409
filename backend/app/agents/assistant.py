@@ -28,7 +28,7 @@ from app.pregame.season import Leader, PlayerSeason, SeasonData, TeamForm
 M = TypeVar("M", bound=BaseModel)
 
 #: Bump when instructions or tool outputs change (invalidates cached answers).
-ASSISTANT_PROMPT_VERSION = "as.5"
+ASSISTANT_PROMPT_VERSION = "as.6"
 
 AssistantTool = Literal[
     "lookup_rule",

@@ -415,9 +415,9 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
 A third agent (`app/agents/assistant.py`, `assistant_agent`) for football questions outside one game, opened
 from the floating **Ask** button on every tab (`components/assistant/AskFab.tsx` → `app/assistant.tsx`, a modal).
 
-- **Tools (read-only):** `lookup_rule(topic)` → `app/agents/glossary.py` (56 curated plain-English NFL entries
-  with aliases; `search` = phrase match on term/aliases + word overlap minus filler words; recent rule changes are
-  described without exact numbers); `get_player(name)` (matches "Josh Allen" → nflverse "J.Allen"; totals +
+- **Tools (read-only):** `lookup_rule(topic)` → `app/agents/glossary.py` (61 curated plain-English NFL entries
+  with aliases; `search` = phrase match on term/aliases + word overlap minus filler words; recent rule changes are written
+  for the 2025 season from the NFL's own explainers, with key facts pinned by `test_rule_guide_states_current_nfl_rules`); `get_player(name)` (matches "Josh Allen" → nflverse "J.Allen"; totals +
   league ranks); `get_league_leaders(stat, limit≤10)`; `get_team(abbr)` (= `SeasonData.form`); `get_scoreboard()`
   (the viewer's week exactly as `week_snapshot` shows it, or `available: false`).
 - **Data/leaks:** season data = weeks before the featured week (`season_for`); scoreboard only if the app sends its
@@ -444,7 +444,7 @@ from the floating **Ask** button on every tab (`components/assistant/AskFab.tsx`
   points/yards for and against per game, takeaways, giveaways) or, for past seasons, `history.team_seasons`
   (records and points only). `defense` / `offense` = average of league ranks (points + yards allowed + takeaways /
   points + yards + few giveaways), labeled as Sideline's composite. Instruction 7: judgment questions combine
-  measures, say which, and name a runner-up when they disagree. `ASSISTANT_PROMPT_VERSION` as.4.
+  measures, say which, and name a runner-up when they disagree. `ASSISTANT_PROMPT_VERSION` as.6.
 - **Mobile:** `services/askSideline.ts`, `lib/askSideline.ts` (starters, `previousQuestions`, `canAsk`;
   unit-tested); `WeekContext.weekAuth` exposes the in-memory week session (never persisted).
 

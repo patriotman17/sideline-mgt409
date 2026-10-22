@@ -269,3 +269,35 @@ def test_rankings_current_and_past(season):
     assert past.rows[0].team == "SEA" and "points only" in past.method  # type: ignore[union-attr]
     assert team_rankings_tool(d, "yards_allowed", 2013, 3).available is False  # type: ignore[union-attr]
     assert team_rankings_tool(d, "defense", 1990, 3).available is False  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize(
+    ("term", "facts"),
+    [
+        (
+            "Kickoff",
+            [
+                "own 35",
+                "receiving team's 40",
+                "between its own 35 and 30",
+                "goal line to its 20",
+                "touchback at the 35",
+            ],
+        ),
+        ("Touchback", ["own 20", "35"]),
+        ("Onside kick", ["declare", "trailing", "2025"]),
+        ("Overtime", ["10-minute", "both teams get a possession", "tie"]),
+        ("Replay review and challenges", ["at least one of the first two", "can't add a flag"]),
+        ("Clipping", ["15 yards"]),
+        ("Illegal block in the back", ["10 yards"]),
+        ("Hip-drop tackle", ["15 yards", "automatic first down"]),
+        ("Extra point", ["15-yard line"]),
+        ("Two-point conversion", ["2-yard line"]),
+        ("Holding", ["10 yards", "5 yards and an automatic first down"]),
+    ],
+)
+def test_rule_guide_states_current_nfl_rules(term, facts):
+    """Pinned facts for rules that changed recently or are easy to get wrong (2025 NFL rules)."""
+    entry = next(e for e in glossary.GLOSSARY if e.term == term)
+    for fact in facts:
+        assert fact in entry.text, (term, fact)

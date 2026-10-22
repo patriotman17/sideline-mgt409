@@ -48,6 +48,34 @@ GLOSSARY: tuple[Entry, ...] = (
         ("hike",),
     ),
     Entry(
+        "Measuring a first down",
+        "basics",
+        "When it's close, officials measure whether the ball reached the line to gain. Starting in 2025 the "
+        "NFL uses an electronic camera-tracking system (Hawk-Eye) as the main way to measure, with the "
+        "traditional 10-yard chain crew on the sideline as a backup.",
+        (
+            "measurement",
+            "measure",
+            "chains",
+            "chain gang",
+            "line to gain measured",
+            "hawk-eye",
+        ),
+    ),
+    Entry(
+        "QB sneak and tush push",
+        "strategy",
+        "On short yardage the quarterback can take the snap and push straight ahead (a sneak). The 'tush "
+        "push' is a sneak where teammates line up behind him and shove him forward; it's legal. A proposal to"
+        " ban pushing the runner from behind was debated in 2025 but not adopted.",
+        (
+            "sneak",
+            "qb sneak",
+            "tush push",
+            "brotherly shove",
+        ),
+    ),
+    Entry(
         "Red zone",
         "basics",
         "The area between the opponent's 20-yard line and the goal line. Drives that reach it score far "
@@ -152,9 +180,10 @@ GLOSSARY: tuple[Entry, ...] = (
     Entry(
         "Onside kick",
         "kicking",
-        "A short kickoff the kicking team tries to recover itself. Teams must declare it in advance, and only"
-        " a team that is behind may try one; since 2025 that's allowed at any point in the game, not just the"
-        " 4th quarter. A declared onside kick uses a traditional lineup instead of the dynamic kickoff setup.",
+        "A short kickoff the kicking team tries to recover itself. Teams must declare it in advance and it "
+        "uses a traditional lineup instead of the dynamic kickoff setup. In 2024 only a team trailing in the "
+        "4th quarter could try one; in 2025 (the season Sideline replays) a trailing team may declare one at "
+        "any point in the game. For 2026 the league voted to let teams declare one at any time.",
         ("onside", "on-side kick"),
     ),
     Entry(
@@ -315,16 +344,46 @@ GLOSSARY: tuple[Entry, ...] = (
     Entry(
         "Illegal block in the back",
         "penalties",
-        "Blocking an opponent from behind above the waist, often on returns. 10 yards.",
-        ("block in the back", "clipping"),
+        "Blocking an opponent from behind above the waist, often on kick returns. 10 yards. (Clipping, "
+        "blocking from behind at or below the waist, is a separate 15-yard foul.)",
+        (
+            "block in the back",
+            "illegal block",
+        ),
+    ),
+    Entry(
+        "Clipping",
+        "penalties",
+        "Blocking an opponent from behind at or below the waist. 15 yards. It's dangerous because it hits the"
+        " back of the legs.",
+        (
+            "clipping",
+            "clip",
+        ),
+    ),
+    Entry(
+        "Hip-drop tackle",
+        "penalties",
+        "Banned since 2024: a tackler grabs the runner, swivels and drops his hips or body onto the runner's "
+        "legs at or below the knee, trapping them. 15 yards and an automatic first down, because it caused "
+        "far more injuries than normal tackles.",
+        (
+            "hip drop",
+            "hip-drop",
+            "swivel hip drop",
+        ),
     ),
     # ---------------------------------------------------------------- replay
     Entry(
         "Replay review and challenges",
         "replay",
-        "Coaches can challenge certain calls by throwing a red flag (two challenges a game, a third if both "
-        "succeed). Scoring plays and turnovers are reviewed automatically, as are plays in the last two "
-        "minutes of each half and overtime when the replay official stops the game.",
+        "Coaches can challenge certain calls by throwing a red flag: two challenges a game, plus a third if "
+        "at least one of the first two succeeds (since 2024). Scoring plays and turnovers are reviewed "
+        "automatically, as are plays in the last two minutes of each half and in overtime when the replay "
+        "official stops the game. 'Replay assist' lets officials in the league's command center help get "
+        "calls right quickly; since 2025 it can also correct certain flags already thrown (for example face "
+        "mask, horse-collar, tripping, hits on defenseless players, roughing the kicker), but it can't add a "
+        "flag that wasn't thrown.",
         ("challenge", "red flag", "review", "replay", "booth review", "overturned", "call stands"),
     ),
     # ---------------------------------------------------------------- positions
