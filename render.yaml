@@ -64,6 +64,10 @@ services:
         source: /*
         destination: /index.html
     headers:
+      # Always revalidate (ETag), so a new deploy is picked up at once instead of a cached old build.
+      - path: /*
+        name: Cache-Control
+        value: no-cache
       - path: /*
         name: X-Frame-Options
         value: DENY
