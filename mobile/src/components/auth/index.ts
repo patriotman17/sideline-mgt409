@@ -5,3 +5,4 @@ export * from './TextField';
 export * from './FadeIn';
 export * from './LaunchScreen';
 export * from './CodeField';
+export * from './WelcomeBackdrop';

@@ -1,7 +1,7 @@
 {
   "name": "Sideline",
   "short_name": "Sideline",
-  "description": "Real NFL games, explained by AI. Nothing spoiled.",
+  "description": "Every NFL game, explained by AI as it happens.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

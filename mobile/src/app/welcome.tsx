@@ -3,13 +3,16 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FadeIn } from '@/components/auth';
+import { FadeIn, WelcomeBackdrop } from '@/components/auth';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/state/AuthContext';
 
 const POINTS = [
-  { title: 'Real games, replayed', body: 'Play-by-play NFL replays at your pace.' },
-  { title: 'An AI that never spoils', body: 'Ask anything. It only knows what’s happened so far.' },
+  { title: 'Live with the game', body: 'Scores, plays and win odds update snap by snap.' },
+  {
+    title: 'An AI that knows the moment',
+    body: 'Ask anything. It answers from what’s happened so far.',
+  },
   { title: 'Call the big moments', body: 'Make picks on 4th downs, drives and finishes.' },
 ];
 
@@ -24,6 +27,7 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg">
+      <WelcomeBackdrop />
       <View className="w-full max-w-[460px] flex-1 self-center px-7">
         <View className="flex-1 justify-center">
           <FadeIn>
@@ -37,7 +41,7 @@ export default function WelcomeScreen() {
           <FadeIn delay={90}>
             <Text className="mt-4 text-[26px] font-semibold leading-[32px] tracking-[-0.3px] text-ink">
               Every game, explained.{'\n'}
-              <Text className="text-sub">Nothing spoiled.</Text>
+              <Text className="text-sub">As it happens.</Text>
             </Text>
           </FadeIn>
 
