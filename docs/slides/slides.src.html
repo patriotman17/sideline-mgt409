@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sideline · MGT 409</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<style>
+  :root { --volt: #c6ff3d; --navy: #00225f; --sub: #a7afbd; --mute: #6f7785; --card: #16181c; }
+  html, body { background: #000; }
+  .reveal { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif; color: #fff; font-size: 34px; }
+  .reveal .slides section { text-align: left; height: 100%; }
+  .reveal-viewport { background: radial-gradient(120% 80% at 0% 0%, #00225f 0%, #050b18 45%, #000 75%); }
+  .reveal h1, .reveal h2, .reveal h3 { font-weight: 800; letter-spacing: -0.02em; text-transform: none; margin: 0 0 18px; color: #fff; line-height: 1.05; }
+  .reveal h1 { font-size: 3.4em; }
+  .reveal h2 { font-size: 1.85em; }
+  .reveal .kicker { color: var(--volt); font-weight: 800; letter-spacing: .2em; font-size: .5em; text-transform: uppercase; margin-bottom: 14px; }
+  .reveal p, .reveal li { line-height: 1.32; }
+  .reveal .sub { color: var(--sub); }
+  .reveal .big { font-size: 1.3em; font-weight: 700; }
+  .reveal .volt { color: var(--volt); }
+  .reveal ul { margin: 0 0 0 1em; } .reveal li { margin: 10px 0; }
+  .reveal .row { display: flex; gap: 34px; align-items: center; }
+  .reveal .col { flex: 1; }
+  .reveal img.phone { height: 600px; border-radius: 26px; border: 2px solid #22262d; margin: 0; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  .reveal .phones { display: flex; gap: 22px; justify-content: center; align-items: flex-start; }
+  .reveal .phones figure { margin: 0; text-align: center; }
+  .reveal .phones figcaption { font-size: .48em; color: var(--sub); margin-top: 10px; max-width: 290px; }
+  .reveal .stat { background: var(--card); border-radius: 22px; padding: 20px 24px; }
+  .reveal .stat .v { font-size: 1.7em; font-weight: 800; color: var(--volt); line-height: 1; }
+  .reveal .stat .l { font-size: .55em; color: var(--sub); margin-top: 8px; }
+  .reveal .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .reveal .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .reveal table { font-size: .58em; border-collapse: collapse; width: 100%; }
+  .reveal table th, .reveal table td { border-bottom: 1px solid #2a2e36; padding: 10px 12px; text-align: left; }
+  .reveal table th { color: var(--sub); font-weight: 600; }
+  .reveal td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .reveal .card { background: var(--card); border-radius: 22px; padding: 22px 26px; }
+  .reveal .card h3 { font-size: .9em; margin-bottom: 8px; }
+  .reveal .card p { font-size: .62em; color: var(--sub); margin: 0; }
+  .reveal .diagram { background: #fff; border-radius: 22px; padding: 14px; }
+  .reveal .diagram svg { width: 100%; height: auto; display: block; }
+  .reveal .foot { position: absolute; bottom: 10px; left: 0; font-size: .42em; color: var(--mute); }
+  .reveal .pill { display: inline-block; background: var(--volt); color: #000; font-weight: 800; border-radius: 999px; padding: 4px 16px; font-size: .55em; }
+  .reveal a { color: var(--volt); }
+  .reveal .progress { color: var(--volt); }
+  .reveal .controls { color: var(--volt); }
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- 1. Title -->
+<section>
+  <div class="row" style="height:100%">
+    <div class="col">
+      <div class="kicker">MGT 409 · Final project · Rahul Regula</div>
+      <h1>Sideline</h1>
+      <p class="big">Every game, explained.<br><span class="volt">As it happens.</span></p>
+      <p class="sub" style="font-size:.7em">An AI companion for watching live NFL games: it explains each play, answers any
+        football question from real data, and turns the big moments into picks. It never makes anything up.</p>
+      <p style="font-size:.6em;margin-top:30px"><a href="https://sideline-web.onrender.com">sideline-web.onrender.com</a> · <span class="sub">tap Try Demo</span></p>
+    </div>
+    <div><img class="phone" src="assets/01-welcome.png" alt="Sideline welcome screen"></div>
+  </div>
+</section>
+
+<!-- 2. Problem -->
+<section>
+  <div class="kicker">The problem</div>
+  <h2>Millions watch. Many don't fully follow it.</h2>
+  <div class="grid3" style="margin:26px 0 30px">
+    <div class="stat"><div class="v">18.7M</div><div class="l">viewers per NFL game, 2025 regular season, best since 1989 (Nielsen)</div></div>
+    <div class="stat"><div class="v">~50%</div><div class="l">of fans already use a phone or second screen while they watch (Sporting News; Advocado)</div></div>
+    <div class="stat"><div class="v">0</div><div class="l">tools that explain <i>this</i> play, at <i>this</i> moment, from real data</div></div>
+  </div>
+  <ul style="font-size:.78em">
+    <li>Casual and new fans, partners, friends watching along: "Why did they punt?" "What's pass interference?"</li>
+    <li>Today they ask the person next to them, or search, and miss the next play. Chatbots don't know the live game.</li>
+  </ul>
+  <div class="foot">Sources in the report, section 2.</div>
+</section>
+
+<!-- 3. What is new -->
+<section>
+  <div class="kicker">What is new</div>
+  <h2>Grounded in the game, at this exact moment</h2>
+  <table>
+    <tr><th></th><th>Explains the play</th><th>Knows the live moment</th><th>Answers any question</th><th>No made-up stats</th></tr>
+    <tr><td>ESPN · NFL app · Apple Sports</td><td>no</td><td>scores only</td><td>no</td><td>yes</td></tr>
+    <tr><td>Amazon Prime Vision</td><td>some (1 game/week)</td><td>yes</td><td>no</td><td>yes</td></tr>
+    <tr><td>ChatGPT · Gemini</td><td>yes</td><td>no</td><td>yes</td><td>no (memory)</td></tr>
+    <tr><td><b class="volt">Sideline</b></td><td><b>yes</b></td><td><b>yes</b></td><td><b>yes</b></td><td><b>yes, checked</b></td></tr>
+  </table>
+  <p class="sub" style="font-size:.6em;margin-top:22px">Plus: big moments pause the game for 12 seconds so you make the call, then show if you were right.</p>
+</section>
+
+<!-- 4. Agents -->
+<section>
+  <div class="kicker">How it works</div>
+  <h2 style="font-size:1.4em">Code computes the facts. Three agents explain them.</h2>
+  <div class="diagram">@@DIAGRAM@@</div>
+  <p class="sub" style="font-size:.5em;margin-top:12px">gpt-6-luna via Portkey · 17 read-only tools · every call through one safety runner · evals 30/30</p>
+</section>
+
+<!-- 5. Demo -->
+<section>
+  <div class="kicker">Demo</div>
+  <div class="phones">
+    <figure><img class="phone" src="assets/03-scores-live.png" alt="Scores"><figcaption>The real 2025 Week 5 on one live clock</figcaption></figure>
+    <figure><img class="phone" src="assets/05-game-ask-ai.png" alt="Ask AI"><figcaption>Ask about the game, as of this play</figcaption></figure>
+    <figure><img class="phone" src="assets/07-pregame-ai-preview.png" alt="Pregame"><figcaption>Pregame form and an AI preview</figcaption></figure>
+    <figure><img class="phone" src="assets/09-ask-sideline-answers.png" alt="Ask Sideline"><figcaption>Any football question, with sources</figcaption></figure>
+  </div>
+</section>
+
+<!-- 6. Cost -->
+<section>
+  <div class="kicker">Cost to run (measured)</div>
+  <h2>About a cent per fan per month</h2>
+  <div class="grid3" style="margin:22px 0 26px">
+    <div class="stat"><div class="v">$0.00013</div><div class="l">per in-game question: 3,814 input tokens (3,258 cached), 90 output</div></div>
+    <div class="stat"><div class="v">$0.96</div><div class="l">AI cost per month for 100 users ($92.53 for 10,000)</div></div>
+    <div class="stat"><div class="v">−83%</div><div class="l">from caching: 74% of input tokens prompt-cached; 34 of 107 requests needed no model call</div></div>
+  </div>
+  <table>
+    <tr><th>Agent (real gpt-6-luna calls)</th><th style="text-align:right">Avg input</th><th style="text-align:right">cached</th><th style="text-align:right">Avg output</th><th style="text-align:right">Cost / call</th></tr>
+    <tr><td>Ask AI (in a game)</td><td class="n">3,814</td><td class="n">3,258</td><td class="n">90</td><td class="n">$0.00013</td></tr>
+    <tr><td>"Why?" explanations</td><td class="n">4,614</td><td class="n">3,233</td><td class="n">226</td><td class="n">$0.00028</td></tr>
+    <tr><td>Pregame preview (shared)</td><td class="n">1,960</td><td class="n">0</td><td class="n">209</td><td class="n">$0.00030</td></tr>
+    <tr><td>Ask Sideline</td><td class="n">3,466</td><td class="n">2,932</td><td class="n">141</td><td class="n">$0.00015</td></tr>
+  </table>
+  <p style="font-size:.5em;margin-top:14px" class="sub">Facts come from code (free); one shared preview per game; strict output limits. Honest miss: trimming chat
+    history saved 5% of tokens but cost 7% <i>more</i>, because a stable prompt caches better.</p>
+</section>
+
+<!-- 7. Safety -->
+<section>
+  <div class="row">
+    <div class="col">
+      <div class="kicker">Safety</div>
+      <h2 style="font-size:1.5em">Wrong stats, spoilers and bills</h2>
+      <ul style="font-size:.6em">
+        <li><b>Injection:</b> user text is data; the provider filter blocks jailbreaks; blocked text is never resent.</li>
+        <li><b>Made-up facts:</b> any number no tool returned is flagged; evidence must cite a tool that ran.</li>
+        <li><b>Spoilers:</b> tools can't see the future; answers stating an unreached final score are withheld; the database refuses future rows.</li>
+        <li><b>Overspending:</b> $2/day budget cap, rate limits, ≤5 model requests and 700 output tokens per question.</li>
+        <li><b>Data:</b> private Supabase schema, row-level security, read-only backend role. 291 + 63 tests pass.</li>
+      </ul>
+    </div>
+    <div class="phones" style="gap:14px">
+      <img class="phone" style="height:560px" src="assets/10b-safety-no-spoiler.png" alt="Safety">
+    </div>
+  </div>
+</section>
+
+<!-- 8. Impact -->
+<section>
+  <div class="kicker">Impact</div>
+  <h2>Understanding in seconds, without leaving the game</h2>
+  <div class="grid3" style="margin:22px 0 26px">
+    <div class="stat"><div class="v">~1-5 s</div><div class="l">to a grounded answer (median model call 0.5-0.7 s)</div></div>
+    <div class="stat"><div class="v">30/30</div><div class="l">known game situations answered correctly, with no future leakage</div></div>
+    <div class="stat"><div class="v">@@USER_STAT@@</div><div class="l">@@USER_STAT_LABEL@@</div></div>
+  </div>
+  <p class="sub" style="font-size:.62em">@@USER_QUOTE@@</p>
+</section>
+
+<!-- 9. Next -->
+<section>
+  <div class="kicker">What's next</div>
+  <h2>From a replayed week to a real Sunday</h2>
+  <div class="grid2" style="margin-top:20px">
+    <div class="card"><h3>Live data feed</h3><p>Plug a licensed real-time feed into the same engine (built for it).</p></div>
+    <div class="card"><h3>Watch parties</h3><p>Chat, reactions and a big-moment leaderboard with friends (designed, in preview).</p></div>
+    <div class="card"><h3>Explanations for you</h3><p>Tune every answer to the fan's knowledge level, already in their profile.</p></div>
+    <div class="card"><h3>Alerts and the App Store</h3><p>Push your team's big moments; ship the native iPhone app.</p></div>
+  </div>
+  <p style="font-size:.6em;margin-top:26px"><span class="pill">Try it</span>&nbsp; <a href="https://sideline-web.onrender.com">sideline-web.onrender.com</a> · github.com/patriotman17/sideline-mgt409</p>
+</section>
+
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({ hash: true, width: 1280, height: 720, margin: 0.06, controls: true, progress: true, slideNumber: 'c/t', transition: 'fade' });
+</script>
+</body>
+</html>

@@ -14,12 +14,20 @@ export type AskItem =
   | { id: string; role: 'assistant'; result: AssistResult }
   | { id: string; role: 'error'; text: string; question: string };
 
-/** Earlier questions to send as context: the user's own words only (never answers), newest last, max 3. */
+/**
+ * Earlier questions to send as context: the user's own words only (never answers), newest last, max 3.
+ * Questions that failed (blocked by the provider's safety filter, withheld, errors) are left out, so one
+ * blocked message doesn't get resent with, and block, every later question in the chat.
+ */
 export function previousQuestions(items: AskItem[], max = 3): string[] {
-  return items
-    .filter((i): i is Extract<AskItem, { role: 'user' }> => i.role === 'user')
-    .map((i) => i.text)
-    .slice(-max);
+  const out: string[] = [];
+  items.forEach((item, i) => {
+    if (item.role !== 'user') return;
+    const next = items[i + 1];
+    if (next?.role === 'error') return;
+    out.push(item.text);
+  });
+  return out.slice(-max);
 }
 
 /** The question is sendable: not blank, at most 500 characters (the backend limit). */

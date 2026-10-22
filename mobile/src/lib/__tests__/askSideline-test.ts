@@ -13,7 +13,15 @@ describe('Ask Sideline helpers', () => {
       user('4', 'c'),
       user('5', 'd'),
     ];
+    // 'a' failed (its answer is an error), so it's never resent.
     expect(previousQuestions(items)).toEqual(['b', 'c', 'd']);
+    expect(
+      previousQuestions([
+        user('1', 'jailbreak'),
+        { id: '2', role: 'error', text: 'blocked', question: 'jailbreak' },
+        user('3', 'ok'),
+      ]),
+    ).toEqual(['ok']);
     expect(previousQuestions([])).toEqual([]);
   });
 

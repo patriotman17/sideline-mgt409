@@ -1,0 +1,10 @@
+tests/agents/test_preview.py::test_stating_the_real_final_score_is_withheld PASSED
+tests/agents/test_assistant.py::test_unrevealed_final_score_is_withheld PASSED
+tests/agents/test_assistant.py::test_invented_numbers_lower_confidence PASSED
+tests/agents/test_assistant.py::test_rate_limited_per_client PASSED     
+tests/agents/test_preview.py::test_budget_and_config_guards PASSED      
+tests/test_pregame.py::test_a_later_game_slipped_into_the_file_is_ignored PASSED
+tests/test_history_stats.py::test_a_2025_row_is_refused PASSED          
+tests/test_pregame.py::test_tampered_supabase_rows_are_rejected PASSED  
+tests/test_errors_cors.py::test_unhandled_errors_keep_cors_headers PASSED
+============================== 9 passed in 0.57s ===============================
