@@ -110,11 +110,13 @@ export const startWeek = (
   week: number = FEATURED_WEEK.week,
   preset: string = FEATURED_WEEK.preset,
 ) =>
-  apiRequest<WeekSnapshot & { session_token: string }>('POST', `${BASE}/sessions`, {
-    season,
-    week,
-    preset,
-  });
+  apiRequest<WeekSnapshot & { session_token: string }>(
+    'POST',
+    `${BASE}/sessions`,
+    { season, week, preset },
+    // Generous: right after a restart the backend may still be loading data (it warms up at startup).
+    { timeoutMs: 30000 },
+  );
 
 export const getWeek = (a: WeekAuth) =>
   apiGet<WeekSnapshot>(`${BASE}/sessions/${a.sessionId}`, 4000, auth(a));

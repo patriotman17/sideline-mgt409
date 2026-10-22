@@ -26,3 +26,12 @@ def test_unhandled_errors_keep_cors_headers(monkeypatch):
         assert "secret" not in r.text
     finally:
         config.get_settings.cache_clear()
+
+
+def test_startup_warms_up_data():
+    from app.api.routes.week import get_slates
+
+    get_slates.cache_clear()
+    with TestClient(create_app()) as client:  # runs the lifespan (warm-up)
+        assert get_slates.cache_info().currsize == 1  # loaded before the first request
+        assert client.get("/health").status_code == 200
