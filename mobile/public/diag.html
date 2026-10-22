@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sideline connection check</title>
+<style>
+  body { background:#000; color:#eee; font: 15px/1.45 -apple-system, system-ui, sans-serif; margin: 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .row { padding: 10px 12px; margin: 8px 0; border-radius: 10px; background: #1a1a1a; word-break: break-word; }
+  .ok { color: #c6ff3a; } .bad { color: #ff6b6b; } .mute { color: #999; font-size: 13px; }
+  button { font-size: 16px; padding: 10px 16px; border-radius: 999px; border: 0; background: #c6ff3a; color: #000; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>Sideline connection check</h1>
+<div class="mute">Runs the same requests the app makes and shows the exact result. Screenshot this page.</div>
+<div id="out"></div>
+<p><button onclick="run()">Run again</button></p>
+<script>
+const out = document.getElementById('out');
+function line(name, ok, detail) {
+  const d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = '<b class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? 'OK ' : 'FAIL ') + '</b> ' + name +
+    '<div class="mute">' + String(detail).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]) + '</div>';
+  out.appendChild(d);
+}
+async function probe(name, url, opts) {
+  const t = performance.now();
+  try {
+    const r = await fetch(url, opts);
+    const body = await r.text();
+    line(name, r.ok, r.status + ' ' + r.type + ' · ' + Math.round(performance.now() - t) + ' ms · ' +
+      (r.headers.get('content-type') || '?') + ' · ' + body.slice(0, 90));
+  } catch (e) {
+    line(name, false, (e && e.name) + ': ' + (e && e.message) + ' · after ' + Math.round(performance.now() - t) + ' ms');
+  }
+}
+function xhr(name, url) {
+  return new Promise((resolve) => {
+    const t = performance.now();
+    const x = new XMLHttpRequest();
+    x.open('GET', url);
+    x.onload = () => { line(name, x.status === 200, x.status + ' · ' + Math.round(performance.now() - t) + ' ms · ' + x.responseText.slice(0, 60)); resolve(); };
+    x.onerror = () => { line(name, false, 'network error (status ' + x.status + ') after ' + Math.round(performance.now() - t) + ' ms'); resolve(); };
+    x.send();
+  });
+}
+async function run() {
+  out.innerHTML = '';
+  line('Page', true, location.href + ' · ' + new Date().toISOString());
+  line('Browser', true, navigator.userAgent);
+  await probe('fetch /index.html (static file)', '/index.html', { cache: 'no-store' });
+  await probe('fetch /health (same site)', '/health');
+  await probe('fetch /health no-store', '/health', { cache: 'no-store' });
+  await xhr('XMLHttpRequest /health', '/health');
+  await probe('fetch /api/v1/week/slates', '/api/v1/week/slates');
+  await probe('POST /api/v1/week/sessions', '/api/v1/week/sessions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ season: 2025, week: 5, preset: 'sun-early' }),
+  });
+  await probe('fetch backend address directly', 'https://sideline-api-6b29.onrender.com/health');
+  const app = document.createElement('div');
+  app.className = 'row';
+  app.innerHTML = '<a style="color:#c6ff3a" href="/">Open the app</a>';
+  out.appendChild(app);
+}
+run();
+</script>
+</body>
+</html>
