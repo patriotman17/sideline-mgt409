@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Literal, get_args
+from typing import Literal, TypeVar, get_args
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
@@ -25,6 +25,8 @@ from pydantic_ai import Agent, RunContext
 from app.agents.agent import ToolTracking, ToolUnavailable, _run_tool
 from app.agents.audit import ToolCallRecord
 from app.pregame.season import Leader, Matchup, Result, Storyline
+
+M = TypeVar("M", bound=BaseModel)
 
 #: Bump when the preview instructions or tool outputs change (invalidates cached previews).
 PREVIEW_PROMPT_VERSION = "pg.1"
@@ -135,7 +137,7 @@ class PreviewDeps(ToolTracking):
     #: Every number the tools returned this run (for the invented-number check).
     seen: list[str] = field(default_factory=list)
 
-    def saw[M: BaseModel](self, out: M) -> M:
+    def saw(self, out: M) -> M:
         self.seen.append(out.model_dump_json())
         return out
 

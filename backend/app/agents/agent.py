@@ -10,7 +10,7 @@ import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Literal, get_args
+from typing import Literal, TypeVar, get_args
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
@@ -166,7 +166,10 @@ class ToolUnavailable(BaseModel):
     error: str = "This data is temporarily unavailable. Tell the user you couldn't retrieve it."
 
 
-def _run_tool[R](deps: ToolTracking, name: str, args: dict[str, object], fn: Callable[[], R]) -> R | ToolUnavailable:
+R = TypeVar("R")
+
+
+def _run_tool(deps: ToolTracking, name: str, args: dict[str, object], fn: Callable[[], R]) -> R | ToolUnavailable:
     """Execute a tool, recording it; failures become a structured 'unavailable' result."""
     try:
         with deps.track(name, args):

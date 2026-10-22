@@ -2,7 +2,7 @@
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py311"
 extend-exclude = [".venv", ".cache"]
 
 [tool.ruff.lint]
@@ -10,7 +10,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["app", "scripts", "tests", "evals"]

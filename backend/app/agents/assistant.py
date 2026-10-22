@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Literal, get_args
+from typing import Literal, TypeVar, get_args
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
@@ -24,6 +24,8 @@ from app.agents.agent import ToolTracking, ToolUnavailable, _run_tool
 from app.agents.audit import ToolCallRecord
 from app.history_stats.data import HistoryStats, PlayerSeasonRow, TeamSeasonRow
 from app.pregame.season import Leader, PlayerSeason, SeasonData, TeamForm
+
+M = TypeVar("M", bound=BaseModel)
 
 #: Bump when instructions or tool outputs change (invalidates cached answers).
 ASSISTANT_PROMPT_VERSION = "as.4"
@@ -135,7 +137,7 @@ class AssistantDeps(ToolTracking):
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     seen: list[str] = field(default_factory=list)
 
-    def saw[M: BaseModel](self, out: M) -> M:
+    def saw(self, out: M) -> M:
         self.seen.append(out.model_dump_json())
         return out
 

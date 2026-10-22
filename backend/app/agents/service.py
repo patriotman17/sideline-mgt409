@@ -16,7 +16,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -176,9 +176,13 @@ class AssistResult(BaseModel):
     as_of: str
 
 
+OutT = TypeVar("OutT")
+DepsT = TypeVar("DepsT", bound=ToolTracking)
+
+
 @dataclass
-class _Done[O]:
-    output: O
+class _Done(Generic[OutT]):
+    output: OutT
     record: AuditRecord
 
 
@@ -648,15 +652,15 @@ class AIService:
         record = self.audit.write(done.record.model_copy(update={"grounding_issues": issues}))
         return _Run(answer=answer, record=record, tied_leaders=deps.tied_leaders)
 
-    async def _execute[D: ToolTracking, O](
+    async def _execute(
         self,
-        agent: Agent[D, O],
+        agent: Agent[DepsT, OutT],
         prompt: str,
         *,
-        deps: D,
+        deps: DepsT,
         base: AuditRecord,
         history: list[ModelMessage] | None = None,
-    ) -> _Done[O]:
+    ) -> _Done[OutT]:
         """Run one agent with every safeguard: configured? → daily budget → usage limits (requests, tool
         calls, output tokens) + max_tokens + timeout → spend. Every failure is audited and becomes an
         ``AIError`` with a user-safe message. On success returns the output and an *unwritten* audit record

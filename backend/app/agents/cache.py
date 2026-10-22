@@ -6,9 +6,12 @@ import threading
 import time
 from collections import OrderedDict
 from collections.abc import Callable, Hashable
+from typing import Generic, TypeVar
+
+V = TypeVar("V")
 
 
-class TTLCache[V]:
+class TTLCache(Generic[V]):
     def __init__(
         self, *, maxsize: int = 1000, ttl_seconds: float = 6 * 3600, clock: Callable[[], float] = time.monotonic
     ):

@@ -1,104 +1,84 @@
 # Sideline
 
-AI-powered mobile companion that makes watching live NFL games more interactive,
-personalized, and social.
+**An AI companion for watching live NFL games:** every play explained as it happens, any football question answered
+from real data, and the big moments turned into picks. All without making anything up.
 
-> **MGT 409 final project.** This is the course submission of Sideline (AI Foundations for Managers,
-> Fall 2026). It uses `PORTKEY_API_KEY` with `gpt-6-luna` only.
-
-> **Status:** Phase 1 UI (clearly labeled **mock data**), Phase 2A/2B: a deterministic
-> **historical replay engine** for real NFL play-by-play (nflverse), and Phase 2C: **Ask Sideline**,
-> an AI agent that answers questions and explains key moments using only what has happened so far
-> in the replay, Phase 2D: deterministic **predictions**, and optional **Supabase accounts** (email/password,
-> onboarding, profiles, favorite teams) with a no-account **Try Demo**. No live commercial sports APIs or
-> payments yet.
+> **Try it now: https://sideline-web.onrender.com** (phone or laptop; tap **Try Demo**, no account needed).
+> MGT 409 (AI Foundations for Managers, Fall 2026) final project by Rahul Regula.
+> Report: [`report.html`](report.html) · Slides: [`slides.html`](slides.html) (open in a browser; **F** = full screen).
 
 | | |
 |---|---|
-| Mobile | React Native · Expo SDK 57 · TypeScript · Expo Router · NativeWind v4 |
-| Backend | Python 3.12 · FastAPI · Pydantic AI (gpt-6-luna via Portkey) |
-| Planned | Supabase (auth, DB, realtime) |
+| App | React Native · Expo SDK 57 · TypeScript (iPhone, Android, web) |
+| Backend | Python 3.11+ · FastAPI · Pydantic AI · **gpt-6-luna via Portkey** (course key only) |
+| Data | Real NFL play-by-play and stats from [nflverse](https://github.com/nflverse/nflverse-data) (CC BY 4.0), stored in Supabase, with the same data committed in the repo as the offline default |
 
-See [AGENTS.md](AGENTS.md) for architecture and conventions.
+## 2-minute tour
 
-## Prerequisites
+1. Open the link and tap **Try Demo**.
+2. **Scores** replays the real 2025 Week 5 on one clock: under **Jump to**, tap **Sunday · 1:00 PM**, pick **60×**,
+   press **▶**. Games go live and score exactly as they did; nothing is shown before it happens.
+3. Open a live game (e.g. Broncos @ Eagles): it stays in sync with the clock. Use **Ask AI** ("Who has the most rushing
+   yards so far?"). When the game **pauses for a big moment**, make your call.
+4. Open a game that hasn't started (e.g. Patriots @ Bills) for the **pregame** card and its AI preview.
+5. Tap the lime **Ask** button (bottom right) for any football question: rules ("What's a two-point conversion?"),
+   this season ("Who has the best defense?"), history ("How did the 2007 Patriots do?").
+6. Optional: **You → Developer → Show AI usage** prints the real tokens and cost under every AI answer.
 
-- Node.js 20+ and npm
-- Python 3.12 (3.10+ works)
-- Optional: Xcode (iOS Simulator), Android Studio (emulator), or the Expo Go app on your phone
+**Picks, Party and Discover** are labeled previews of upcoming features (sample data).
 
-## 1. Environment files
+## Run it locally (about 5 minutes)
+
+Needs **Python 3.11 or 3.12** and **Node.js 20+**. Only one key is used: `PORTKEY_API_KEY`.
+
+**1. The key.** The backend looks for `.env` in the repo folder first, then **one folder above it** (so the staff
+`.env` next to the cloned repo works as is). It needs `PORTKEY_API_KEY`; `OPENAI_API_KEY` is not used.
+
+```
+submissions/
+├── .env              ← PORTKEY_API_KEY=...   (found here)
+└── sideline-mgt409/  ← this repo (a .env here would win)
+```
+
+**2. Backend** (terminal 1):
 
 ```bash
-cp .env.example .env                    # shared secrets, e.g. PORTKEY_API_KEY (backend only)
-cp backend/.env.example backend/.env    # backend settings (APP_ENV, CORS_ORIGINS…)
-cp mobile/.env.example mobile/.env      # optional: EXPO_PUBLIC_API_URL + Supabase public values
-```
-
-**Accounts are optional.** Leave the Supabase values blank and the app runs in guest demo mode
-(**Try Demo**): real replays, Ask AI and picks, no sign-up needed. See [Accounts](#accounts-optional).
-
-Secrets go in a `.env` that only the backend reads. The backend looks for it **in the repo folder first,
-then one folder above the repo**, so you can keep your key outside the clone:
-
-```
-some-folder/
-├── .env              ← PORTKEY_API_KEY=... (works here)
-└── sideline-mgt409/
-    └── .env          ← ...or here (this one wins if both exist)
-```
-
-Secrets are read only by the backend. Never put secrets in
-`mobile/.env` — anything prefixed `EXPO_PUBLIC_` ships inside the app bundle.
-
-## 2. Backend
-
-```bash
-cd backend
-python3.12 -m venv .venv
+cd sideline-mgt409/backend
+python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/uvicorn app.main:app --reload --port 8000
+.venv/bin/uvicorn app.main:app --port 8000
 ```
 
-- Health check: http://localhost:8000/health
-- API docs (development only): http://localhost:8000/docs
-- To use the app from a phone, add `--host 0.0.0.0` (see the API URL table below).
+Check: http://localhost:8000/api/v1/status shows `"status":"ok"`.
 
-Checks (install dev tools once with `.venv/bin/pip install -r requirements-dev.txt`):
+**3. App in the browser** (terminal 2):
 
 ```bash
-.venv/bin/ruff check . && .venv/bin/ruff format --check .   # lint + format
-.venv/bin/mypy                                              # strict type check
-.venv/bin/python -m pytest -q                               # tests
-```
-
-## 3. Mobile
-
-```bash
-cd mobile
+cd sideline-mgt409/mobile
 npm install
-npx expo start          # then press i (iOS), a (Android), or w (web)
+npx expo start --web
 ```
 
-Scan the QR code with Expo Go to run it on a phone. The Profile tab → **Developer → Backend**
-row shows whether the app can reach the API.
+It opens http://localhost:8081. Tap **Try Demo** and follow the tour above. (Phone: install Expo Go, set
+`EXPO_PUBLIC_API_URL=http://<your-computer-IP>:8000` in `mobile/.env`, start the backend with `--host 0.0.0.0`, and scan
+the QR code.)
 
-API URL by target (set `EXPO_PUBLIC_API_URL` in `mobile/.env`):
+**Data, no setup needed.** The repo includes everything the app uses (2025 Week 5 play-by-play, Weeks 1-4 season
+context, 1999-2024 player and team seasons; about 2 MB), so it runs with no database. The hosted app reads the same data
+from Supabase instead: set `REPLAY_DATA_SOURCE=supabase` and `SUPABASE_DB_URL` (read-only role) to switch; any database
+problem falls back to the committed files. Accounts (sign-up) also need Supabase; without it the app offers **Try Demo**
+only.
 
-| Target | URL |
-|---|---|
-| iOS Simulator / web | `http://localhost:8000` (default) |
-| Android emulator | `http://10.0.2.2:8000` |
-| Physical device | `http://<your-computer-LAN-IP>:8000` (start uvicorn with `--host 0.0.0.0`) |
-
-Quality checks:
+**Checks** (optional):
 
 ```bash
-npm test              # unit tests (jest-expo)
-npx tsc --noEmit      # types
-npx expo lint         # ESLint (incl. React Compiler rules)
-npx expo-doctor       # dependency / config health
+cd backend && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/python -m pytest -q   # 291 tests, no paid calls
+cd mobile && npm test                                                                           # 63 tests
 ```
+
+See [AGENTS.md](AGENTS.md) for the architecture in detail, and the sections below for each feature.
+
+---
 
 ## What's in the app
 
