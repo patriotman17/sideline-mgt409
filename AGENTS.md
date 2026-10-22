@@ -106,8 +106,9 @@ Expo only auto-loads `.env` files inside `mobile/`, so the root `.env` is never 
 
 `render.yaml` (Blueprint): `sideline-api` (python, `rootDir: backend`, uvicorn `--proxy-headers
 --forwarded-allow-ips='*'`, `/health`) and `sideline-web` (static Expo web export, SPA rewrite to `index.html`,
-`EXPO_PUBLIC_API_URL=https://$API_HOST` at build). Hosts cross-wire via `fromService` (bare hosts; `_origins` in
-`core/config.py` turns them into `https://` origins). Secrets are `sync: false` (dashboard only). Backend deps are
+`EXPO_PUBLIC_API_URL` at build). The public URLs are literal values in `render.yaml` (`fromService` `host` is
+Render's private network name, unusable from browsers); `_origins` in `core/config.py` still accepts bare hosts.
+Live: https://sideline-web.onrender.com → https://sideline-api-6b29.onrender.com. Secrets are `sync: false` (dashboard only). Backend deps are
 pinned in `requirements.txt` (runtime) / `requirements-dev.txt` (pytest, ruff, mypy); Python 3.12
 (`.python-version`, `PYTHON_VERSION`). Web-only `components/web/PhoneFrame.web.tsx` centers the app at ≤ 440 px
 on wide screens. `services/health.waitForBackend` waits up to 90 s for an https backend (free host waking up;

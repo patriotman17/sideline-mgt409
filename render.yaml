@@ -19,12 +19,10 @@ services:
         value: production
       - key: LOG_LEVEL
         value: info
-      # The web app's host (bare hosts mean https://).
+      # The web app's public URL. (Render's fromService `host` is the private network name, not the public
+      # address, so the URLs are written here; they're public, not secrets.)
       - key: CORS_ORIGINS
-        fromService:
-          type: web
-          name: sideline-web
-          property: host
+        value: https://sideline-web.onrender.com
       - key: PORTKEY_API_KEY # course key, gpt-6-luna only
         sync: false
       - key: AI_MODEL
@@ -58,7 +56,7 @@ services:
     name: sideline-web
     runtime: static
     rootDir: mobile
-    buildCommand: npm ci && EXPO_PUBLIC_API_URL="https://$API_HOST" npx expo export --platform web --output-dir dist
+    buildCommand: npm ci && npx expo export --platform web --output-dir dist
     staticPublishPath: dist
     routes:
       # Single-page app: every path (e.g. /replay/...) is served by index.html; Expo Router takes over.
@@ -78,11 +76,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
-      - key: API_HOST
-        fromService:
-          type: web
-          name: sideline-api
-          property: host
+      # The backend's public URL, baked into the web build (EXPO_PUBLIC_* values are build-time).
+      - key: EXPO_PUBLIC_API_URL
+        value: https://sideline-api-6b29.onrender.com
       # Public values (the publishable key is meant to ship in apps; RLS protects the data).
       # Leave blank for guest-only mode.
       - key: EXPO_PUBLIC_SUPABASE_URL

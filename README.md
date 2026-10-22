@@ -387,8 +387,10 @@ app only receives what the replay has revealed.
    `SUPABASE_DB_URL` (read-only `sideline_reader` connection string) for accounts and the Supabase data
    source, and the public `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the web app.
    With only `PORTKEY_API_KEY` the app runs in guest mode on the committed data files.
-3. Each service gets the other's address automatically (`fromService`): the web build calls
-   `https://<sideline-api host>`, and the backend's CORS allows only the web app's host.
+3. The two public URLs are written in `render.yaml` (`EXPO_PUBLIC_API_URL` for the web build, `CORS_ORIGINS`
+   for the backend). Render's `fromService` `host` is the private network name, so it can't be used for
+   browser traffic. If Render gives your services other names, update those two values.
+   Live: web **https://sideline-web.onrender.com** · API https://sideline-api-6b29.onrender.com/health
 4. For accounts on the deployed site, add the web URL to Supabase Auth (`site_url` + redirect allowlist in
    `supabase/config.toml`, then `npx supabase config push`).
 
