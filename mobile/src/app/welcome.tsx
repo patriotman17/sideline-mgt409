@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -6,15 +7,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FadeIn, WelcomeBackdrop } from '@/components/auth';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/state/AuthContext';
+import { colors } from '@/theme';
 
 const POINTS = [
-  { title: 'Live with the game', body: 'Scores, plays and win odds update snap by snap.' },
   {
+    icon: 'pulse',
+    title: 'Live with the game',
+    body: 'Scores, plays and win odds update snap by snap.',
+  },
+  {
+    icon: 'sparkles',
     title: 'An AI that knows the moment',
     body: 'Ask anything. It answers from what’s happened so far.',
   },
-  { title: 'Call the big moments', body: 'Make picks on 4th downs, drives and finishes.' },
-];
+  {
+    icon: 'flag',
+    title: 'Call the big moments',
+    body: 'Make picks on 4th downs, drives and finishes.',
+  },
+] as const;
 
 export default function WelcomeScreen() {
   const { accountsEnabled, startDemo } = useAuth();
@@ -46,9 +57,15 @@ export default function WelcomeScreen() {
           </FadeIn>
 
           <FadeIn delay={180} className="mt-10 gap-5">
-            {POINTS.map((p, i) => (
+            {POINTS.map((p) => (
               <View key={p.title} className="flex-row gap-4">
-                <Text className="w-5 pt-0.5 font-cond text-[15px] text-mute">0{i + 1}</Text>
+                <View
+                  className="w-5 pt-2.5"
+                  importantForAccessibility="no"
+                  accessibilityElementsHidden
+                >
+                  <Ionicons name={p.icon} size={18} color={colors.sub} />
+                </View>
                 <View className="flex-1 border-t border-white/10 pt-2.5">
                   <Text className="text-[15px] font-semibold text-ink">{p.title}</Text>
                   <Text className="mt-0.5 text-[14px] leading-[19px] text-sub">{p.body}</Text>

@@ -36,7 +36,7 @@ export function AvatarStack({ people, max = 4, size = 28 }: { people: { id: stri
           className="items-center justify-center rounded-full border-2 border-bg bg-raised"
           style={{ width: size, height: size, marginLeft: -size * 0.3 }}
         >
-          <Text className="text-[10px] font-bold text-sub">+{extra}</Text>
+          <Text className="text-[11px] font-bold text-sub">+{extra}</Text>
         </View>
       ) : null}
     </View>

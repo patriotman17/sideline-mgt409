@@ -26,7 +26,7 @@ export function IconButton({ icon, onPress, accessibilityLabel, color = colors.i
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      className={`h-10 w-10 items-center justify-center rounded-full active:opacity-70 ${
+      className={`h-11 w-11 items-center justify-center rounded-full active:opacity-70 ${
         variant === 'filled' ? 'bg-white/10' : ''
       } ${disabled ? 'opacity-40' : ''}`}
     >

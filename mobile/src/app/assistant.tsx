@@ -138,7 +138,7 @@ export default function AssistantScreen() {
               <Ionicons name="sparkles" size={14} color={colors.volt} />
               <Text className="text-[16px] font-bold text-ink">Ask Sideline</Text>
             </View>
-            <View className="w-10" />
+            <View className="w-11" />
           </View>
 
           <ScrollView
@@ -155,6 +155,10 @@ export default function AssistantScreen() {
                 <Text className="text-[15px] leading-[21px] text-sub">
                   Rules and penalties, players, teams, who leads the league, or what’s happening in
                   this week’s games. Answers come from Sideline’s rule guide and real NFL data.
+                </Text>
+                <Text className="text-[13px] leading-[18px] text-mute">
+                  Your question goes to Sideline’s server and an AI model. No account details are
+                  included.
                 </Text>
                 <View className="mt-2 flex-row flex-wrap gap-2">
                   {STARTER_QUESTIONS.map((q) => (
@@ -186,7 +190,7 @@ export default function AssistantScreen() {
                     accessibilityRole="button"
                     className="self-start active:opacity-70"
                   >
-                    <Text className="text-[13px] font-semibold text-volt">Try again</Text>
+                    <Text className="text-[13px] font-semibold text-volt">Try Again</Text>
                   </Pressable>
                 </View>
               ),

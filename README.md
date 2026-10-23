@@ -87,8 +87,8 @@ See [AGENTS.md](AGENTS.md) for the architecture in detail, and the sections belo
 Thursday night, the London morning game, six overlapping 1 PM games, the 4 PM games, Sunday and Monday
 night. Press play (1×–300×) or jump to a window; games go live, score and finish exactly as they did,
 and nothing is shown before the clock reaches it. Tap any game to watch it from that moment with Ask
-Sideline, Insights and Picks: it stays **live with the week** as the clock runs, or tap **My own pace**
-to control it yourself (and **Back to live** to rejoin).
+Sideline, Insights and Picks: it stays **live with the week** as the clock runs, or tap **My Own Pace**
+to control it yourself (and **Back to Live** to rejoin).
 
 **Big moments.** Sideline pauses where it matters, like a broadcast before a 4th down: when a big moment
 arrives in the game you're watching (or your #1 team's game), play holds for about 12 seconds with the

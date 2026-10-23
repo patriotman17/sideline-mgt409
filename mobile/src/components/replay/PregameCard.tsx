@@ -122,7 +122,7 @@ function AiPreview({ gameId, initial }: { gameId: string; initial: PregamePrevie
             hitSlop={8}
             className="active:opacity-70"
           >
-            <Text className="text-[13px] font-semibold text-volt">Try again</Text>
+            <Text className="text-[13px] font-semibold text-volt">Try Again</Text>
           </Pressable>
         </View>
       ) : (
@@ -151,7 +151,7 @@ export function PregameCard({ gameId }: { gameId: string }) {
             accessibilityRole="button"
             className="mt-2 self-start active:opacity-70"
           >
-            <Text className="text-[13px] font-semibold text-volt">Try again</Text>
+            <Text className="text-[13px] font-semibold text-volt">Try Again</Text>
           </Pressable>
         </View>
       );
@@ -176,16 +176,25 @@ export function PregameCard({ gameId }: { gameId: string }) {
 
       <View className="mt-4 gap-2">
         {rows.map((r) => (
-          <View key={r.label} className="flex-row items-center">
+          <View
+            key={r.label}
+            className="flex-row items-center"
+            accessible
+            accessibilityLabel={`${r.label}: ${data.away.team} ${r.away}, ${data.home.team} ${r.home}${
+              r.better ? `, ${r.better === 'away' ? data.away.team : data.home.team} better` : ''
+            }`}
+          >
             <Text
               className={`w-16 font-score-bold text-[17px] ${r.better === 'away' ? 'text-ink' : 'text-white/50'}`}
             >
               {r.away}
+              {r.better === 'away' ? <Text className="text-[11px] text-sub"> ▲</Text> : null}
             </Text>
             <Text className="flex-1 text-center text-[12px] text-sub">{r.label}</Text>
             <Text
               className={`w-16 text-right font-score-bold text-[17px] ${r.better === 'home' ? 'text-ink' : 'text-white/50'}`}
             >
+              {r.better === 'home' ? <Text className="text-[11px] text-sub">▲ </Text> : null}
               {r.home}
             </Text>
           </View>

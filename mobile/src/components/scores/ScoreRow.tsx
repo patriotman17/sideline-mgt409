@@ -62,7 +62,7 @@ function Center({ game, hideScore }: { game: Game; hideScore: boolean }) {
         <Text className="text-[11px] font-medium text-mute">NFL</Text>
         <Text className="mt-0.5 font-score-bold text-[19px] text-ink">Final</Text>
         {game.period === 'F/OT' ? <Text className="text-[11px] font-semibold text-sub">OT</Text> : null}
-        {hideScore ? <Text className="text-[10px] text-mute">Spoiler shield</Text> : null}
+        {hideScore ? <Text className="text-[11px] text-mute">Spoiler shield</Text> : null}
       </>
     );
   }
@@ -126,7 +126,7 @@ export function ScoreRow({ game, onPress, showRecords = true, badge }: ScoreRowP
           {badge ? (
             <View className="mt-1 flex-row items-center gap-1 rounded-full bg-volt px-2 py-0.5">
               <Ionicons name="flash" size={10} color={colors.bg} />
-              <Text className="text-[10px] font-bold uppercase text-bg">{badge}</Text>
+              <Text className="text-[11px] font-bold uppercase text-bg">{badge}</Text>
             </View>
           ) : null}
         </View>

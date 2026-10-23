@@ -105,8 +105,8 @@ function RootNavigator() {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-bg px-8">
         <Text className="text-center text-[17px] font-semibold text-ink">{profileError}</Text>
-        <Button label="Try again" onPress={retry} />
-        <Button label="Log out" variant="ghost" onPress={signOut} />
+        <Button label="Try Again" onPress={retry} />
+        <Button label="Log Out" variant="ghost" onPress={signOut} />
       </View>
     );
   }

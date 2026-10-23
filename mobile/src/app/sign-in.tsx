@@ -46,7 +46,7 @@ export default function SignInScreen() {
         <>
           <Button label="Log In" loading={busy} onPress={submit} />
           <Button
-            label="Create an account"
+            label="Create an Account"
             variant="ghost"
             onPress={() => router.replace('/sign-up')}
           />
@@ -90,7 +90,7 @@ export default function SignInScreen() {
       <FormMessage error={error} />
       {unconfirmed ? (
         <Button
-          label="Enter my confirmation code"
+          label="Enter My Confirmation Code"
           variant="secondary"
           size="sm"
           className="self-start"

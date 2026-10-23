@@ -87,7 +87,7 @@ export default function ScoresScreen() {
           title="Week 5 is unavailable"
           body={`${week.error} Make sure the Sideline backend is running.`}
         >
-          <Button label="Try again" onPress={week.retry} />
+          <Button label="Try Again" onPress={week.retry} />
         </EmptyState>
       ) : !snap ? (
         <View className="mt-4 gap-2 px-3">

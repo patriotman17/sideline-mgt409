@@ -27,7 +27,7 @@ export function FieldTracker({ game }: { game: Game }) {
         <View className="flex-row items-center gap-1.5">
           {s.redZone ? (
             <View className="rounded bg-liveDim px-1.5 py-0.5">
-              <Text className="text-[10px] font-extrabold text-live">RED ZONE</Text>
+              <Text className="text-[11px] font-extrabold text-live">RED ZONE</Text>
             </View>
           ) : null}
           <Text className="text-xs font-semibold text-sub">{offense.abbr} ball {towardHome ? '→' : '←'}</Text>
@@ -35,7 +35,12 @@ export function FieldTracker({ game }: { game: Game }) {
       </View>
       <View className="h-12 flex-row overflow-hidden rounded-xl" style={{ backgroundColor: '#14361F' }}>
         <View className="w-[8%] items-center justify-center" style={{ backgroundColor: away.primary }}>
-          <Text className="text-[9px] font-black text-white" style={{ transform: [{ rotate: '-90deg' }] }}>
+          <Text
+            className="text-[11px] font-black text-white"
+            style={{ transform: [{ rotate: '-90deg' }] }}
+            importantForAccessibility="no"
+            accessibilityElementsHidden
+          >
             {away.abbr}
           </Text>
         </View>
@@ -54,7 +59,12 @@ export function FieldTracker({ game }: { game: Game }) {
           />
         </View>
         <View className="w-[8%] items-center justify-center" style={{ backgroundColor: home.primary }}>
-          <Text className="text-[9px] font-black text-white" style={{ transform: [{ rotate: '90deg' }] }}>
+          <Text
+            className="text-[11px] font-black text-white"
+            style={{ transform: [{ rotate: '90deg' }] }}
+            importantForAccessibility="no"
+            accessibilityElementsHidden
+          >
             {home.abbr}
           </Text>
         </View>

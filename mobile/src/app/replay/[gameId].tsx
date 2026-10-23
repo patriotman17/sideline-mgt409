@@ -171,7 +171,7 @@ export default function ReplayScreen() {
           body={`${error} Make sure the Sideline backend is running.`}
         >
           <View className="flex-row gap-2">
-            <Button label="Try again" onPress={retry} />
+            <Button label="Try Again" onPress={retry} />
             <Button label="Close" variant="secondary" onPress={close} />
           </View>
         </EmptyState>
@@ -259,7 +259,7 @@ export default function ReplayScreen() {
                 Historical replay{snapshot?.game.season ? ` · ${snapshot.game.season} season` : ''}
               </Text>
             </View>
-            <View className="w-10" />
+            <View className="w-11" />
           </View>
 
           <ScrollView
@@ -329,7 +329,7 @@ export default function ReplayScreen() {
                         hitSlop={8}
                         className="active:opacity-70"
                       >
-                        <Text className="text-[13px] font-semibold text-ink">My own pace</Text>
+                        <Text className="text-[13px] font-semibold text-ink">My Own Pace</Text>
                       </Pressable>
                     </View>
                   ) : (
@@ -348,7 +348,7 @@ export default function ReplayScreen() {
                     >
                       <Ionicons name="radio" size={14} color={colors.ink} />
                       <Text className="flex-1 text-[13px] text-sub">Watching at your own pace</Text>
-                      <Text className="text-[13px] font-semibold text-ink">Back to live</Text>
+                      <Text className="text-[13px] font-semibold text-ink">Back to Live</Text>
                     </Pressable>
                   )
                 ) : null}

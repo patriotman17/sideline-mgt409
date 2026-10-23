@@ -72,7 +72,7 @@ export default function ForgotPasswordScreen() {
         back={() => setSentTo(null)}
         footer={
           <>
-            <Button label="Reset password" loading={busy} onPress={reset} />
+            <Button label="Reset Password" loading={busy} onPress={reset} />
             <Button
               label={cooldown ? `Send a new code in ${cooldown}s` : 'Send a new code'}
               variant="ghost"
@@ -110,7 +110,7 @@ export default function ForgotPasswordScreen() {
       subtitle={`We’ll email you an ${EMAIL_CODE_LENGTH}-digit code to choose a new password.`}
       footer={
         <>
-          <Button label="Send code" loading={busy} onPress={send} />
+          <Button label="Send Code" loading={busy} onPress={send} />
           <Button
             label="Back to Log In"
             variant="ghost"

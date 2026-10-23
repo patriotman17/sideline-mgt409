@@ -258,7 +258,7 @@ export default function OnboardingScreen() {
       footer={
         <>
           <FormMessage error={error} />
-          <Button label="Start watching" loading={busy} onPress={finish} />
+          <Button label="Start Watching" loading={busy} onPress={finish} />
         </>
       }
     >

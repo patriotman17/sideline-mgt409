@@ -46,7 +46,7 @@ export function Timeline({ events, awayId, homeId }: { events: TimelineEvent[]; 
                   </Text>
                   {e.teamId ? (
                     <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: getTeam(e.teamId).primary }}>
-                      <Text className="text-[10px] font-extrabold text-white">{getTeam(e.teamId).abbr}</Text>
+                      <Text className="text-[11px] font-extrabold text-white">{getTeam(e.teamId).abbr}</Text>
                     </View>
                   ) : null}
                 </View>

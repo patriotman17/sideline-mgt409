@@ -133,7 +133,7 @@ export default function ProfileScreen() {
           </Text>
           {auth.accountsEnabled ? (
             <Button
-              label="Log in or create account"
+              label="Log In or Create Account"
               size="sm"
               className="mt-3 self-start"
               onPress={auth.exitDemo}

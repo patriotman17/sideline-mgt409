@@ -52,7 +52,7 @@ export function MomentBanner({ hold, matchup, onOpen, onSkip }: Props) {
             accessibilityRole="button"
             className="rounded-full bg-volt px-4 py-2.5 active:opacity-80"
           >
-            <Text className="text-[14px] font-bold text-bg">Make your call</Text>
+            <Text className="text-[14px] font-bold text-bg">Make Your Call</Text>
           </Pressable>
           <Pressable
             onPress={onSkip}
@@ -60,7 +60,7 @@ export function MomentBanner({ hold, matchup, onOpen, onSkip }: Props) {
             hitSlop={8}
             className="active:opacity-70"
           >
-            <Text className="text-[14px] font-semibold text-sub">Keep watching</Text>
+            <Text className="text-[14px] font-semibold text-sub">Keep Watching</Text>
           </Pressable>
         </View>
       </View>

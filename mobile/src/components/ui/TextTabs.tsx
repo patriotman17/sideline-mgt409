@@ -37,7 +37,7 @@ export function TextTabs<T extends string>({ tabs, value, onChange, className = 
               <Text className={`text-[15px] ${active ? 'font-semibold text-ink' : 'font-medium text-mute'}`}>{t.label}</Text>
               {t.badge ? (
                 <View className="min-w-[17px] items-center rounded-full bg-volt px-1">
-                  <Text className="text-[10px] font-bold text-bg">{t.badge}</Text>
+                  <Text className="text-[11px] font-bold text-bg">{t.badge}</Text>
                 </View>
               ) : null}
             </View>

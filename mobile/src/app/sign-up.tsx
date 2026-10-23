@@ -117,7 +117,7 @@ export default function SignUpScreen() {
         <>
           <Button label="Create Account" loading={busy} onPress={submit} />
           <Button
-            label="I already have an account"
+            label="I Already Have an Account"
             variant="ghost"
             onPress={() => router.replace('/sign-in')}
           />

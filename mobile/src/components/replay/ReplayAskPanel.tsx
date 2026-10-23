@@ -168,7 +168,7 @@ export function ReplayAskPanel({
           className="mb-3 flex-row items-center gap-1 self-end active:opacity-70"
         >
           <Ionicons name="create-outline" size={14} color={colors.sub} />
-          <Text className="text-[13px] font-medium text-sub">New chat</Text>
+          <Text className="text-[13px] font-medium text-sub">New Chat</Text>
         </Pressable>
       ) : null}
       {hiddenCount > 0 ? (

@@ -64,7 +64,7 @@ export default function ResetPasswordScreen() {
         subtitle="This reset link has expired or was already used, or it was opened on a different device. Request a new one."
         back={() => router.replace('/')}
         footer={
-          <Button label="Request a new link" onPress={() => router.replace('/forgot-password')} />
+          <Button label="Request a New Link" onPress={() => router.replace('/forgot-password')} />
         }
       >
         <FormMessage error={error} />
@@ -89,7 +89,7 @@ export default function ResetPasswordScreen() {
     <AuthLayout
       title="Choose a new password"
       back={() => router.replace('/')}
-      footer={<Button label="Save password" loading={busy} onPress={save} />}
+      footer={<Button label="Save Password" loading={busy} onPress={save} />}
     >
       <TextField
         label="New password"
