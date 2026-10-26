@@ -75,7 +75,9 @@
   <div class="meta">
     <b>Author</b><span>Rahul Regula</span>
     <b>Live app</b><span><a href="https://sideline-web.onrender.com">sideline-web.onrender.com</a> (works on a phone or laptop; tap <i>Try Demo</i>)</span>
-    <b>Code</b><span><a href="https://github.com/patriotman17/sideline-mgt409">github.com/patriotman17/sideline-mgt409</a></span>
+    <b>GitHub repo</b><span><a href="https://github.com/patriotman17/sideline-mgt409">https://github.com/patriotman17/sideline-mgt409</a>
+      (public). Clone: <code>git clone https://github.com/patriotman17/sideline-mgt409.git</code>, then follow
+      <code>README.md</code> (about 3 minutes to run locally)</span>
     <b>Model</b><span>gpt-6-luna via Portkey (course key), three agents, 17 read-only tools</span>
     <b>Data</b><span>Real NFL play-by-play and stats from nflverse (CC BY 4.0), stored in Supabase</span>
   </div>
@@ -113,8 +115,13 @@ out of the conversation in the room.</p>
 league, broadcaster or team, every viewer who "gets it" is worth more: they stay through the 4th quarter, they come back
 next week. For the fan, it's the difference between watching and being part of it.</p>
 
-<div class="todo">Add 2-3 sentences on the real person behind this: who you watch games with (or who you were the first
-time you watched), the question they kept asking, and what happened. A short quote from them is ideal.</div>
+<p><b>Who I built it for.</b> I built Sideline for two kinds of people at the same watch party: the fan who wants to know
+more about the game they love, and the casual who's there for the people and would like to actually follow along. When
+I put it in front of six people, the two who said they knew nothing about football ("I have 0 football understanding")
+were the ones who used the AI on their own, asking question after question. One said the suggested questions are what
+made it work "for football noobs who know nothing (me)". Fans got something too: one asked, half-joking, why their team
+was struggling and got a fair, sourced answer, and another called it "what an NFL app should be". The goal is that nobody
+at the watch party has to stay confused, or interrupt the person next to them, to enjoy the game.</p>
 
 <!-- ============================================================ 3. WHAT IS NEW -->
 <h2><span class="n">3</span>What is new</h2>
@@ -434,6 +441,13 @@ on by default under every AI answer.</div>
 a cent per fan per month (section 5), a companion like this could serve a whole fan base, and the same engine that keeps it
 spoiler-free makes it safe to put next to a live broadcast.</p>
 
+<p><b>The bigger vision: a social home for fans, then every sport.</b> Understanding the game is the way in; the long-term
+product is a place where fans watch <i>together</i>: watch parties with friends, shared big-moment calls and leaderboards,
+and a fan's profile (team, knowledge level, picks) that follows them across games. Nothing in the engine is
+football-specific at its core: a game is a sequence of plays folded into a state, AI that reads only that state, and
+predictions resolved by rules. The same design extends to basketball, baseball, hockey and soccer by adding each sport's
+play feed, rules and rule guide.</p>
+
 <!-- ============================================================ 8. LIMITS -->
 <h2><span class="n">8</span>Limits and next steps</h2>
 
@@ -461,6 +475,9 @@ spoiler-free makes it safe to put next to a live broadcast.</p>
   <li>Personal explanations: use each fan's knowledge level (already in their profile) to tune every answer and suggest
     "learn this" moments.</li>
   <li>Push alerts for your team's big moments, and a native app on the App Store.</li>
+  <li>Make it social: fan profiles, friends and live watch parties as the main way to use the app, not a preview tab.</li>
+  <li>A second sport (likely the NBA, whose season overlaps the NFL's): its play feed, rules and rule guide on the same
+    engine.</li>
   <li>More history (playoff stats, pre-1999) and regression evals that run on every change.</li>
 </ol>
 
