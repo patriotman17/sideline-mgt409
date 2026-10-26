@@ -140,6 +140,9 @@ on wide screens. `services/health.waitForBackend` waits up to 90 s for an https 
   Game Detail accepts `tab=summary|plays|picks|chat` (old names are aliased).
   Historical replays: `router.push({ pathname: '/replay/[gameId]', params: { gameId } })`.
 - State: read with `useAppState()`, mutate with `useAppActions()`. Keep the reducer pure.
+- First launch: `hooks/useFirstRunGuide` (called by Scores) opens the `how-to` modal once per device
+  (`lib/howTo.ts`: steps + `HOW_TO_SEEN_KEY` in AsyncStorage, unit-tested); You → Help → "How Sideline works" reopens it.
+  `docs/tools/capture.mjs` closes it with "Start Watching".
 - Async data: `useAsync(fn, deps)` (deps must be primitives). Plan: TanStack Query in Phase 2.
 - Interactions: use `useHaptics()` (respects the user setting, no-ops on web). Every
   pressable gets `accessibilityRole` and, for icon-only controls, `accessibilityLabel`.

@@ -16,7 +16,8 @@ from real data, and the big moments turned into picks. All without making anythi
 
 ## 2-minute tour
 
-1. Open the link and tap **Try Demo**.
+1. Open the link and tap **Try Demo**. A short **How Sideline works** guide opens the first time (again any time from
+   **You → Help**).
 2. **Scores** replays the real 2025 Week 5 on one clock: under **Jump to**, tap **Sunday · 1:00 PM**, pick **60×**,
    press **▶**. Games go live and score exactly as they did; nothing is shown before it happens.
 3. Open a live game (e.g. Broncos @ Eagles): it stays in sync with the clock. Use **Ask AI** ("Who has the most rushing

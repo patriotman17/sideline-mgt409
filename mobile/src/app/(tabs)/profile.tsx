@@ -331,6 +331,16 @@ export default function ProfileScreen() {
         />
       </ListGroup>
 
+      {/* Help */}
+      <SectionHeader title="Help" />
+      <ListGroup inset={60}>
+        <ActionRow
+          icon="help-circle"
+          label="How Sideline works"
+          onPress={() => router.push('/how-to')}
+        />
+      </ListGroup>
+
       {/* Account */}
       {account ? (
         <>

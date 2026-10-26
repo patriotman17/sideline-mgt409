@@ -71,6 +71,10 @@ await shot('01-welcome');
 
 // 2. Scores: Try Demo, jump into the Sunday 1 PM window and let the week clock run.
 await js(`(()=>{const e=[...document.querySelectorAll('[role=button]')].find(x=>(x.innerText||'').trim().startsWith('Try Demo')); e&&e.click()})()`);
+// First launch opens the "How Sideline works" guide; close it the way a user would.
+await waitText('How Sideline works');
+await sleep(800);
+await js(`(()=>{const e=[...document.querySelectorAll('[role=button]')].find(x=>(x.innerText||'').trim()==='Start Watching'); e&&e.click()})()`);
 await waitText('PM ET|AM ET');
 await shot('02-scores-before-kickoff');
 await click('[aria-label="Jump to Sunday · 1:00 PM"]');

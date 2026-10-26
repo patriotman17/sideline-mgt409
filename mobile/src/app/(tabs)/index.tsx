@@ -10,6 +10,7 @@ import { WEEK_DAYS, dayOfClock, toScoreGame, weekSections, type WeekDay } from '
 import { getTeam } from '@/services';
 import type { WeekGame } from '@/services/week';
 import { usePersonalization } from '@/state/usePersonalization';
+import { useFirstRunGuide } from '@/hooks/useFirstRunGuide';
 import { useWeek } from '@/state/WeekContext';
 import { colors, withAlpha } from '@/theme';
 
@@ -31,6 +32,7 @@ export default function ScoresScreen() {
   const { favoriteTeamIds, initials } = usePersonalization();
   const week = useWeek();
   const { ensure } = week;
+  useFirstRunGuide();
   // null = follow the clock's day; a tap pins a day.
   const [pinnedDay, setPinnedDay] = useState<WeekDay | null>(null);
 

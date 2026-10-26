@@ -121,6 +121,7 @@ function RootNavigator() {
         <Stack.Screen name="game/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="replay/[gameId]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="assistant" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="how-to" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signed_out'}>
         <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
