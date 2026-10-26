@@ -269,7 +269,7 @@ Data from the audit log of the real run (request <code>assistant</code>, gpt-6-l
   <li><b>Audit + cache.</b> One audit line: 4,244 input tokens (3,558 cached), 215 output, 2 model requests,
     <b>$0.00021</b>, 4.3 s end to end. The answer is cached, so the next fan who asks gets it free.</li>
 </ol>
-<figure><img src="assets/09-ask-sideline-answers.png" alt="The answer in the app"><figcaption>What the user sees: the answer, "Sources (1)", what the data covers, and (with You → Developer → Show AI usage on) the real token count and cost of this answer.</figcaption></figure>
+<figure><img src="assets/09-ask-sideline-answers.png" alt="The answer in the app"><figcaption>What the user sees: the answer, "Sources (1)", what the data covers, and the real token count and cost of this answer.</figcaption></figure>
 </div>
 
 <p>The same pattern, inside a game, and before kickoff:</p>
@@ -297,8 +297,8 @@ $0.50 per million output tokens (cached input is billed at the provider's discou
   <tr><th>Session</th><th class="num">107</th><th class="num">73</th><th colspan="4" class="num">total <b>$0.0132</b></th></tr>
 </table>
 <p class="src">A "run" is one answered question. Each model call is 2 model requests on average (pick a tool, then answer).
-Source: <code>docs/tokenomics.md</code> (run of 2026-10-22). The app can show these numbers itself: with
-You → Developer → <i>Show AI usage</i> on, every AI answer shows its tokens and cost (screenshots above and in section 6).</p>
+Source: <code>docs/tokenomics.md</code> (run of 2026-10-22). The app shows these numbers itself: every AI answer
+shows its tokens and cost (on by default; You → Developer → <i>Show AI usage</i> hides it) (screenshots above and in section 6).</p>
 
 <h3>Per user and at scale</h3>
 <p>Assumptions (a regular fan in season): 8 games a month, 5 in-game questions and 2 "Why?" taps per game, 10 Ask Sideline
@@ -390,18 +390,45 @@ use a scripted fake model). Database refusal, run live on Supabase inside a roll
   <tr><td>Questions answerable</td><td>rules (61 entries), 2025 season, 1999-2024 history (42,408 player seasons), live scores</td><td>data in Supabase</td></tr>
 </table>
 
-<div class="todo">Real-user test. With 3-5 people (ideally casual fans), time each on the same 4 questions, first with
-whatever they'd normally use (Google, ESPN, ChatGPT), then with Sideline, during a replayed game:
-(1) "Why did they punt there?" (2) "Who has the most rushing yards right now?" (3) "What's pass interference?"
-(4) "Who has the best defense this season?" Record seconds per question, whether the answer was right, and one quote.
-Fill the table below, and add one photo or screenshot of a tester using it.</div>
+<h3>Real-user test (October 2026)</h3>
+<p><b>Method.</b> Six people (friends and classmates, from avid fans to two who said they know nothing about football)
+used the live site on their own phones and laptops, alone, following the one-page tester guide
+(<code>docs/tester-guide.md</code>): run the replayed Sunday, open a live game, ask Ask AI, make a big-moment call, and
+ask the floating Ask Sideline anything. Afterwards I asked each the same two questions: did the AI bug out, and did its
+answers make sense? This test was about whether the product works and makes sense to real people; it wasn't timed against
+Google or ChatGPT (that's the next test, section 8).</p>
 
 <table>
-  <tr><th>Tester (first name, fan level)</th><th class="num">Avg time today</th><th class="num">Avg time with Sideline</th><th>Right answers (today / Sideline)</th><th>Quote</th></tr>
-  <tr><td>…</td><td class="num">… s</td><td class="num">… s</td><td>… / …</td><td>…</td></tr>
-  <tr><td>…</td><td class="num">… s</td><td class="num">… s</td><td>… / …</td><td>…</td></tr>
-  <tr><td>…</td><td class="num">… s</td><td class="num">… s</td><td>… / …</td><td>…</td></tr>
+  <tr><th>Tester</th><th>Football knowledge</th><th>What happened</th><th>In their words</th></tr>
+  <tr><td>1</td><td>Not stated</td><td>Completed every step of the guide. No errors. Turned on "Show AI usage" and saw nothing until
+    the next answer, which was confusing.</td><td>"It didn't bug out!"</td></tr>
+  <tr><td>2</td><td>Commanders fan</td><td>Asked Ask Sideline "why do my commanders suck so bad?" and got a grounded, fair
+    answer: 2-2, 8th in points, 18th in points allowed, turnover margin -1, with sources and follow-up questions.</td>
+    <td>"This is really neat!"</td></tr>
+  <tr><td>3</td><td>None ("0 football understanding")</td><td>Asked the AI many questions. Liked the points for making calls and
+    the live field graphic. No errors.</td><td>"Super well made"; the AI's answers made sense "to me lol"</td></tr>
+  <tr><td>4</td><td>None (self-described "football noob")</td><td>Relied on the suggested starter questions. No errors.</td>
+    <td>"nope, it worked perfectly"</td></tr>
+  <tr><td>5</td><td>Not stated</td><td>Used it on their own. No errors ("Works great").</td><td>"Like what an NFL app should be really!"</td></tr>
+  <tr><td>6</td><td>Not stated</td><td>Mid-game, "who received first?" failed with "needed more work than allowed"; the next
+    question worked. Asked for a "how to use" guide on first launch.</td><td>"Overall really impressive for a football
+    app!!"</td></tr>
 </table>
+
+<p><b>Results.</b> 6 of 6 testers used it on their own devices without help, and 5 of 6 saw no errors. One question
+failed (tester 6, fixed below). The two testers with no football knowledge, the core user from section 2, both used the AI
+on their own. One said the suggested starter questions are what made it work "for football noobs who know nothing (me)".</p>
+
+<div class="callout good"><b>Fixed from feedback (tester 6's failed question).</b> The audit log showed why "who received
+first?" failed mid-game: the model called <code>get_recent_plays</code> four times hoping to see older plays. That tool only
+returns the newest 25, so by the 2nd half the opening kickoff was out of reach, and the request limit (5 model calls)
+stopped it. That's the overspending safeguard from section 6 working: it failed safely instead of looping. The fix:
+<code>get_game_context</code> now lists who received each half's kickoff; <code>get_recent_plays</code> can read from the start
+of the game (<code>from_start</code>) or only kickoffs, and when it truncates it tells the model where older facts are. At the
+tester's exact position (NYG @ NO, 3rd quarter, 3rd &amp; 6), "who received first?" now answers correctly in one tool call
+(5 of 5 live runs), "what happened on the first drive?" works too, new unit tests pin it, and the live eval still passes
+30/30 ($0.004). Tester 1 also didn't find the AI usage numbers until asking another question, so they're now
+on by default under every AI answer.</div>
 
 <p><b>What becomes possible.</b> For a team, a broadcaster or the league, every confused viewer is an at-risk viewer. At about
 a cent per fan per month (section 5), a companion like this could serve a whole fan base, and the same engine that keeps it
@@ -427,6 +454,8 @@ spoiler-free makes it safe to put next to a live broadcast.</p>
 
 <h3>Next month</h3>
 <ol>
+  <li>A first-launch "how to use" walkthrough (tester 6's request), and a timed test against Google/ChatGPT with casual fans
+    on the same four questions.</li>
   <li>Connect a licensed live data feed and run a real Sunday.</li>
   <li>Watch parties with friends: shared chat, reactions and a big-moment leaderboard (Supabase Realtime).</li>
   <li>Personal explanations: use each fan's knowledge level (already in their profile) to tune every answer and suggest

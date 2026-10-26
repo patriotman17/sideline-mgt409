@@ -21,7 +21,7 @@ from app.agents.stats import LeaderCategory
 from app.agents.view import ReplayView
 
 #: Bump when instructions/tools change so cached answers are invalidated.
-PROMPT_VERSION = "2c.5"
+PROMPT_VERSION = "2c.6"
 
 ToolName = Literal["get_game_state", "get_recent_plays", "get_team_stats", "get_player_stats", "get_game_context"]
 TOOL_NAMES: tuple[str, ...] = get_args(ToolName)
@@ -203,18 +203,26 @@ def get_game_state(ctx: RunContext[AgentDeps]) -> t.GameStateOut | ToolUnavailab
 
 @sideline_agent.tool
 def get_recent_plays(
-    ctx: RunContext[AgentDeps], limit: int = 8, team: str | None = None, only: t.PlayFilter = "all"
+    ctx: RunContext[AgentDeps],
+    limit: int = 8,
+    team: str | None = None,
+    only: t.PlayFilter = "all",
+    from_start: bool = False,
 ) -> t.RecentPlaysOut | ToolUnavailable:
-    """Plays that have happened so far, most recent first.
+    """Plays that have happened so far, most recent first (at most 25 per call).
 
     Args:
         limit: How many plays to return (1-25).
         team: Optional team abbreviation to filter by offense, e.g. "KC".
-        only: Filter: "all", "scoring", "turnovers", "penalties", or "big_plays" (20+ yards).
+        only: Filter: "all", "scoring", "turnovers", "penalties", "big_plays" (20+ yards), or "kickoffs".
+        from_start: True = the earliest plays of the game first (e.g. "the first drive", "how did it start").
     """
-    args: dict[str, object] = {"limit": limit, "team": team, "only": only}
+    args: dict[str, object] = {"limit": limit, "team": team, "only": only, "from_start": from_start}
     return _run_tool(
-        ctx.deps, "get_recent_plays", args, lambda: t.get_recent_plays(ctx.deps.view, limit=limit, team=team, only=only)
+        ctx.deps,
+        "get_recent_plays",
+        args,
+        lambda: t.get_recent_plays(ctx.deps.view, limit=limit, team=team, only=only, from_start=from_start),
     )
 
 
@@ -259,5 +267,6 @@ def _note_ties(deps: AgentDeps, out: t.PlayerStatsOut) -> t.PlayerStatsOut:
 @sideline_agent.tool
 def get_game_context(ctx: RunContext[AgentDeps]) -> t.GameContextOut | ToolUnavailable:
     """Game situation and context so far: matchup, venue, pregame line, leader/margin, late-and-close flags,
-    lead changes, largest leads, scoring summary, turnovers, and known data limitations."""
+    lead changes, largest leads, scoring summary, turnovers, who received each half's opening kickoff
+    (half_kickoffs: "who got the ball first"), and known data limitations."""
     return _run_tool(ctx.deps, "get_game_context", {}, lambda: t.get_game_context(ctx.deps.view))

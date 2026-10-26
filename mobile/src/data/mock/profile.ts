@@ -32,5 +32,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   spoilerShield: false,
   haptics: true,
   aiCommentary: true,
-  showAiUsage: false,
+  showAiUsage: true,
 };

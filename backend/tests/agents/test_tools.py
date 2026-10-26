@@ -75,6 +75,35 @@ def test_context_lead_changes(super_bowl):
     assert ctx.lead_changes == 3 and ctx.times_tied_after_scoring == 2
 
 
+def test_half_kickoffs_answer_who_received_first(super_bowl):
+    """Mid-game, the opening kickoff is beyond get_recent_plays' window; game context still says who received."""
+    first = next(e for e in super_bowl.events if e.kind is PlayKind.KICKOFF)
+    early = t.get_game_context(ReplayView.at(super_bowl, first.sequence + 1)).half_kickoffs
+    assert len(early) == 1 and early[0].startswith("Opening kickoff:")
+    q3 = next(e for e in super_bowl.events if e.quarter == 3)
+    assert len(t.get_game_context(ReplayView.at(super_bowl, q3.sequence - 1)).half_kickoffs) == 1  # no future half
+    full = t.get_game_context(ReplayView.at(super_bowl, len(super_bowl.events))).half_kickoffs
+    assert [k.split(":")[0] for k in full] == ["Opening kickoff", "Second-half kickoff", "Overtime kickoff"]
+    assert "received by SF (first possession: SF); kicked by KC" in full[2]  # SF chose to receive in overtime
+
+
+def test_recent_plays_says_where_older_plays_are(super_bowl):
+    view = ReplayView.at(super_bowl, len(super_bowl.events))
+    out = t.get_recent_plays(view, limit=25)
+    assert out.returned == 25 and out.note and "half_kickoffs" in out.note
+    kicks = t.get_recent_plays(view, limit=25, only="kickoffs")
+    assert kicks.plays and all(p.kind == "kickoff" for p in kicks.plays) and kicks.note is None
+    first = t.get_recent_plays(view, limit=5, from_start=True)
+    assert [p.play_sequence for p in first.plays] == sorted(p.play_sequence for p in first.plays)
+    assert first.plays[0].kind == "kickoff" and "from_start" not in (first.note or "")
+
+
+def test_from_start_never_reaches_past_the_cursor(super_bowl):
+    view = ReplayView.at(super_bowl, 10)
+    out = t.get_recent_plays(view, limit=25, from_start=True)
+    assert out.plays and max(p.play_sequence for p in out.plays) < 10
+
+
 def test_situation_note_after_field_goal_is_a_kickoff(divisional):
     fg = next(e for e in divisional.events if e.kind is PlayKind.FIELD_GOAL and e.scoring)
     note = t.get_game_state(ReplayView.at(divisional, fg.sequence + 1)).situation_note

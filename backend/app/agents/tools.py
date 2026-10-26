@@ -148,7 +148,7 @@ def get_game_state(view: ReplayView) -> GameStateOut:
 # ---------------------------------------------------------------- get_recent_plays
 
 
-PlayFilter = Literal["all", "scoring", "turnovers", "penalties", "big_plays"]
+PlayFilter = Literal["all", "scoring", "turnovers", "penalties", "big_plays", "kickoffs"]
 
 
 class PlayOut(BaseModel):
@@ -212,10 +212,16 @@ def _play_out(e: PlayEvent, away: str, home: str) -> PlayOut:
 
 
 def get_recent_plays(
-    view: ReplayView, *, limit: int = 8, team: str | None = None, only: PlayFilter = "all"
+    view: ReplayView,
+    *,
+    limit: int = 8,
+    team: str | None = None,
+    only: PlayFilter = "all",
+    from_start: bool = False,
 ) -> RecentPlaysOut:
     limit = max(1, min(limit, MAX_RECENT_PLAYS))
-    events = [e for e in reversed(view.events) if e.kind is not PlayKind.GAME_START]
+    ordered = view.events if from_start else tuple(reversed(view.events))
+    events = [e for e in ordered if e.kind is not PlayKind.GAME_START]
     if team:
         events = [e for e in events if e.offense == team.upper() or e.timeout_team == team.upper()]
     if only == "scoring":
@@ -226,8 +232,19 @@ def get_recent_plays(
         events = [e for e in events if e.penalty]
     elif only == "big_plays":
         events = [e for e in events if (e.yards_gained or 0) >= 20 and e.kind in (PlayKind.PASS, PlayKind.RUN)]
+    elif only == "kickoffs":
+        events = [e for e in events if e.kind is PlayKind.KICKOFF]
     plays = [_play_out(e, view.away, view.home) for e in events[:limit]]
     note = None if plays else "No plays match this filter yet."
+    if len(events) > len(plays):
+        # The model can't page back; tell it where older facts live instead of letting it call this again.
+        note = (
+            f"{'First' if from_start else 'Newest'} {len(plays)} of {len(events)} matching plays; calling again "
+            "with the same arguments returns the same plays. "
+            + ("" if from_start else "For the start of the game use from_start=true. ")
+            + "Also: get_game_context (half_kickoffs, scoring_summary, turnovers), get_team_stats / "
+            "get_player_stats (totals), or a narrower filter (only=scoring/turnovers/kickoffs)."
+        )
     return RecentPlaysOut(plays=plays, returned=len(plays), total_revealed=view.cursor, note=note)
 
 
@@ -333,6 +350,9 @@ class GameContextOut(BaseModel):
     largest_lead: dict[str, int]
     scoring_summary: list[ScoringPlayOut]
     turnovers_so_far: dict[str, int]
+    half_kickoffs: list[str] = Field(
+        description="Who received the opening kickoff of each half revealed so far (answers 'who got the ball first')"
+    )
     data_limitations: list[str] = Field(default_factory=lambda: list(DATA_LIMITATIONS))
 
 
@@ -350,7 +370,18 @@ def get_game_context(view: ReplayView) -> GameContextOut:
     largest = {away: 0, home: 0}
     summary: list[ScoringPlayOut] = []
     turnovers = {away: 0, home: 0}
+    half_kickoffs: list[str] = []
+    halves_seen: set[int] = set()
     for e in view.events:
+        half = 1 if e.quarter <= 2 else 2 if e.quarter <= 4 else 3
+        if e.kind is PlayKind.KICKOFF and half not in halves_seen and e.offense in (away, home):
+            halves_seen.add(half)
+            kicker = home if e.offense == away else away
+            label = {1: "Opening kickoff", 2: "Second-half kickoff", 3: "Overtime kickoff"}[half]
+            half_kickoffs.append(
+                f"{label}: received by {e.offense} (first possession: {e.offense}); "
+                f"kicked by {kicker} (play {e.sequence})"
+            )
         if e.turnover and e.turnover.lost_by in turnovers and e.turnover.type is not TurnoverType.DOWNS:
             turnovers[e.turnover.lost_by] += 1
         for sc in e.scoring:
@@ -405,4 +436,5 @@ def get_game_context(view: ReplayView) -> GameContextOut:
         largest_lead=largest,
         scoring_summary=summary,
         turnovers_so_far=turnovers,
+        half_kickoffs=half_kickoffs,
     )

@@ -24,7 +24,7 @@ from real data, and the big moments turned into picks. All without making anythi
 4. Open a game that hasn't started (e.g. Patriots @ Bills) for the **pregame** card and its AI preview.
 5. Tap the lime **Ask** button (bottom right) for any football question: rules ("What's a two-point conversion?"),
    this season ("Who has the best defense?"), history ("How did the 2007 Patriots do?").
-6. Optional: **You → Developer → Show AI usage** prints the real tokens and cost under every AI answer.
+6. Every AI answer shows its real tokens and cost underneath (turn it off under **You → Developer → Show AI usage**).
 
 **Picks, Party and Discover** are labeled previews of upcoming features (sample data).
 

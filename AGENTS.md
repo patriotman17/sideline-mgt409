@@ -405,7 +405,7 @@ options, deadlines, outcomes, or points (`app/predictions/`, `api/routes/predict
   AI call. `python -m evals.tokenomics` (real calls, ~$0.015) simulates three fans across all four AI features
   with one shared service, reports per-kind input / cached / output tokens and cost, cache hit counts, a
   no-caching counterfactual, a history-window A/B, and a monthly projection → `docs/tokenomics.md`. Mobile:
-  You → Developer → **Show AI usage** (`settings.showAiUsage`, off by default) renders `components/ui/AiUsage`
+  You → Developer → **Show AI usage** (`settings.showAiUsage`, **on** by default since user testing) renders `components/ui/AiUsage`
   (`lib/aiUsage.formatUsage`, unit-tested) under Ask AI, pregame preview and Ask Sideline answers.
 - **Mobile:** `services/pregame.ts` → `components/replay/PregameCard.tsx` (shown in the replay screen while
   the game is `scheduled`) with pure helpers in `lib/pregame.ts` (unit-tested).
@@ -509,7 +509,7 @@ replays / Ask AI / insights / predictions are unaffected. Guest mode never reads
 - **Ask Sideline preferences** (`agents/agent.py::AnswerStyle`): validated enums only, turned into fixed
   server-written sentences by `style_instructions` (no client text reaches the prompt); phrasing only, so
   facts still come from the tools. Part of the answer-cache key and recorded in the audit log as
-  `answer_style`. `PROMPT_VERSION` 2c.5.
+  `answer_style`. `PROMPT_VERSION` 2c.6: `get_game_context.half_kickoffs` (who received each half's kickoff) and `get_recent_plays(from_start=true, only="kickoffs")`, because the newest-25 window can't reach the start of the game mid-game; a truncated result says where older facts are, so the model stops re-calling it (the "who received first?" `limit_exceeded` from user testing).
 - **Backend:** `core/auth.py` verifies `Authorization: Bearer <access_token>` against
   `<SUPABASE_URL>/auth/v1/.well-known/jwks.json` (PyJWKClient, cached 10 min, re-fetched for an unknown
   `kid`, so key rotation just works): asymmetric algorithms only (HS256 / `none` rejected), signature,

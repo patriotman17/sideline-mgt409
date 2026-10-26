@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { formatUsage, type AiUsageData } from '@/lib/aiUsage';
 import { useAppState } from '@/state/AppStore';
 
-/** Shown under AI answers only when You → Developer → "Show AI usage" is on (off for normal use). */
+/** Shown under AI answers while You → Developer → "Show AI usage" is on (the default; turn it off to hide). */
 export function AiUsage({ usage, status }: { usage: AiUsageData | undefined; status?: string }) {
   const { settings } = useAppState();
   if (!settings.showAiUsage || !usage) return null;
