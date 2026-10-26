@@ -379,7 +379,7 @@ answer, it's a <b>confident wrong stat</b>, a <b>spoiler</b>, or a <b>bill</b>. 
   <li><b>Audit log</b> of every AI call (tokens, cost, tool calls, latency), with keys and tokens redacted.</li>
 </ul>
 
-<h3>Defenses shown working (automated tests, run 2026-10-22)</h3>
+<h3>Defenses shown working (automated tests, run 2026-10-26)</h3>
 <pre>tests/agents/test_preview.py::test_stating_the_real_final_score_is_withheld PASSED
 tests/agents/test_assistant.py::test_unrevealed_final_score_is_withheld PASSED
 tests/agents/test_assistant.py::test_invented_numbers_lower_confidence PASSED
@@ -390,7 +390,7 @@ tests/test_history_stats.py::test_a_2025_row_is_refused PASSED
 tests/test_pregame.py::test_tampered_supabase_rows_are_rejected PASSED  
 tests/test_errors_cors.py::test_unhandled_errors_keep_cors_headers PASSED
 ============================== 9 passed in 0.57s ===============================</pre>
-<p class="src">Plus the full suite: 291 backend tests and 63 app tests passing, all without calling a paid model (tests
+<p class="src">Plus the full suite: 305 backend tests and 63 app tests passing, all without calling a paid model (tests
 use a scripted fake model). Database refusal, run live on Supabase inside a rolled-back transaction:
 <code>insert into history.team_seasons values (2025, 'BUF', …)</code> → <code>violates check constraint</code>.</p>
 
@@ -401,18 +401,39 @@ use a scripted fake model). Database refusal, run live on Supabase inside a roll
 <table>
   <tr><th>Metric</th><th>Value</th><th>Source</th></tr>
   <tr><td>Time for an AI answer</td><td>median 0.5-0.7 s per model call; about 1-5 s end to end</td><td>tokenomics run (audit log)</td></tr>
-  <tr><td>Accuracy on known situations</td><td>30/30 eval cases pass (facts, tool choice, grounding, no future leakage)</td><td><code>python -m evals.run --live</code></td></tr>
+  <tr><td>Accuracy on known situations</td><td>30/30 eval cases pass (facts, tool choice, grounding, no future leakage)</td><td><code>python -m evals.run --live</code> (2026-10-26)</td></tr>
+  <tr><td>Accuracy vs. how fans ask today (a chatbot)</td><td><b>14/14</b> right with Sideline vs. <b>6/14</b> for the same
+    model without Sideline's tools, which also spoiled a result</td><td><code>python -m evals.baseline</code> (2026-10-26)</td></tr>
   <tr><td>Cost to serve a fan for a month</td><td>about $0.009 of AI</td><td>section 5</td></tr>
   <tr><td>Questions answerable</td><td>rules (61 entries), 2025 season, 1999-2024 history (42,408 player seasons), live scores</td><td>data in Supabase</td></tr>
 </table>
+
+<h3>Measured against today's method: asking a chatbot</h3>
+<p>Fans today ask ChatGPT or search. To measure the difference, I asked the same model (gpt-6-luna) the 14 factual
+questions from the eval set the way a fan would type them into a chatbot: "I'm watching Kansas City Chiefs at Buffalo Bills,
+AFC Divisional Round, 2024-01-21. Right now it's Q2 0:00. Who leads the game in rushing yards?", with no tools and no game data. Both are scored by the same code
+(the right facts, computed by the engine, and nothing from after the current play).</p>
+<table>
+  <tr><th></th><th class="num">Correct</th><th class="num">Spoilers</th><th>Typical failure</th></tr>
+  <tr><td>Chatbot (same model, no tools)</td><td class="num">6 / 14</td><td class="num">1</td><td>Asked at halftime "who wins?", it
+    gave the real final score ("The Kansas City Chiefs win, 27–24"). Wrong leaders from memory ("James Cook leads with 67
+    rushing yards"; it was Josh Allen with 51), a wrong turnover count, and confident made-up details: "That was Cover 3" and
+    "Fred Warner has 5 tackles" (an earlier run said 7). Play-by-play has neither, and one of its 6 "correct" answers is that
+    tackle count, which passes only because the check looks for the word "tackle".</td></tr>
+  <tr><td>Sideline</td><td class="num">14 / 14</td><td class="num">0</td><td>None in the live eval; it says plainly when the
+    data doesn't cover something (tackles, coverages).</td></tr>
+</table>
+<p class="src">Source: <code>backend/evals/baseline.py</code> and <code>backend/evals/run.py --live</code>, run 2026-10-26
+(the baseline costs $0.0003). The questions were chosen by the eval set, not to favor either side; time-to-answer for people
+wasn't measured (section 8).</p>
 
 <h3>Real-user test (October 2026)</h3>
 <p><b>Method.</b> Six people (friends and classmates, from avid fans to two who said they know nothing about football)
 used the live site on their own phones and laptops, alone, following the one-page tester guide
 (<code>docs/tester-guide.md</code>): run the replayed Sunday, open a live game, ask Ask AI, make a big-moment call, and
 ask the floating Ask Sideline anything. Afterwards I asked each the same two questions: did the AI bug out, and did its
-answers make sense? This test was about whether the product works and makes sense to real people; it wasn't timed against
-Google or ChatGPT (that's the next test, section 8).</p>
+answers make sense? This test was about whether the product works and makes sense to real people; accuracy against a chatbot is
+measured above; timing people against Google is the next test (section 8).</p>
 
 <table>
   <tr><th>Tester</th><th>Football knowledge</th><th>What happened</th><th>In their words</th></tr>

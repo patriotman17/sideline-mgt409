@@ -73,7 +73,7 @@ only.
 **Checks** (optional):
 
 ```bash
-cd backend && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/python -m pytest -q   # 291 tests, no paid calls
+cd backend && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/python -m pytest -q   # 305 tests, no paid calls
 cd mobile && npm test                                                                           # 63 tests
 ```
 

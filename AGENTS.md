@@ -289,7 +289,7 @@ stays the source of truth: the agent only *reads* engine-derived facts through f
   $0.50/M out) unless `AI_INPUT_PRICE_PER_MTOK`/`AI_OUTPUT_PRICE_PER_MTOK` override it. Unknown → `None`
   and a conservative $0.01 is charged against the budget.
 - **Tests never call a paid model**: use `FunctionModel` via `tests/agents/conftest.py::scripted`.
-- **Evals:** `python -m evals.run` (offline, free) or `--live` (≈$0.004 for 17 cases + 3 conversations / 10 turns).
+- **Evals:** `python -m evals.baseline` (same 14 factual questions to the same model with no tools, as a fan would ask a chatbot: 6/14 right, 1 spoiler, vs 14/14 for Sideline; ~$0.0003). `python -m evals.run` (offline, free) or `--live` (≈$0.004 for 17 cases + 3 conversations / 10 turns).
   `CONVERSATIONS` in `evals/cases.py` replays multi-turn chats (incl. the original "most rushing yards" →
   "No, which player?" failure, "the other team", "he", "now", and a rewind-leak check); `forbid_tools` fails
   player questions answered with team totals. Expected facts are
