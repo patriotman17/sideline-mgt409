@@ -10,7 +10,7 @@ import { markHowToSeen } from '@/hooks/useFirstRunGuide';
 import { HOW_TO_STEPS } from '@/lib/howTo';
 import { colors } from '@/theme';
 
-/** "How Sideline works": four steps, shown once on first launch and any time from You. */
+/** "How Sideline works": five steps, shown once on first launch and any time from You. */
 export default function HowToScreen() {
   // Opening it counts as seen, however it's closed (button, close icon or swipe down).
   useEffect(() => {

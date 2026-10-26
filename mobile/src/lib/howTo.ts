@@ -9,12 +9,17 @@ export interface HowToStep {
   body: string;
 }
 
-/** The four things a first-time user needs, in the order they'll meet them. */
+/** The five things a first-time user needs, in the order they'll meet them. */
 export const HOW_TO_STEPS: readonly HowToStep[] = [
+  {
+    icon: 'clipboard',
+    title: 'Check the pregame',
+    body: 'Before kickoff, tap any game to see how both teams have played this season, their key players, storylines and a Sideline AI preview.',
+  },
   {
     icon: 'play-circle',
     title: 'Start the clock',
-    body: 'Scores replays the real 2025 Week 5 on one clock. Press ▶, pick a speed, or use Jump to (try Sunday · 1:00 PM). Games go live exactly as they did.',
+    body: 'When you’re ready, Scores replays the real 2025 Week 5 on one clock. Press ▶, pick a speed, or use Jump to (try Sunday · 1:00 PM). Games go live exactly as they did.',
   },
   {
     icon: 'tv',

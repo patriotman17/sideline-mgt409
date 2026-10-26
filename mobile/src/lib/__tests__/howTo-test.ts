@@ -9,8 +9,9 @@ describe('first-launch guide', () => {
     expect(shouldAutoShowHowTo('1')).toBe(false);
   });
 
-  it('covers the four main features in order, briefly', () => {
+  it('covers the main features in order, pregame first, briefly', () => {
     expect(HOW_TO_STEPS.map((s) => s.title)).toEqual([
+      'Check the pregame',
       'Start the clock',
       'Open a live game',
       'Make your call',
